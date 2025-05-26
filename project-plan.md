@@ -18,7 +18,6 @@
 - Build System: **Vite** (fast development server, optimized production builds)
 - Package Manager: **npm** or **pnpm** (for faster installs)
 - TypeScript Compiler: **tsc** with strict mode enabled
-- Code Formatting: **Prettier** with ESLint integration
 - Linting: **ESLint** with TypeScript support (@typescript-eslint/parser)
 
 ## Libraries & Frameworks
@@ -63,9 +62,9 @@
 - **Development Environment**
 	- Initialize `package.json` with Vite + TypeScript template: `npm create vite@latest math-game -- --template vanilla-ts`
 	- Configure TypeScript with strict settings in `tsconfig.json`
-	- Set up ESLint and Prettier configurations
+	- Set up ESLint configurations
 	- Install core dependencies: `vite`, `typescript`, `howler`, `@types/howler`
-	- Install dev dependencies: `eslint`, `prettier`, `vitest`, `playwright`
+	- Install dev dependencies: `eslint`, `vitest`, `playwright`
 - **Basic Project Structure (ECS Architecture)**
 	```
 	src/
@@ -311,7 +310,6 @@ requestAnimationFrame(gameLoop);
   "@typescript-eslint/parser": "^6.0.0",
   "eslint": "^8.45.0",
   "playwright": "^1.37.0",
-  "prettier": "^3.0.0",
   "typescript": "^5.0.2",
   "vite": "^4.4.5",
   "vitest": "^0.34.0",
