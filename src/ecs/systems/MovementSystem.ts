@@ -4,11 +4,8 @@ import { gameEngine, GAME_CONFIG } from '../Engine';
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
     .setPriority(90) // High priority, but after input system
-    .addQuery('movingEntities', {
-      with: ['position', 'velocity']
-    })
     .addQuery('playerEntities', {
-      with: ['position', 'velocity', 'player']
+      with: ['position', 'player']
     })
     .setProcess((queries) => {
       // Process player movement based on input (grid-based)
@@ -51,9 +48,6 @@ export function addMovementSystemToEngine(): void {
         player.inputState.left = false;
         player.inputState.right = false;
       }
-      
-      // Note: We don't apply velocity-based movement for grid-based game
-      // All other entities remain stationary unless they have special movement logic
     })
     .build();
 }

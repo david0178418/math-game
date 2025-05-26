@@ -2480,6 +2480,326 @@ Now let me update the MovementSystem to handle grid-based movement:
 
 ---
 
+```diff
+      })
+      .setProcess((queries, deltaTime) => {
+-       console.log(`Movement system processing with deltaTime: ${deltaTime}`);
++       console.log(`Movement system processing for grid-based movement with deltaTime: ${deltaTime}`);
+        
+-       // Process player movement based on input
++       // Process player movement based on input (grid-based)
+        for (const entity of queries.playerEntities) {
+-         const velocity = entity.components.velocity;
++         const position = entity.components.position;
+          const player = entity.components.player;
+          
+          console.log('Player input state:', player.inputState);
+          
+-         // Convert input state to velocity
+-         velocity.x = 0;
+-         velocity.y = 0;
+-         
+-         if (player.inputState.left) velocity.x -= GAME_CONFIG.PLAYER_SPEED;
+-         if (player.inputState.right) velocity.x += GAME_CONFIG.PLAYER_SPEED;
+-         if (player.inputState.up) velocity.y -= GAME_CONFIG.PLAYER_SPEED;
+-         if (player.inputState.down) velocity.y += GAME_CONFIG.PLAYER_SPEED;
++         // Convert current pixel position to grid coordinates
++         const currentGridX = Math.round(position.x / GAME_CONFIG.CELL_SIZE);
++         const currentGridY = Math.round(position.y / GAME_CONFIG.CELL_SIZE);
++         
++         // Calculate new grid position based on input
++         let newGridX = currentGridX;
++         let newGridY = currentGridY;
+          
+-         // Normalize diagonal movement
+-         if (velocity.x !== 0 && velocity.y !== 0) {
+-           const magnitude = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+-           velocity.x = (velocity.x / magnitude) * GAME_CONFIG.PLAYER_SPEED;
+-           velocity.y = (velocity.y / magnitude) * GAME_CONFIG.PLAYER_SPEED;
+-         }
+-         
+-         if (velocity.x !== 0 || velocity.y !== 0) {
+-           console.log('Player velocity updated:', velocity);
+-         }
+-       }
+-       
+-       // Apply movement to all entities with velocity
+-       for (const entity of queries.movingEntities) {
+-         const position = entity.components.position;
+-         const velocity = entity.components.velocity;
+-         
+-         const oldPosition = { x: position.x, y: position.y };
+-         
+-         // Apply velocity to position
+-         position.x += velocity.x * deltaTime;
+-         position.y += velocity.y * deltaTime;
+-         
+-         // Grid boundary constraints
+-         const gridWidthPixels = GAME_CONFIG.GRID_WIDTH * GAME_CONFIG.CELL_SIZE;
+-         const gridHeightPixels = GAME_CONFIG.GRID_HEIGHT * GAME_CONFIG.CELL_SIZE;
++         // Only allow one direction at a time (prevent diagonal movement)
++         if (player.inputState.left && !player.inputState.right && !player.inputState.up && !player.inputState.down) {
++           newGridX = Math.max(0, currentGridX - 1);
++         } else if (player.inputState.right && !player.inputState.left && !player.inputState.up && !player.inputState.down) {
++           newGridX = Math.min(GAME_CONFIG.GRID_WIDTH - 1, currentGridX + 1);
++         } else if (player.inputState.up && !player.inputState.down && !player.inputState.left && !player.inputState.right) {
++           newGridY = Math.max(0, currentGridY - 1);
++         } else if (player.inputState.down && !player.inputState.up && !player.inputState.left && !player.inputState.right) {
++           newGridY = Math.min(GAME_CONFIG.GRID_HEIGHT - 1, currentGridY + 1);
++         }
++         
++         // Convert new grid position back to pixel coordinates
++         const newPixelX = newGridX * GAME_CONFIG.CELL_SIZE;
++         const newPixelY = newGridY * GAME_CONFIG.CELL_SIZE;
+          
+-         position.x = Math.max(0, Math.min(gridWidthPixels - GAME_CONFIG.CELL_SIZE, position.x));
+-         position.y = Math.max(0, Math.min(gridHeightPixels - GAME_CONFIG.CELL_SIZE, position.y));
+-         
+-         // Log if position actually changed
+-         if (position.x !== oldPosition.x || position.y !== oldPosition.y) {
+-           console.log('Entity position updated:', { from: oldPosition, to: { x: position.x, y: position.y } });
+-         }
+-       }
++         // Update position if it changed
++         if (newPixelX !== position.x || newPixelY !== position.y) {
++           console.log(`Grid movement: (${currentGridX},${currentGridY}) -> (${newGridX},${newGridY})`);
++           console.log(`Pixel movement: (${position.x},${position.y}) -> (${newPixelX},${newPixelY})`);
++           
++           position.x = newPixelX;
++           position.y = newPixelY;
++         }
++         
++         // Clear input state after processing (prevents continuous movement)
++         player.inputState.up = false;
++         player.inputState.down = false;
++         player.inputState.left = false;
++         player.inputState.right = false;
++       }
++       
++       // Note: We don't apply velocity-based movement for grid-based game
++       // All other entities remain stationary unless they have special movement logic
+      })
+      .build();
+```
+
+```diff
+  export function pixelToGrid(pixelX: number, pixelY: number): { x: number; y: number } {
+    return {
+-     x: Math.floor(pixelX / GAME_CONFIG.CELL_SIZE),
+-     y: Math.floor(pixelY / GAME_CONFIG.CELL_SIZE)
++     x: Math.round(pixelX / GAME_CONFIG.CELL_SIZE),
++     y: Math.round(pixelY / GAME_CONFIG.CELL_SIZE)
+    };
+  }
+```
+
+```diff
+    const gridCoords = pixelToGrid(position.x, position.y);
+    return gridToPixel(gridCoords.x, gridCoords.y);
++ }
++ 
++ // Helper function to check if two grid positions are the same
++ export function sameGridPosition(pos1: { x: number; y: number }, pos2: { x: number; y: number }): boolean {
++   const grid1 = pixelToGrid(pos1.x, pos1.y);
++   const grid2 = pixelToGrid(pos2.x, pos2.y);
++   return grid1.x === grid2.x && grid1.y === grid2.y;
+  } 
+```
+
+---
+
+Now let me remove the debug logging from both systems since the movement is working but we want cleaner output:
+
+---
+
+```diff
+      event.preventDefault();
+      (keyPressed as Record<string, boolean>)[event.code] = true;
+-     console.log(`Key pressed: ${event.code}`);
+    }
+  }
+```
+
+```diff
+      event.preventDefault();
+      (keyPressed as Record<string, boolean>)[event.code] = false;
+-     console.log(`Key released: ${event.code}`);
+    }
+  }
+```
+
+```diff
+          playerComponent.inputState.left = leftPressed;
+          playerComponent.inputState.right = rightPressed;
+-         
+-         if (upPressed || downPressed || leftPressed || rightPressed) {
+-           console.log('Grid movement input detected:', { 
+-             up: upPressed, 
+-             down: downPressed, 
+-             left: leftPressed, 
+-             right: rightPressed 
+-           });
+-         }
+        }
+        
+```
+
+---
+
+```diff
+        with: ['position', 'velocity', 'player']
+      })
+-     .setProcess((queries, deltaTime) => {
+-       console.log(`Movement system processing for grid-based movement with deltaTime: ${deltaTime}`);
+-       
++     .setProcess((queries) => {
+        // Process player movement based on input (grid-based)
+        for (const entity of queries.playerEntities) {
+          const position = entity.components.position;
+          const player = entity.components.player;
+-         
+-         console.log('Player input state:', player.inputState);
+          
+          // Convert current pixel position to grid coordinates
+```
+
+```diff
+          // Update position if it changed
+          if (newPixelX !== position.x || newPixelY !== position.y) {
+-           console.log(`Grid movement: (${currentGridX},${currentGridY}) -> (${newGridX},${newGridY})`);
+-           console.log(`Pixel movement: (${position.x},${position.y}) -> (${newPixelX},${newPixelY})`);
+-           
+            position.x = newPixelX;
+            position.y = newPixelY;
+```
+
+---
+
+Now let me build and test the game:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 9 modules transformed.
+dist/index.html                  0.46 kB │ gzip: 0.29 kB
+dist/assets/index-BaiKPFAq.css   1.20 kB │ gzip: 0.62 kB
+dist/assets/index-BMnFKaI6.js   16.98 kB │ gzip: 5.41 kB
+✓ built in 75ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Perfect! The game has been successfully converted to grid-based movement. Here's what I changed:
+
+## Grid-Based Movement Implementation
+
+**InputSystem Changes:**
+- **Key Press Detection**: Instead of tracking continuous key states, the system now detects key press events (transition from released to pressed)
+- **Discrete Input**: Each key press triggers one movement command, preventing continuous movement while holding keys
+- **Edge Detection**: Uses previous frame state to detect when a key was just pressed
+
+**MovementSystem Changes:**
+- **Grid Coordinates**: Converts pixel positions to grid coordinates for calculations
+- **Single Cell Movement**: Each input moves exactly one grid cell (no fractional movement)
+- **No Diagonal Movement**: Only allows movement in one direction at a time, just like classic Number Munchers
+- **Boundary Checking**: Ensures the player stays within the 20x20 grid
+- **Input State Clearing**: Clears input flags after processing to prevent continuous movement
+
+**Key Features:**
+1. **One Cell Per Key Press**: Each WASD/Arrow key press moves exactly one grid cell
+2. **Grid Snapping**: Player always aligns perfectly to grid cells
+3. **No Diagonal Movement**: Prevents moving diagonally like the original game
+4. **Boundary Constraints**: Can't move outside the game grid
+5. **Clean Movement**: No floating-point positions or smooth transitions
+
+The player (blue circle) will now move in discrete steps across the grid, just like in the classic Number Munchers game! Try testing it - each key press should move the player exactly one cell in the corresponding direction.
+
+---
+
+_**User**_
+
+Great. Now, take this opportunity to make any cleanup, refactor, or reorganization that you see fit, if any.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Good idea! Now that we have working grid-based movement, let me analyze the codebase and make some cleanup and improvements. Let me start by examining the current state of our key files:
+
+---
+
+Read file: src/ecs/Engine.ts
+
+---
+
+Read file: src/ecs/Engine.ts
+
+---
+
+Read file: src/main.ts
+
+---
+
+Now let me check the current project structure to see what files we have:
+
+---
+
+<details>
+            <summary>Listed directory src • **7** results</summary>
+        
+| Name |
+|-------|
+| 📄 `main.ts` |
+| 📁 `ecs` |
+| 📁 `assets` |
+| 📁 `utils` |
+| 📁 `game` |
+| 📄 `vite-env.d.ts` |
+| 📄 `style.css` |
+
+</details>
+
+---
+
+<details>
+            <summary>Listed directory src/game • **0** results</summary>
+        
+No results found
+</details>
+
+---
+
+<details>
+            <summary>Listed directory src/utils • **0** results</summary>
+        
+No results found
+</details>
+
+---
+
+Perfect! Now I have a good understanding of the codebase. Here are the cleanup and refactoring improvements I'll make:
+
+## 1. Remove Velocity Component (Not Needed for Grid Movement)
+
+Since we're using grid-based movement, the velocity component is no longer needed:
+
+---
+
 
 
 ---
