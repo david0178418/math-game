@@ -59,9 +59,7 @@
 
 ## Phase 1: Project Setup & Configuration
 - **Repository Setup**
-	- Initialize Git repository with conventional commit standards
 	- Create project directory structure following modern web app conventions
-	- Set up `.gitignore` for Node.js/TypeScript projects
 - **Development Environment**
 	- Initialize `package.json` with Vite + TypeScript template: `npm create vite@latest math-game -- --template vanilla-ts`
 	- Configure TypeScript with strict settings in `tsconfig.json`
