@@ -15,6 +15,9 @@ import {
   initializeRenderSystem, 
   addRenderSystemToEngine 
 } from '../ecs/systems/RenderSystem';
+import { addCollisionSystemToEngine } from '../ecs/systems/CollisionSystem';
+import { addUISystemToEngine } from '../ecs/systems/UISystem';
+import { addProblemManagementSystemToEngine } from '../ecs/systems/ProblemManagementSystem';
 
 /**
  * Game Initializer
@@ -44,6 +47,7 @@ export class GameInitializer {
           <h1>Math Game</h1>
           <p>Use WASD or Arrow Keys to move</p>
           <p>Collect green squares (correct answers)!</p>
+          <p>Avoid gray squares (wrong answers)!</p>
           <div id="score">Score: 0</div>
         </div>
         <canvas id="game-canvas"></canvas>
@@ -76,12 +80,15 @@ export class GameInitializer {
     initializeInputSystem();
     initializeRenderSystem(this.canvas);
 
-    // Add systems to engine
-    addInputSystemToEngine();
-    addMovementSystemToEngine();
-    addRenderSystemToEngine();
+    // Add all systems to engine in priority order
+    addInputSystemToEngine();       // Priority 100 - Input handling
+    addMovementSystemToEngine();    // Priority 90  - Movement processing
+    addCollisionSystemToEngine();   // Priority 70  - Collision detection
+    addUISystemToEngine();          // Priority 50  - UI updates
+    addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
+    addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
 
-    console.log('All systems initialized');
+    console.log('All Phase 4 systems initialized');
   }
 
   /**
@@ -93,26 +100,24 @@ export class GameInitializer {
     const playerPixelPos = gridToPixel(playerGridPos.x, playerGridPos.y);
     EntityFactory.createPlayer(playerPixelPos.x, playerPixelPos.y);
 
-    // Create demo math problems
-    this.createDemoMathProblems();
+    // Create initial set of math problems
+    this.createInitialMathProblems();
   }
 
   /**
-   * Create demonstration math problems
+   * Create initial math problems (fewer since ProblemManagementSystem will spawn more)
    */
-  private createDemoMathProblems(): void {
+  private createInitialMathProblems(): void {
     const problems = [
       // Correct answers (green)
-      { gridX: 5, gridY: 5, value: 10, isCorrect: true },
-      { gridX: 15, gridY: 5, value: 15, isCorrect: true },
-      { gridX: 5, gridY: 15, value: 20, isCorrect: true },
-      { gridX: 15, gridY: 15, value: 25, isCorrect: true },
+      { gridX: 5, gridY: 5, value: 5, isCorrect: true },
+      { gridX: 15, gridY: 5, value: 8, isCorrect: true },
+      { gridX: 5, gridY: 15, value: 12, isCorrect: true },
+      { gridX: 15, gridY: 15, value: 7, isCorrect: true },
       
       // Incorrect answers (gray)
       { gridX: 8, gridY: 8, value: 13, isCorrect: false },
       { gridX: 12, gridY: 8, value: 17, isCorrect: false },
-      { gridX: 8, gridY: 12, value: 19, isCorrect: false },
-      { gridX: 12, gridY: 12, value: 23, isCorrect: false },
     ];
 
     for (const problem of problems) {
@@ -126,7 +131,7 @@ export class GameInitializer {
       );
     }
 
-    console.log(`Created ${problems.length} math problems`);
+    console.log(`Created ${problems.length} initial math problems`);
   }
 
   /**
@@ -134,6 +139,6 @@ export class GameInitializer {
    */
   private startGame(): void {
     startGameLoop();
-    console.log('Math Game started successfully!');
+    console.log('Math Game Phase 4 started successfully!');
   }
 } 
