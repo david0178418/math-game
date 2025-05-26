@@ -19,10 +19,12 @@ interface Components {
     inputState: { up: boolean; down: boolean; left: boolean; right: boolean };
   };
   enemy: { 
-    aiType: string; 
-    state: string; 
-    targetX: number; 
-    targetY: number;
+    behaviorType: 'chase' | 'patrol' | 'random' | 'guard';
+    nextMoveTime: number;
+    aiState?: any;
+    waypoints?: Array<{ x: number, y: number }>;
+    currentWaypoint?: number;
+    guardPosition?: { x: number, y: number };
   };
   mathProblem: { 
     value: number; 
@@ -151,7 +153,7 @@ export const EntityFactory = {
     return entity;
   },
 
-  createEnemy(x: number, y: number, aiType: string = 'random'): { id: number } {
+  createEnemy(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
     const entity = gameEngine.entityManager.createEntity();
     
     gameEngine.entityManager.addComponent(entity.id, 'position', { x, y });
@@ -162,10 +164,8 @@ export const EntityFactory = {
       layer: GAME_CONFIG.LAYERS.ENTITIES 
     });
     gameEngine.entityManager.addComponent(entity.id, 'enemy', { 
-      aiType, 
-      state: 'idle', 
-      targetX: x, 
-      targetY: y,
+      behaviorType,
+      nextMoveTime: 0
     });
     gameEngine.entityManager.addComponent(entity.id, 'collider', { 
       width: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 

@@ -11,14 +11,28 @@ export function addCollisionSystemToEngine(): void {
   gameEngine.addSystem('collisionSystem')
     .setPriority(70) // After movement, before rendering
     .addQuery('players', {
-      with: ['position', 'player', 'collider']
+      with: ['position', 'player', 'collider', 'health']
     })
     .addQuery('mathProblems', {
       with: ['position', 'mathProblem', 'collider']
     })
+    .addQuery('enemies', {
+      with: ['position', 'enemy', 'collider']
+    })
     .setProcess((queries) => {
-      // Check collisions between players and math problems
+      const currentTime = performance.now();
+      
+      // Update invulnerability timers and check collisions
       for (const player of queries.players) {
+        const healthComp = player.components.health;
+        
+        // Update invulnerability timer
+        if (healthComp.invulnerable && currentTime > healthComp.invulnerabilityTime) {
+          healthComp.invulnerable = false;
+          console.log('Player invulnerability ended');
+        }
+        
+        // Check collisions with math problems
         for (const problem of queries.mathProblems) {
           const mathProblemComp = problem.components.mathProblem;
           
@@ -30,6 +44,15 @@ export function addCollisionSystemToEngine(): void {
           // Check if player and problem are at the same grid position
           if (sameGridPosition(player.components.position, problem.components.position)) {
             handlePlayerProblemCollision(player, problem);
+          }
+        }
+        
+        // Check collisions with enemies (only if not invulnerable)
+        if (!healthComp.invulnerable) {
+          for (const enemy of queries.enemies) {
+            if (sameGridPosition(player.components.position, enemy.components.position)) {
+              handlePlayerEnemyCollision(player, enemy);
+            }
           }
         }
       }
@@ -82,4 +105,38 @@ function handlePlayerProblemCollision(
   // Hide the consumed problem by making it invisible
   problemRenderable.color = 'transparent';
   problemRenderable.size = 0;
+}
+
+/**
+ * Handle collision between player and enemy
+ */
+function handlePlayerEnemyCollision(
+  player: any, 
+  enemy: any
+): void {
+  const playerComp = player.components.player;
+  const healthComp = player.components.health;
+  
+  // Check if player is invulnerable
+  if (healthComp.invulnerable) {
+    return;
+  }
+  
+  console.log('Player hit by enemy!');
+  
+  // Lose a life
+  playerComp.lives -= 1;
+  healthComp.current -= 1;
+  
+  console.log(`Lives remaining: ${playerComp.lives}`);
+  
+  // Set invulnerability period (2 seconds)
+  healthComp.invulnerable = true;
+  healthComp.invulnerabilityTime = performance.now() + 2000;
+  
+  // Check for game over
+  if (playerComp.lives <= 0) {
+    console.log('Game Over!');
+    gameEngine.addResource('gameState', 'gameOver');
+  }
 } 

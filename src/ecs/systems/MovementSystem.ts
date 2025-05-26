@@ -3,7 +3,7 @@ import { gameEngine, GAME_CONFIG } from '../Engine';
 // Add the movement system to ECSpresso
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
-    .setPriority(90) // High priority, but after input system
+    .setPriority(90) // High priority, but after input system and AI system
     .addQuery('playerEntities', {
       with: ['position', 'player']
     })

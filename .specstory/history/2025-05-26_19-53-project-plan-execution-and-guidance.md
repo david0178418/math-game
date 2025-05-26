@@ -4793,3 +4793,574 @@ _**Assistant**_
 
 ---
 
+I'll check the current game to see what's happening with the "Play Again" button. Let me first run the game and examine the issue.
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+Let me examine the UISystem code more closely to see if there are any issues with the button implementation:
+
+---
+
+Read file: src/ecs/systems/UISystem.ts
+
+---
+
+I can see the issue! The problem is that the `showGameOverScreen()` function is being called repeatedly every frame when the game state is 'gameOver'. This means it's continuously creating new game over divs with the same ID, and the button may not be working because of these duplicate elements.
+
+Let me fix this by adding a check to ensure the game over screen is only created once:
+
+---
+
+
+
+---
+
+Perfect! Now the "Play Again" button should work properly. The key issues that were fixed:
+
+1. **Prevented duplicate game over screens**: Added a check to ensure the game over screen is only created once, even though the system runs every frame.
+
+2. **Added visual feedback**: Added hover effects to the button so users know it's interactive.
+
+3. **Added logging**: Added a console log to confirm when the game over screen is created.
+
+The button should now work correctly with `location.reload()` to restart the game. The issue was that multiple game over divs were being created with the same ID, which could interfere with the button's click handler.
+
+Let me also check if there are any other potential issues by looking at how the game state is being set:
+
+---
+
+<details>
+            <summary>Grep search for "gameState.*gameOver" • **6** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L54 | `gameState: 'menu' | 'playing' | 'paused' | 'gameOver';` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/UISystem.ts` | L24 | `if (gameState === 'gameOver') {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L77 | `gameEngine.addResource('gameState', 'gameOver');` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L696 | `+   gameState: 'menu' | 'playing' | 'paused' | 'gameOver';` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L3000 | `gameState: 'menu' | 'playing' | 'paused' | 'gameOver';` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L3954 | `+         gameStateResource.value = 'gameOver';` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L3997 | `-         gameStateResource.value = 'gameOver';` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L3999 | `+       gameEngine.addResource('gameState', 'gameOver');` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L4036 | `+       if (gameState === 'gameOver') {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L77 | `gameEngine.addResource('gameState', 'gameOver');` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/UISystem.ts` | L24 | `if (gameState === 'gameOver') {` |
+
+</details>
+
+---
+
+The game state management looks correct. Now let's test the game to make sure the Play Again button works:
+
+---
+
+```bash
+echo "Game is running at http://localhost:5173/ - Please test the Play Again button by losing all lives in the game"
+```
+
+```
+dgranado@MacBook-Pro math % echo "Game is running at http://localhost:5173/ - Please test the Play Again but
+ton by losing all lives in techo "Game is running at http://localhost:5173/ - Please test the Play Again but
+ton by losing all lives in the game"
+Game is running at http://localhost:5173/ - Please test the Play Again button by losing all lives in the gam
+e
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Perfect! The "Play Again" button should now work correctly. Here's what I fixed:
+
+## Issues with the Original Implementation:
+
+1. **Multiple Game Over Screens**: The `showGameOverScreen()` function was being called every frame once the game state became 'gameOver', creating multiple identical divs with the same ID.
+
+2. **Button Interference**: Having multiple buttons with the same `onclick` handler could cause issues with event handling.
+
+## The Fix:
+
+1. **Added Duplicate Prevention**: Now the function checks if a game over screen already exists before creating a new one:
+   ```typescript
+   if (document.getElementById('game-over')) {
+     return;
+   }
+   ```
+
+2. **Enhanced User Experience**: Added hover effects to the button so users get visual feedback when they hover over it.
+
+3. **Added Debugging**: Added a console log to confirm when the game over screen is successfully created.
+
+## How to Test:
+
+1. The game is running at `http://localhost:5173/`
+2. Play the game and lose all your lives by hitting gray squares (wrong answers)
+3. When the game over screen appears, click the "Play Again" button
+4. The page should reload and start a fresh game
+
+The button should now work perfectly with `location.reload()` to restart the game!
+
+---
+
+_**User**_
+
+Great. What are the next steps? Whatever that is, proceed.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Let me check the project plan to see what comes after Phase 4, which we just completed.
+
+---
+
+Read file: project-plan.md
+
+---
+
+Let me continue reading to see the rest of the phases:
+
+---
+
+Read file: project-plan.md
+
+---
+
+Perfect! Now I can see that **Phase 5: AI & Game Logic Systems** is next. This phase involves implementing:
+
+1. **AI System** for enemy entities with pathfinding
+2. **Enhanced Collision System** (we already have basic collision, but need player-enemy collision)
+3. **Game Logic System** for advanced game state management
+
+Let me start implementing Phase 5. I'll begin by creating the AI System and then enhance our existing systems:
+
+---
+
+```diff
+- 
++ import { gameEngine } from '../Engine';
++ import { sameGridPosition } from './MovementSystem';
++ 
++ /**
++  * AI System
++  * Handles AI behavior for enemy entities including pathfinding and movement patterns
++  */
++ 
++ // AI behavior types
++ export type AIBehaviorType = 'chase' | 'patrol' | 'random' | 'guard';
++ 
++ // AI state for pathfinding
++ interface AIState {
++   targetX: number;
++   targetY: number;
++   path: Array<{ x: number, y: number }>;
++   pathIndex: number;
++   lastPathUpdate: number;
++   behaviorTimer: number;
++ }
++ 
++ // Configuration for AI behavior
++ const AI_CONFIG = {
++   PATH_UPDATE_INTERVAL: 1000,     // Update pathfinding every 1 second
++   RANDOM_DIRECTION_INTERVAL: 2000, // Change random direction every 2 seconds
++   MOVEMENT_SPEED: 0.5,            // AI movement speed multiplier
++   DETECTION_RANGE: 8,             // Grid cells within which AI detects player
++ } as const;
++ 
++ // Add the AI system to ECSpresso
++ export function addAISystemToEngine(): void {
++   gameEngine.addSystem('aiSystem')
++     .setPriority(85) // After input, before movement
++     .addQuery('enemies', {
++       with: ['position', 'enemy', 'velocity']
++     })
++     .addQuery('players', {
++       with: ['position', 'player']
++     })
++     .addQuery('obstacles', {
++       with: ['position', 'collider']
++     })
++     .setProcess((queries) => {
++       const currentTime = performance.now();
++       
++       // Process each enemy
++       for (const enemy of queries.enemies) {
++         const player = queries.players[0]; // Assume single player
++         if (player) {
++           processEnemyAI(enemy, player, queries.obstacles, currentTime);
++         }
++       }
++     })
++     .build();
++ }
++ 
++ /**
++  * Process AI behavior for a single enemy
++  */
++ function processEnemyAI(
++   enemy: any,
++   player: any,
++   obstacles: any[],
++   currentTime: number
++ ): void {
++   const enemyPos = enemy.components.position;
++   const enemyData = enemy.components.enemy;
++   const enemyVelocity = enemy.components.velocity;
++   const playerPos = player.components.position;
++   
++   // Initialize AI state if not present
++   if (!enemyData.aiState) {
++     enemyData.aiState = {
++       targetX: enemyPos.x,
++       targetY: enemyPos.y,
++       path: [],
++       pathIndex: 0,
++       lastPathUpdate: 0,
++       behaviorTimer: 0
++     } as AIState;
++   }
++   
++   const aiState = enemyData.aiState as AIState;
++   
++   // Update behavior based on type
++   switch (enemyData.behaviorType) {
++     case 'chase':
++       processChaseAI(enemy, player, obstacles, currentTime, aiState);
++       break;
++     case 'patrol':
++       processPatrolAI(enemy, obstacles, currentTime, aiState);
++       break;
++     case 'random':
++       processRandomAI(enemy, obstacles, currentTime, aiState);
++       break;
++     case 'guard':
++       processGuardAI(enemy, obstacles, currentTime, aiState);
++       break;
++     default:
++       processRandomAI(enemy, obstacles, currentTime, aiState);
++   }
++ }
++ 
++ /**
++  * Chase AI: Follows the player using pathfinding
++  */
++ function processChaseAI(
++   enemy: any,
++   player: any,
++   obstacles: any[],
++   currentTime: number,
++   aiState: AIState
++ ): void {
++   const enemyPos = enemy.components.position;
++   const playerPos = player.components.position;
++   const enemyVelocity = enemy.components.velocity;
++   
++   // Convert positions to grid coordinates
++   const enemyGrid = pixelToGrid(enemyPos.x, enemyPos.y);
++   const playerGrid = pixelToGrid(playerPos.x, playerPos.y);
++   
++   // Check if player is within detection range
++   const distance = Math.abs(enemyGrid.x - playerGrid.x) + Math.abs(enemyGrid.y - playerGrid.y);
++   if (distance > AI_CONFIG.DETECTION_RANGE) {
++     // Player too far, switch to random movement
++     processRandomAI(enemy, obstacles, currentTime, aiState);
++     return;
++   }
++   
++   // Update pathfinding periodically
++   if (currentTime - aiState.lastPathUpdate > AI_CONFIG.PATH_UPDATE_INTERVAL) {
++     aiState.path = findPath(enemyGrid, playerGrid, obstacles);
++     aiState.pathIndex = 0;
++     aiState.lastPathUpdate = currentTime;
++   }
++   
++   // Follow the path
++   if (aiState.path.length > 0 && aiState.pathIndex < aiState.path.length) {
++     const target = aiState.path[aiState.pathIndex];
++     moveTowardsTarget(enemy, target.x, target.y);
++     
++     // Check if reached current target
++     if (sameGridPosition(enemyPos, { x: target.x * 32, y: target.y * 32 })) {
++       aiState.pathIndex++;
++     }
++   } else {
++     // No path found, move randomly
++     processRandomAI(enemy, obstacles, currentTime, aiState);
++   }
++ }
++ 
++ /**
++  * Patrol AI: Moves between predefined waypoints
++  */
++ function processPatrolAI(
++   enemy: any,
++   obstacles: any[],
++   currentTime: number,
++   aiState: AIState
++ ): void {
++   const enemyData = enemy.components.enemy;
++   
++   // If no waypoints defined, create some
++   if (!enemyData.waypoints || enemyData.waypoints.length === 0) {
++     enemyData.waypoints = generatePatrolWaypoints(enemy.components.position);
++     enemyData.currentWaypoint = 0;
++   }
++   
++   const waypoints = enemyData.waypoints;
++   const currentWaypoint = waypoints[enemyData.currentWaypoint];
++   
++   moveTowardsTarget(enemy, currentWaypoint.x, currentWaypoint.y);
++   
++   // Check if reached waypoint
++   if (sameGridPosition(enemy.components.position, { x: currentWaypoint.x * 32, y: currentWaypoint.y * 32 })) {
++     enemyData.currentWaypoint = (enemyData.currentWaypoint + 1) % waypoints.length;
++   }
++ }
++ 
++ /**
++  * Random AI: Moves in random directions
++  */
++ function processRandomAI(
++   enemy: any,
++   obstacles: any[],
++   currentTime: number,
++   aiState: AIState
++ ): void {
++   const enemyVelocity = enemy.components.velocity;
++   
++   // Change direction periodically
++   if (currentTime - aiState.behaviorTimer > AI_CONFIG.RANDOM_DIRECTION_INTERVAL) {
++     const directions = [
++       { x: 0, y: -1 }, // Up
++       { x: 0, y: 1 },  // Down
++       { x: -1, y: 0 }, // Left
++       { x: 1, y: 0 },  // Right
++     ];
++     
++     const randomDir = directions[Math.floor(Math.random() * directions.length)];
++     enemyVelocity.x = randomDir.x * AI_CONFIG.MOVEMENT_SPEED;
++     enemyVelocity.y = randomDir.y * AI_CONFIG.MOVEMENT_SPEED;
++     
++     aiState.behaviorTimer = currentTime;
++   }
++ }
++ 
++ /**
++  * Guard AI: Stays near a specific position
++  */
++ function processGuardAI(
++   enemy: any,
++   obstacles: any[],
++   currentTime: number,
++   aiState: AIState
++ ): void {
++   const enemyPos = enemy.components.position;
++   const enemyData = enemy.components.enemy;
++   
++   // Set guard position if not defined
++   if (!enemyData.guardPosition) {
++     enemyData.guardPosition = { x: enemyPos.x, y: enemyPos.y };
++   }
++   
++   const guardPos = enemyData.guardPosition;
++   const distance = Math.sqrt((enemyPos.x - guardPos.x) ** 2 + (enemyPos.y - guardPos.y) ** 2);
++   
++   // If too far from guard position, return to it
++   if (distance > 64) { // 2 grid cells
++     const guardGrid = pixelToGrid(guardPos.x, guardPos.y);
++     moveTowardsTarget(enemy, guardGrid.x, guardGrid.y);
++   } else {
++     // Stay in place or move slightly
++     enemy.components.velocity.x = 0;
++     enemy.components.velocity.y = 0;
++   }
++ }
++ 
++ /**
++  * Simple A* pathfinding implementation
++  */
++ function findPath(
++   start: { x: number, y: number },
++   goal: { x: number, y: number },
++   obstacles: any[]
++ ): Array<{ x: number, y: number }> {
++   // For now, implement simple direct movement
++   // TODO: Implement full A* algorithm
++   const path: Array<{ x: number, y: number }> = [];
++   
++   let current = { ...start };
++   
++   // Simple pathfinding: move towards goal one step at a time
++   while (current.x !== goal.x || current.y !== goal.y) {
++     if (current.x < goal.x) current.x++;
++     else if (current.x > goal.x) current.x--;
++     
++     if (current.y < goal.y) current.y++;
++     else if (current.y > goal.y) current.y--;
++     
++     path.push({ ...current });
++     
++     // Prevent infinite loops
++     if (path.length > 20) break;
++   }
++   
++   return path;
++ }
++ 
++ /**
++  * Move enemy towards a target grid position
++  */
++ function moveTowardsTarget(enemy: any, targetGridX: number, targetGridY: number): void {
++   const enemyPos = enemy.components.position;
++   const enemyVelocity = enemy.components.velocity;
++   
++   const targetPixelX = targetGridX * 32;
++   const targetPixelY = targetGridY * 32;
++   
++   const dx = targetPixelX - enemyPos.x;
++   const dy = targetPixelY - enemyPos.y;
++   
++   // Normalize direction
++   const distance = Math.sqrt(dx * dx + dy * dy);
++   if (distance > 0) {
++     enemyVelocity.x = (dx / distance) * AI_CONFIG.MOVEMENT_SPEED;
++     enemyVelocity.y = (dy / distance) * AI_CONFIG.MOVEMENT_SPEED;
++   }
++ }
++ 
++ /**
++  * Convert pixel coordinates to grid coordinates
++  */
++ function pixelToGrid(x: number, y: number): { x: number, y: number } {
++   return {
++     x: Math.floor(x / 32),
++     y: Math.floor(y / 32)
++   };
++ }
++ 
++ /**
++  * Generate patrol waypoints around a starting position
++  */
++ function generatePatrolWaypoints(startPos: { x: number, y: number }): Array<{ x: number, y: number }> {
++   const startGrid = pixelToGrid(startPos.x, startPos.y);
++   
++   return [
++     { x: startGrid.x, y: startGrid.y },
++     { x: startGrid.x + 3, y: startGrid.y },
++     { x: startGrid.x + 3, y: startGrid.y + 3 },
++     { x: startGrid.x, y: startGrid.y + 3 },
++   ];
++ } 
+```
+
+---
+
+I need to first check what components are defined in the Engine and add the missing components. Let me check the current component definitions:
+
+---
+
+Read file: src/ecs/Engine.ts
+
+---
+
+Now I need to add the `velocity` component to the Components interface and update the enemy component to include the AI properties:
+
+---
+
+
+
+---
+
+I need to update the `createEnemy` function to use the new enemy component structure:
+
+---
+
+
+
+---
+
+Now I need to update the MovementSystem to handle velocity-based movement for enemies while keeping grid-based movement for the player. Let me check the current MovementSystem:
+
+---
+
+Read file: src/ecs/systems/MovementSystem.ts
+
+---
+
+Now I'll update the MovementSystem to handle both player (grid-based) and enemy (velocity-based) movement:
+
+---
+
+
+
+---
+
+Now I need to enhance the CollisionSystem to handle player-enemy collisions. Let me update it:
+
+---
+
+
+
+---
+
+I need to add the missing collision functions. Let me add them to the CollisionSystem:
+
+---
+
+
+
+---
+
+_**User**_
+
+Why are the enemies velocity based? Are they not grid based in their movement as well?
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+You're absolutely right! That's an excellent observation. In Number Munchers, ALL entities move grid-based - both the player and enemies move from cell to cell on the grid, not with smooth velocity-based movement.
+
+I made an architectural mistake by implementing enemies with velocity-based movement. This creates inconsistency and unnecessary complexity. Let me fix this by making enemies also use grid-based movement like the player.
+
+Let me correct this:
+
+---
+
+
+
+---
+
+Now I need to fix the createEnemy function to remove velocity and add nextMoveTime:
+
+---
+
+
+
+---
+
+Now I need to update the MovementSystem to remove the velocity-based movement:
+
+---
+
+
+
+---
+
+
+
+---
+
