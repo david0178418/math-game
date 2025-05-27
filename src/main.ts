@@ -1,6 +1,5 @@
 import './style.css';
 import { GameInitializer } from './game/GameInitializer';
-import { GameStyles } from './game/GameStyles';
 
 /**
  * Main entry point for the Math Game
@@ -8,16 +7,19 @@ import { GameStyles } from './game/GameStyles';
 async function main(): Promise<void> {
   try {
     // Show loading state
-    document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+    const appElement = document.querySelector<HTMLDivElement>('#app')!;
+    appElement.innerHTML = `
       <div class="game-loading">Loading Math Game...</div>
     `;
 
-    // Apply game styles
-    GameStyles.apply();
+    // Note: GameStyles.apply() removed - UIManager handles all styling now
 
     // Initialize and start the game
     const gameInitializer = new GameInitializer();
     await gameInitializer.initialize();
+
+    // Remove loading screen after successful initialization
+    appElement.remove();
 
   } catch (error) {
     console.error('Failed to start Math Game:', error);
