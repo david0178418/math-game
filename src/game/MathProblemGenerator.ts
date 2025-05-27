@@ -28,6 +28,44 @@ export class MathProblemGenerator {
   }
   
   /**
+   * Generate problems for multiples mode
+   * Returns all correct multiples and some incorrect values
+   */
+  generateMultiplesProblems(multipleOf: number): ProblemOption[] {
+    const problems: ProblemOption[] = [];
+    
+    // Generate all multiples from 1 to 12
+    for (let i = 1; i <= 12; i++) {
+      const multiple = multipleOf * i;
+      problems.push({
+        value: multiple,
+        isCorrect: true
+      });
+    }
+    
+    // Add some incorrect numbers to make it challenging
+    const incorrectNumbers = new Set<number>();
+    const correctNumbers = new Set(problems.map(p => p.value));
+    
+    // Generate numbers that are NOT multiples of the target
+    while (incorrectNumbers.size < 8) {
+      const randomNum = Math.floor(Math.random() * (multipleOf * 12)) + 1;
+      
+      // Make sure it's not a multiple and not already used
+      if (!correctNumbers.has(randomNum) && randomNum % multipleOf !== 0) {
+        incorrectNumbers.add(randomNum);
+        problems.push({
+          value: randomNum,
+          isCorrect: false
+        });
+      }
+    }
+    
+    // Shuffle the problems
+    return this.shuffleArray(problems);
+  }
+  
+  /**
    * Generate a math problem with the current difficulty
    */
   generateProblem(): MathProblem {

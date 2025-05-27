@@ -101,6 +101,9 @@ export function addRenderSystemToEngine(): void {
         
         drawEntity(position, renderable);
       }
+      
+      // Draw numbers on math problem tiles (after drawing the entities)
+      drawMathProblemNumbers(queries.mathProblems);
     })
     .build();
 }
@@ -192,6 +195,38 @@ function drawEntity(position: { x: number; y: number }, renderable: { shape: 'ci
       renderable.size
     );
   }
+}
+
+// Draw numbers on math problem tiles
+function drawMathProblemNumbers(mathProblems: any[]): void {
+  if (!ctx) return;
+  
+  // Set up text styling
+  ctx.save();
+  ctx.font = 'bold 14px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  for (const problem of mathProblems) {
+    const position = problem.components.position;
+    const mathProblemComp = problem.components.mathProblem;
+    
+    // Skip consumed problems (they're already invisible)
+    if (mathProblemComp.consumed) continue;
+    
+    const centerX = position.x + CELL_SIZE / 2;
+    const centerY = position.y + CELL_SIZE / 2;
+    
+    // Use white text with black outline for visibility on both green and gray backgrounds
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.strokeText(mathProblemComp.value.toString(), centerX, centerY);
+    
+    ctx.fillStyle = 'white';
+    ctx.fillText(mathProblemComp.value.toString(), centerX, centerY);
+  }
+  
+  ctx.restore();
 }
 
 // Get canvas element (for external use)

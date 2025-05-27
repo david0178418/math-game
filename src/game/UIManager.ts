@@ -5,7 +5,7 @@ import { gameEngine } from '../ecs/Engine';
  * Handles all game UI screens and transitions
  */
 
-export type GameScreen = 'menu' | 'playing' | 'settings' | 'gameOver' | 'paused';
+export type GameScreen = 'menu' | 'modeSelect' | 'playing' | 'settings' | 'gameOver' | 'paused';
 
 export class UIManager {
   private currentScreen: GameScreen = 'menu';
@@ -100,6 +100,9 @@ export class UIManager {
     switch (screen) {
       case 'menu':
         this.createMainMenu();
+        break;
+      case 'modeSelect':
+        this.createModeSelectScreen();
         break;
       case 'playing':
         this.createGameplayUI();
@@ -224,12 +227,147 @@ export class UIManager {
     const settingsBtn = menuScreen.querySelector('#settings-btn') as HTMLButtonElement;
     const highScoresBtn = menuScreen.querySelector('#high-scores-btn') as HTMLButtonElement;
     
-    startBtn.addEventListener('click', () => this.startGame());
+    startBtn.addEventListener('click', () => this.showScreen('modeSelect'));
     settingsBtn.addEventListener('click', () => this.showScreen('settings'));
     highScoresBtn.addEventListener('click', () => this.showHighScores());
     
     this.gameContainer!.appendChild(menuScreen);
     this.screenElements.set('menu', menuScreen);
+  }
+  
+  /**
+   * Create mode selection screen
+   */
+  private createModeSelectScreen(): void {
+    const modeSelectScreen = document.createElement('div');
+    modeSelectScreen.id = 'mode-select-screen';
+    modeSelectScreen.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      z-index: 1000;
+    `;
+    
+    modeSelectScreen.innerHTML = `
+      <div style="text-align: center; max-width: 600px; padding: 40px;">
+        <h1 style="
+          font-size: 3rem;
+          margin: 0 0 20px 0;
+          text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+          background: linear-gradient(45deg, #FFD700, #FFA500);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        ">Select Game Mode</h1>
+        
+        <p style="
+          font-size: 1.2rem;
+          margin: 0 0 40px 0;
+          opacity: 0.9;
+          line-height: 1.6;
+        ">Choose a math challenge to begin your adventure!</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
+          <div id="multiples-mode" style="
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            min-width: 400px;
+            text-align: left;
+          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(0, 0, 0, 0.4)'"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.3)'">
+            <h3 style="margin: 0 0 10px 0; font-size: 1.5rem;">🔢 Multiples</h3>
+            <p style="margin: 0; font-size: 1rem; opacity: 0.9;">
+              Find all multiples of the given number! Start with multiples of 2 and work your way up.
+            </p>
+            <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">
+              Example: For multiples of 2, eat 2, 4, 6, 8, 10, 12...
+            </div>
+          </div>
+          
+          <div id="factors-mode" style="
+            background: linear-gradient(45deg, #9E9E9E, #757575);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: not-allowed;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            min-width: 400px;
+            text-align: left;
+            opacity: 0.6;
+          ">
+            <h3 style="margin: 0 0 10px 0; font-size: 1.5rem;">🧮 Factors (Coming Soon)</h3>
+            <p style="margin: 0; font-size: 1rem; opacity: 0.9;">
+              Find all factors of the given number! This mode will be available in a future update.
+            </p>
+            <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">
+              Example: For factors of 12, eat 1, 2, 3, 4, 6, 12...
+            </div>
+          </div>
+          
+          <div id="prime-mode" style="
+            background: linear-gradient(45deg, #9E9E9E, #757575);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: not-allowed;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            min-width: 400px;
+            text-align: left;
+            opacity: 0.6;
+          ">
+            <h3 style="margin: 0 0 10px 0; font-size: 1.5rem;">🔑 Prime Numbers (Coming Soon)</h3>
+            <p style="margin: 0; font-size: 1rem; opacity: 0.9;">
+              Find all prime numbers! Only eat numbers that have exactly two factors.
+            </p>
+            <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">
+              Example: Eat 2, 3, 5, 7, 11, 13...
+            </div>
+          </div>
+        </div>
+        
+        <button id="back-to-main-btn" style="
+          background: linear-gradient(45deg, #607D8B, #455A64);
+          color: white;
+          border: none;
+          padding: 12px 30px;
+          font-size: 1.1rem;
+          border-radius: 12px;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+          transition: all 0.3s ease;
+          margin-top: 30px;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.4)'"
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.3)'">
+          ← Back to Menu
+        </button>
+      </div>
+    `;
+    
+    // Add event listeners
+    const multiplesMode = modeSelectScreen.querySelector('#multiples-mode') as HTMLElement;
+    const backBtn = modeSelectScreen.querySelector('#back-to-main-btn') as HTMLButtonElement;
+    
+    multiplesMode.addEventListener('click', () => this.startGame('multiples'));
+    backBtn.addEventListener('click', () => this.showScreen('menu'));
+    
+    this.gameContainer!.appendChild(modeSelectScreen);
+    this.screenElements.set('modeSelect', modeSelectScreen);
   }
   
   /**
@@ -301,7 +439,7 @@ export class UIManager {
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             max-width: 300px;
             text-align: center;
-          ">Collect correct answers!</div>
+          ">Find multiples of 2!</div>
           
           <button id="pause-btn" style="
             background: rgba(96, 125, 139, 0.9);
@@ -346,7 +484,7 @@ export class UIManager {
           font-size: 1rem;
           text-align: center;
           opacity: 0.8;
-        ">Move with WASD or Arrow Keys • Collect green squares • Avoid red enemies</div>
+        ">Move with WASD or Arrow Keys • Press SPACE to eat tiles • Avoid red enemies</div>
       </div>
     `;
     
@@ -572,7 +710,7 @@ export class UIManager {
   /**
    * Start a new game
    */
-  private startGame(): void {
+  private startGame(mode: string = 'multiples'): void {
     // Check if this is a subsequent game start (entities already exist)
     // If so, do a full page reload to ensure clean state
     if (document.querySelector('canvas')) {
@@ -581,9 +719,13 @@ export class UIManager {
       return;
     }
     
+    // Set the game mode in the engine
+    gameEngine.addResource('gameMode', mode);
+    gameEngine.addResource('currentLevel', 2); // Start with multiples of 2
+    
     this.showScreen('playing');
     // Initialize game here
-    console.log('Starting new game...');
+    console.log(`Starting new game in ${mode} mode...`);
   }
   
   /**

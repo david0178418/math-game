@@ -56,6 +56,8 @@ interface Events {
 interface Resources {
   gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
   score: { value: number };
+  gameMode: string;
+  currentLevel: number;
 }
 
 // Create and configure the ECSpresso engine

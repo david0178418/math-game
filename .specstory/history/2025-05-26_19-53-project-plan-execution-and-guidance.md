@@ -11641,3 +11641,184 @@ Let me check if the dev server is running and verify the game behavior:
 
 ---
 
+```bash
+curl -s http://localhost:5173 > /dev/null && echo "✅ Game accessible - Enemy collisions should work automatically" || echo "❌ Server not responding"
+```
+
+```
+❌ Server not responding
+
+```
+
+---
+
+Let me restart the dev server:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+```bash
+sleep 3 && curl -s http://localhost:5173 > /dev/null && echo "✅ Game is now running" || echo "❌ Still not responding"
+```
+
+```
+✅ Game is now running
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Great! The game is running. Based on the collision system code I reviewed, enemy collisions should be working automatically. However, if you're experiencing issues with enemy behavior, let me verify the exact behavior you're seeing.
+
+## **Current Collision System Behavior (Should Be)**
+
+**✅ Math Problems (Tiles)**:
+- **Positioning**: Player can move onto math problem tiles safely
+- **Consumption**: Only consumed when player presses SPACE/ENTER
+- **Visual Feedback**: Yellow highlight + "Press SPACE to eat!" when on a tile
+- **Scoring**: Points awarded/lives lost only when actively eating
+
+**✅ Enemies**: 
+- **Collision**: Should damage player immediately on contact (no button required)
+- **Damage**: Lose 1 life, gain 2 seconds invulnerability  
+- **Invulnerability**: During invulnerability period, enemies can't damage player
+
+The collision system code looks correct for this behavior. Could you describe exactly what you're experiencing with the enemies? Are they:
+
+1. **Not damaging the player at all** when you walk into them?
+2. **Requiring the eat button** to damage the player? 
+3. **Something else entirely**?
+
+This will help me identify if there's a specific issue I need to address. The current code structure should maintain the original enemy collision behavior while only changing math problem consumption to require the eat button.
+
+**To test in the game**:
+- Move the blue circle (player) into a red rectangle (enemy) 
+- You should immediately lose a life and become briefly invulnerable
+- Math problems (green/gray squares) should only be consumed when you press SPACE while on them
+
+Let me know what specific behavior you're seeing that differs from this expected behavior!
+
+---
+
+_**User**_
+
+Ok, now let's update the presentation of the right/wrong tiles as numbers.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Great idea! The math problems should display their actual number values so players can see what they're choosing to eat. Let me modify the render system to draw the numbers on the math problem tiles.
+
+---
+
+Read file: src/ecs/systems/RenderSystem.ts
+
+---
+
+Now I need to modify the render system to also draw the numbers on math problem tiles. I'll need to:
+
+1. Add a query for math problems to get their values
+2. Modify the rendering loop to draw numbers on math problem tiles after drawing the entities
+
+---
+
+
+
+---
+
+Now I need to add the `drawMathProblemNumbers` function. Let me add it after the other drawing functions:
+
+---
+
+
+
+---
+
+Now let me test the build to make sure everything compiles correctly:
+
+---
+
+```bash
+npm run build
+```
+
+```
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 17 modules transformed.
+dist/index.html                  0.46 kB │ gzip:  0.29 kB
+dist/assets/index-BixeubOt.css   2.85 kB │ gzip:  1.13 kB
+dist/assets/index-BoxzRmP6.js   46.44 kB │ gzip: 12.06 kB
+✓ built in 97ms
+
+```
+
+---
+
+Excellent! The build is successful. Let me check if the dev server is still running:
+
+---
+
+```bash
+curl -s http://localhost:5173 > /dev/null && echo "✅ Game is running with number display" || echo "❌ Server not responding"
+```
+
+```
+❌ Server not responding
+
+```
+
+---
+
+Let me restart the dev server to test the new number display:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+```bash
+sleep 3 && curl -s http://localhost:5173 > /dev/null && echo "✅ Game is now running with numbers!" || echo "❌ Still not responding"
+```
+
+---
+
+_**User**_
+
+You seemed to be having a problem running it, but I did it on my own and the numbers seem to be working fine. Now, we just need to have a question by which the player determines the correct answers. Let's start with "multiples".  The user will be able to pick more modes later such as "factors", so present a mode selection option somewhere.  For multiples, start at 2. In the screen, include all multiples from 1-12 for the given number and progress to the next level when all are eaten.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Excellent! I'm glad the number display is working well. Now let's implement the game mode system with "multiples" as the first mode. I'll need to:
+
+1. Add a mode selection screen
+2. Implement multiples logic (starting with multiples of 2)
+3. Track level progression when all correct answers are eaten
+4. Update the math problem generation
+
+Let me start by adding the mode selection to the UI system:
+
+---
+

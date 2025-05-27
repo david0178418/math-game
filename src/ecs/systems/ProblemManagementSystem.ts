@@ -50,11 +50,14 @@ export function addProblemManagementSystemToEngine(): void {
         // Spawn new problems
         const problemsToSpawn = PROBLEM_CONFIG.MIN_PROBLEMS - activeProblems.length;
         for (let i = 0; i < problemsToSpawn; i++) {
-          spawnRandomProblem(queries.allPositions);
+          spawnRandomProblem(queries.allPositions, queries.mathProblems);
         }
         
         lastSpawnTime = currentTime;
       }
+      
+      // Check for level completion in multiples mode
+      checkLevelCompletion(queries.mathProblems);
       
       // Clean up old consumed problems (optional optimization)
       cleanupConsumedProblems(queries.mathProblems);
@@ -65,9 +68,45 @@ export function addProblemManagementSystemToEngine(): void {
 /**
  * Spawn a new random math problem at an empty grid position
  */
-function spawnRandomProblem(allPositionEntities: any[]): void {
-  const problem = mathProblemGenerator.generateProblem();
-  const options = mathProblemGenerator.generateOptions(problem, 4);
+function spawnRandomProblem(allPositionEntities: any[], mathProblems: any[] = []): void {
+  // Check if we're in multiples mode
+  const gameMode = gameEngine.getResource('gameMode');
+  const currentLevel = gameEngine.getResource('currentLevel');
+  
+  let selectedOption: { value: number; isCorrect: boolean };
+  
+  if (gameMode === 'multiples') {
+    // Get all multiples problems for current level
+    const allMultiplesProblems = mathProblemGenerator.generateMultiplesProblems(currentLevel);
+    
+    // Check what problems are already on the board
+    const existingProblemValues = new Set<number>();
+    
+    for (const entity of mathProblems) {
+      const mathProblem = entity.components.mathProblem;
+      if (!mathProblem.consumed) {
+        existingProblemValues.add(mathProblem.value);
+      }
+    }
+    
+    // Filter out problems that are already on the board
+    const availableProblems = allMultiplesProblems.filter(
+      problem => !existingProblemValues.has(problem.value)
+    );
+    
+    if (availableProblems.length === 0) {
+      console.log('All problems for this level are already on the board');
+      return;
+    }
+    
+    // Select a random available problem
+    selectedOption = availableProblems[Math.floor(Math.random() * availableProblems.length)];
+  } else {
+    // Original logic for other modes
+    const problem = mathProblemGenerator.generateProblem();
+    const options = mathProblemGenerator.generateOptions(problem, 4);
+    selectedOption = options[Math.floor(Math.random() * options.length)];
+  }
   
   // Find an empty grid position
   const emptyPosition = findEmptyGridPosition(allPositionEntities);
@@ -76,8 +115,6 @@ function spawnRandomProblem(allPositionEntities: any[]): void {
     return;
   }
   
-  // Randomly select one of the options to place
-  const selectedOption = options[Math.floor(Math.random() * options.length)];
   const pixelPos = gridToPixel(emptyPosition.x, emptyPosition.y);
   
   // Create the math problem entity
@@ -86,10 +123,10 @@ function spawnRandomProblem(allPositionEntities: any[]): void {
     pixelPos.y,
     selectedOption.value,
     selectedOption.isCorrect,
-    problem.difficulty
+    1
   );
   
-  console.log(`Spawned problem: ${problem.question} = ${selectedOption.value} (${selectedOption.isCorrect ? 'correct' : 'incorrect'})`);
+  console.log(`Spawned ${gameMode} problem: ${selectedOption.value} (${selectedOption.isCorrect ? 'correct' : 'incorrect'})`);
 }
 
 /**
@@ -143,6 +180,64 @@ function adjustDifficultyBasedOnScore(score: number): void {
     mathProblemGenerator.setDifficulty('MEDIUM');
   } else {
     mathProblemGenerator.setDifficulty('HARD');
+  }
+}
+
+/**
+ * Check if all correct answers have been consumed (level completion)
+ */
+function checkLevelCompletion(mathProblems: any[]): void {
+  const gameMode = gameEngine.getResource('gameMode');
+  const currentLevel = gameEngine.getResource('currentLevel');
+  
+  if (gameMode !== 'multiples') return;
+  
+  // Get all problems that should be correct for this level
+  const correctMultiples: number[] = [];
+  for (let i = 1; i <= 12; i++) {
+    correctMultiples.push(currentLevel * i);
+  }
+  
+  // Check if all correct multiples have been consumed
+  const correctProblemsOnBoard = mathProblems.filter(problem => {
+    const mathProblem = problem.components.mathProblem;
+    return correctMultiples.includes(mathProblem.value) && mathProblem.isCorrect;
+  });
+  
+  const allCorrectConsumed = correctProblemsOnBoard.every(problem => 
+    problem.components.mathProblem.consumed
+  );
+  
+  if (allCorrectConsumed && correctProblemsOnBoard.length > 0) {
+    // Level completed! Advance to next level
+    const nextLevel = currentLevel + 1;
+    
+    console.log(`🎉 Level ${currentLevel} completed! Advancing to multiples of ${nextLevel}`);
+    
+    // Update level and show completion message
+    gameEngine.addResource('currentLevel', nextLevel);
+    
+    // Clear all remaining problems to start fresh
+    mathProblems.forEach(problem => {
+      if (!problem.components.mathProblem.consumed) {
+        gameEngine.entityManager.removeEntity(problem.id);
+      }
+    });
+    
+    // Update UI to show new level
+    updateLevelDisplay();
+  }
+}
+
+/**
+ * Update the level display in the UI
+ */
+function updateLevelDisplay(): void {
+  const currentLevel = gameEngine.getResource('currentLevel');
+  const objectiveDisplay = document.getElementById('objective-display');
+  
+  if (objectiveDisplay) {
+    objectiveDisplay.textContent = `Find multiples of ${currentLevel}!`;
   }
 }
 

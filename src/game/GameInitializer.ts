@@ -97,33 +97,12 @@ export class GameInitializer {
   }
 
   /**
-   * Create initial math problems (fewer since ProblemManagementSystem will spawn more)
+   * Create initial math problems based on game mode
    */
   private createInitialMathProblems(): void {
-    const problems = [
-      // Correct answers (green)
-      { gridX: 5, gridY: 5, value: 5, isCorrect: true },
-      { gridX: 15, gridY: 5, value: 8, isCorrect: true },
-      { gridX: 5, gridY: 15, value: 12, isCorrect: true },
-      { gridX: 15, gridY: 15, value: 7, isCorrect: true },
-      
-      // Incorrect answers (gray)
-      { gridX: 8, gridY: 8, value: 13, isCorrect: false },
-      { gridX: 12, gridY: 8, value: 17, isCorrect: false },
-    ];
-
-    for (const problem of problems) {
-      const pixelPos = gridToPixel(problem.gridX, problem.gridY);
-      EntityFactory.createMathProblem(
-        pixelPos.x, 
-        pixelPos.y, 
-        problem.value, 
-        problem.isCorrect, 
-        1
-      );
-    }
-
-    console.log(`Created ${problems.length} initial math problems`);
+    // The ProblemManagementSystem will handle creating problems based on the game mode
+    // So we'll just create a few starter problems
+    console.log('Initial math problems will be created by ProblemManagementSystem');
   }
 
   /**
