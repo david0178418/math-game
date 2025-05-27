@@ -7,6 +7,40 @@ import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
  * Handles AI behavior for enemy entities using grid-based movement like Number Munchers
  */
 
+// Basic entity types for better type safety
+interface Position {
+  x: number;
+  y: number;
+}
+
+interface Entity {
+  components: {
+    position: Position;
+    [key: string]: any;
+  };
+}
+
+interface EnemyEntity extends Entity {
+  components: {
+    position: Position;
+    enemy: {
+      behaviorType: AIBehaviorType;
+      nextMoveTime: number;
+      aiState?: AIState;
+      waypoints?: Array<{ x: number; y: number }>;
+      currentWaypoint?: number;
+      guardPosition?: { x: number; y: number };
+    };
+  };
+}
+
+interface PlayerEntity extends Entity {
+  components: {
+    position: Position;
+    player: any;
+  };
+}
+
 // AI behavior types
 export type AIBehaviorType = 'chase' | 'patrol' | 'random' | 'guard';
 
@@ -60,9 +94,9 @@ export function addAISystemToEngine(): void {
  * Process AI behavior for a single enemy
  */
 function processEnemyAI(
-  enemy: any,
-  player: any,
-  obstacles: any[],
+  enemy: EnemyEntity,
+  player: PlayerEntity,
+  obstacles: Entity[],
   currentTime: number
 ): void {
   const enemyPos = enemy.components.position;
@@ -142,9 +176,9 @@ function processEnemyAI(
  * Chase AI: Follows the player using pathfinding
  */
 function processChaseAI(
-  enemy: any,
-  player: any,
-  obstacles: any[],
+  enemy: EnemyEntity,
+  player: PlayerEntity,
+  obstacles: Entity[],
   currentTime: number,
   aiState: AIState
 ): { x: number, y: number, interval: number } {
@@ -198,10 +232,10 @@ function processChaseAI(
  * Patrol AI: Moves between predefined waypoints
  */
 function processPatrolAI(
-  enemy: any,
-  obstacles: any[],
-  currentTime: number,
-  aiState: AIState
+  enemy: EnemyEntity,
+  _obstacles: Entity[],
+  _currentTime: number,
+  _aiState: AIState
 ): { x: number, y: number, interval: number } {
   const enemyData = enemy.components.enemy;
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
@@ -213,7 +247,8 @@ function processPatrolAI(
   }
   
   const waypoints = enemyData.waypoints;
-  const targetWaypoint = waypoints[enemyData.currentWaypoint];
+  const currentWaypointIndex = enemyData.currentWaypoint ?? 0;
+  const targetWaypoint = waypoints[currentWaypointIndex];
   
   // Move towards current waypoint
   const direction = getDirectionToTarget(currentGrid, targetWaypoint);
@@ -226,7 +261,7 @@ function processPatrolAI(
   
   // Check if reached waypoint
   if (nextX === targetWaypoint.x && nextY === targetWaypoint.y) {
-    enemyData.currentWaypoint = (enemyData.currentWaypoint + 1) % waypoints.length;
+    enemyData.currentWaypoint = (currentWaypointIndex + 1) % waypoints.length;
   }
   
   return { x: nextX, y: nextY, interval: AI_CONFIG.PATROL_MOVE_INTERVAL };
@@ -236,10 +271,10 @@ function processPatrolAI(
  * Random AI: Moves in random directions
  */
 function processRandomAI(
-  enemy: any,
-  obstacles: any[],
-  currentTime: number,
-  aiState: AIState
+  enemy: EnemyEntity,
+  _obstacles: Entity[],
+  _currentTime: number,
+  _aiState: AIState
 ): { x: number, y: number, interval: number } {
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
   
@@ -257,7 +292,7 @@ function processRandomAI(
   let nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
   
   // If the chosen position is blocked, stay in place
-  if (isPositionBlocked(nextX, nextY, obstacles)) {
+  if (isPositionBlocked(nextX, nextY, _obstacles)) {
     nextX = currentGrid.x;
     nextY = currentGrid.y;
   }
@@ -269,10 +304,10 @@ function processRandomAI(
  * Guard AI: Stays near a specific position
  */
 function processGuardAI(
-  enemy: any,
-  obstacles: any[],
-  currentTime: number,
-  aiState: AIState
+  enemy: EnemyEntity,
+  _obstacles: Entity[],
+  _currentTime: number,
+  _aiState: AIState
 ): { x: number, y: number, interval: number } {
   const enemyData = enemy.components.enemy;
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
@@ -316,7 +351,7 @@ function processGuardAI(
 /**
  * Check if a grid position is blocked by obstacles
  */
-function isPositionBlocked(gridX: number, gridY: number, obstacles: any[]): boolean {
+function isPositionBlocked(gridX: number, gridY: number, _obstacles: Entity[]): boolean {
   // For now, only check boundaries (no obstacle collision implemented yet)
   return gridX < 0 || gridX >= GRID_WIDTH || 
          gridY < 0 || gridY >= GRID_HEIGHT;

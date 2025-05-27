@@ -6,6 +6,8 @@ import { sameGridPosition } from './MovementSystem';
  * Handles collisions between entities, particularly player-problem interactions
  */
 
+
+
 // Add the collision system to ECSpresso
 export function addCollisionSystemToEngine(): void {
   gameEngine.addSystem('collisionSystem')
