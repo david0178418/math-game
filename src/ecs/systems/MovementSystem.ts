@@ -48,6 +48,7 @@ export function addMovementSystemToEngine(): void {
         player.inputState.down = false;
         player.inputState.left = false;
         player.inputState.right = false;
+        // Note: eat input is cleared by the collision system after processing
       }
     })
     .build();

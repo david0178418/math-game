@@ -11,7 +11,10 @@ export function addUISystemToEngine(): void {
   gameEngine.addSystem('uiSystem')
     .setPriority(50) // Lower priority, runs after game logic
     .addQuery('players', {
-      with: ['player']
+      with: ['player', 'position']
+    })
+    .addQuery('mathProblems', {
+      with: ['position', 'mathProblem']
     })
     .setProcess((queries) => {
       const gameState = gameEngine.getResource('gameState');
@@ -26,6 +29,10 @@ export function addUISystemToEngine(): void {
           const level = playerComp.score < 50 ? 'Easy' : 
                        playerComp.score < 200 ? 'Medium' : 'Hard';
           uiManager.updateGameplayUI(playerComp.score, playerComp.lives, level);
+          
+          // Check if player is on a consumable math problem
+          const canEat = checkIfPlayerCanEat(player, queries.mathProblems);
+          updateEatIndicator(canEat);
           
           // Also update legacy elements if they exist (for backwards compatibility)
           updateScoreDisplay(playerComp.score);
@@ -89,6 +96,72 @@ function updateLivesDisplay(lives: number): void {
         text-align: center;
       `;
       gameUI.appendChild(livesDiv);
+    }
+  }
+}
+
+/**
+ * Check if player is on a consumable math problem
+ */
+function checkIfPlayerCanEat(player: any, mathProblems: any[]): boolean {
+  const playerPos = player.components.position;
+  
+  for (const problem of mathProblems) {
+    const problemPos = problem.components.position;
+    const mathProblemComp = problem.components.mathProblem;
+    
+    // Skip consumed problems
+    if (mathProblemComp.consumed) continue;
+    
+    // Check if positions match (same grid cell)
+    if (Math.abs(playerPos.x - problemPos.x) < 16 && 
+        Math.abs(playerPos.y - problemPos.y) < 16) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Update the eat indicator in the bottom HUD
+ */
+function updateEatIndicator(canEat: boolean): void {
+  const bottomHud = document.getElementById('bottom-hud');
+  if (!bottomHud) return;
+  
+  let eatIndicator = document.getElementById('eat-indicator');
+  
+  if (canEat) {
+    if (!eatIndicator) {
+      eatIndicator = document.createElement('div');
+      eatIndicator.id = 'eat-indicator';
+      eatIndicator.style.cssText = `
+        color: #FFD700;
+        font-weight: bold;
+        font-size: 1.1rem;
+        animation: pulse 1s infinite;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+      `;
+      bottomHud.appendChild(eatIndicator);
+      
+      // Add pulse animation if not already added
+      if (!document.getElementById('eat-indicator-style')) {
+        const style = document.createElement('style');
+        style.id = 'eat-indicator-style';
+        style.textContent = `
+          @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+    eatIndicator.textContent = '✨ Press SPACE to eat! ✨';
+  } else {
+    if (eatIndicator) {
+      eatIndicator.remove();
     }
   }
 } 

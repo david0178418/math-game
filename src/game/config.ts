@@ -87,5 +87,6 @@ export const INPUT_KEYS = {
   DOWN: ['ArrowDown', 'KeyS'],
   LEFT: ['ArrowLeft', 'KeyA'],
   RIGHT: ['ArrowRight', 'KeyD'],
-  PAUSE: ['Escape', 'Space'],
+  EAT: ['Space', 'Enter'],
+  PAUSE: ['Escape'],
 } as const; 

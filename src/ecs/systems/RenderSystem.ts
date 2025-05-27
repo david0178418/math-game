@@ -71,6 +71,12 @@ export function addRenderSystemToEngine(): void {
     .addQuery('renderableEntities', {
       with: ['position', 'renderable']
     })
+    .addQuery('players', {
+      with: ['position', 'player']
+    })
+    .addQuery('mathProblems', {
+      with: ['position', 'mathProblem']
+    })
     .setProcess((queries) => {
       if (!ctx || !canvas) return;
       
@@ -79,6 +85,9 @@ export function addRenderSystemToEngine(): void {
       
       // Draw grid background
       drawGrid();
+      
+      // Check if player is on a math problem and draw highlight
+      drawPlayerHighlight(queries.players, queries.mathProblems);
       
       // Sort entities by layer (lower layer numbers render first)
       const sortedEntities = [...queries.renderableEntities].sort((a, b) => 
@@ -119,6 +128,45 @@ function drawGrid(): void {
     ctx.moveTo(0, pixelY);
     ctx.lineTo(GRID_WIDTH * CELL_SIZE, pixelY);
     ctx.stroke();
+  }
+}
+
+// Draw highlight when player is on a consumable math problem
+function drawPlayerHighlight(players: any[], mathProblems: any[]): void {
+  if (!ctx) return;
+  
+  for (const player of players) {
+    const playerPos = player.components.position;
+    
+    // Check if player is on a math problem
+    for (const problem of mathProblems) {
+      const problemPos = problem.components.position;
+      const mathProblemComp = problem.components.mathProblem;
+      
+      // Skip consumed problems
+      if (mathProblemComp.consumed) continue;
+      
+      // Check if positions match (same grid cell)
+      if (Math.abs(playerPos.x - problemPos.x) < CELL_SIZE / 2 && 
+          Math.abs(playerPos.y - problemPos.y) < CELL_SIZE / 2) {
+        
+        // Draw a pulsing highlight around the cell
+        const time = Date.now() / 300; // Pulse speed
+        const alpha = 0.3 + 0.2 * Math.sin(time); // Pulse between 0.3 and 0.5 alpha
+        
+        ctx.save();
+        ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`; // Yellow highlight
+        ctx.fillRect(problemPos.x, problemPos.y, CELL_SIZE, CELL_SIZE);
+        
+        // Add a border
+        ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)'; // Gold border
+        ctx.lineWidth = 2;
+        ctx.strokeRect(problemPos.x + 1, problemPos.y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+        ctx.restore();
+        
+        break; // Only highlight one problem per player
+      }
+    }
   }
 }
 

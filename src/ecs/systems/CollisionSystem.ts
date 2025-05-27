@@ -34,7 +34,7 @@ export function addCollisionSystemToEngine(): void {
           console.log('Player invulnerability ended');
         }
         
-        // Check collisions with math problems
+        // Check for math problems that can be consumed
         for (const problem of queries.mathProblems) {
           const mathProblemComp = problem.components.mathProblem;
           
@@ -43,9 +43,14 @@ export function addCollisionSystemToEngine(): void {
             continue;
           }
           
-          // Check if player and problem are at the same grid position
+          // Check if player is on the same grid position as a math problem
           if (sameGridPosition(player.components.position, problem.components.position)) {
-            handlePlayerProblemCollision(player, problem);
+            // Only consume if player presses the eat button
+            if (player.components.player.inputState.eat) {
+              handlePlayerProblemCollision(player, problem);
+              // Clear eat input after processing to prevent multiple consumption
+              player.components.player.inputState.eat = false;
+            }
           }
         }
         

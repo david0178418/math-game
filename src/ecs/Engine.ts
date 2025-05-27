@@ -16,7 +16,7 @@ interface Components {
   player: { 
     score: number; 
     lives: number; 
-    inputState: { up: boolean; down: boolean; left: boolean; right: boolean };
+    inputState: { up: boolean; down: boolean; left: boolean; right: boolean; eat: boolean };
   };
   enemy: { 
     behaviorType: 'chase' | 'patrol' | 'random' | 'guard';
@@ -136,7 +136,7 @@ export const EntityFactory = {
     gameEngine.entityManager.addComponent(entity.id, 'player', { 
       score: STARTING_SCORE, 
       lives: PLAYER_LIVES, 
-      inputState: { up: false, down: false, left: false, right: false } 
+      inputState: { up: false, down: false, left: false, right: false, eat: false } 
     });
     gameEngine.entityManager.addComponent(entity.id, 'collider', { 
       width: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 

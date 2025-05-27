@@ -85,7 +85,7 @@ export const UI_MESSAGES = {
   ERROR_MESSAGE: 'An error occurred while loading the Math Game.',
   ERROR_RETRY: 'Please refresh the page to try again.',
   HIGH_SCORES_COMING_SOON: 'High Scores feature coming soon!',
-  CONTROLS_HINT: 'Move with WASD or Arrow Keys • Collect green squares • Avoid red enemies',
+  CONTROLS_HINT: 'Move with WASD or Arrow Keys • Press SPACE to eat tiles • Avoid red enemies',
   GAME_OVER_TITLE: 'GAME OVER',
   PAUSED_TITLE: 'PAUSED',
   RESUME_HINT: 'Press ESC to resume',

@@ -10,6 +10,8 @@ const keyPressed = {
   KeyS: false,
   KeyA: false,
   KeyD: false,
+  Space: false,
+  Enter: false,
 } as const;
 
 // Previous key state for edge detection
@@ -22,6 +24,8 @@ const prevKeyState = {
   KeyS: false,
   KeyA: false,
   KeyD: false,
+  Space: false,
+  Enter: false,
 } as const;
 
 // Initialize input system
@@ -74,12 +78,14 @@ export function addInputSystemToEngine(): void {
         const downPressed = (keyPressed.ArrowDown || keyPressed.KeyS) && !(prevKeyState.ArrowDown || prevKeyState.KeyS);
         const leftPressed = (keyPressed.ArrowLeft || keyPressed.KeyA) && !(prevKeyState.ArrowLeft || prevKeyState.KeyA);
         const rightPressed = (keyPressed.ArrowRight || keyPressed.KeyD) && !(prevKeyState.ArrowRight || prevKeyState.KeyD);
+        const eatPressed = (keyPressed.Space || keyPressed.Enter) && !(prevKeyState.Space || prevKeyState.Enter);
         
         // Update player input state with press events
         playerComponent.inputState.up = upPressed;
         playerComponent.inputState.down = downPressed;
         playerComponent.inputState.left = leftPressed;
         playerComponent.inputState.right = rightPressed;
+        playerComponent.inputState.eat = eatPressed;
       }
       
       // Update previous key state for next frame
