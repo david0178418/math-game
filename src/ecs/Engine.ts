@@ -1,5 +1,5 @@
 import ECSpresso from 'ecspresso';
-import { GAME_CONFIG } from '../game/config';
+import { GAME_CONFIG, CELL_SIZE, PLAYER_LIVES, STARTING_SCORE } from '../game/config';
 
 // Re-export for convenience
 export { GAME_CONFIG };
@@ -71,7 +71,7 @@ let gameRunning = false;
 export function initializeEngine(): void {
   // Add initial resources
   gameEngine.addResource('gameState', 'menu');
-  gameEngine.addResource('score', { value: GAME_CONFIG.STARTING_SCORE });
+  gameEngine.addResource('score', { value: STARTING_SCORE });
 
   console.log('ECSpresso engine initialized');
 }
@@ -130,22 +130,22 @@ export const EntityFactory = {
     gameEngine.entityManager.addComponent(entity.id, 'renderable', { 
       shape: 'circle', 
       color: GAME_CONFIG.COLORS.PLAYER, 
-      size: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+      size: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
       layer: GAME_CONFIG.LAYERS.ENTITIES 
     });
     gameEngine.entityManager.addComponent(entity.id, 'player', { 
-      score: GAME_CONFIG.STARTING_SCORE, 
-      lives: GAME_CONFIG.PLAYER_LIVES, 
+      score: STARTING_SCORE, 
+      lives: PLAYER_LIVES, 
       inputState: { up: false, down: false, left: false, right: false } 
     });
     gameEngine.entityManager.addComponent(entity.id, 'collider', { 
-      width: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
-      height: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
+      width: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
+      height: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
       group: 'player' 
     });
     gameEngine.entityManager.addComponent(entity.id, 'health', { 
-      current: GAME_CONFIG.PLAYER_LIVES, 
-      max: GAME_CONFIG.PLAYER_LIVES, 
+      current: PLAYER_LIVES, 
+      max: PLAYER_LIVES, 
       invulnerable: false, 
       invulnerabilityTime: 0 
     });
@@ -160,7 +160,7 @@ export const EntityFactory = {
     gameEngine.entityManager.addComponent(entity.id, 'renderable', { 
       shape: 'rectangle', 
       color: GAME_CONFIG.COLORS.ENEMY, 
-      size: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
+      size: CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
       layer: GAME_CONFIG.LAYERS.ENTITIES 
     });
     gameEngine.entityManager.addComponent(entity.id, 'enemy', { 
@@ -168,8 +168,8 @@ export const EntityFactory = {
       nextMoveTime: 0
     });
     gameEngine.entityManager.addComponent(entity.id, 'collider', { 
-      width: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
-      height: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
+      width: CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
+      height: CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
       group: 'enemy' 
     });
     gameEngine.entityManager.addComponent(entity.id, 'health', { 
@@ -189,7 +189,7 @@ export const EntityFactory = {
     gameEngine.entityManager.addComponent(entity.id, 'renderable', { 
       shape: 'rectangle', 
       color: isCorrect ? GAME_CONFIG.COLORS.CORRECT_ANSWER : GAME_CONFIG.COLORS.WRONG_ANSWER, 
-      size: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
+      size: CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
       layer: GAME_CONFIG.LAYERS.MATH_PROBLEMS
     });
     gameEngine.entityManager.addComponent(entity.id, 'mathProblem', { 
@@ -199,8 +199,8 @@ export const EntityFactory = {
       consumed: false 
     });
     gameEngine.entityManager.addComponent(entity.id, 'collider', { 
-      width: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
-      height: GAME_CONFIG.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
+      width: CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
+      height: CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
       group: 'problem' 
     });
 

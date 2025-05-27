@@ -5,16 +5,29 @@
 
 export const GAME_CONFIG = {
   // Grid settings
-  GRID_WIDTH: 20,
-  GRID_HEIGHT: 20,
-  CELL_SIZE: 32,
+  GRID: {
+    WIDTH: 20,
+    HEIGHT: 20,
+    CELL_SIZE: 32,
+  },
   
   // Performance settings
-  TARGET_FPS: 60,
+  PERFORMANCE: {
+    TARGET_FPS: 60,
+    MAX_ENTITIES: 50, // Prevent memory issues
+    CLEANUP_INTERVAL: 5000, // Clean up old entities every 5 seconds
+  },
   
   // Game mechanics
-  PLAYER_LIVES: 3,
-  STARTING_SCORE: 0,
+  GAMEPLAY: {
+    PLAYER_LIVES: 3,
+    STARTING_SCORE: 0,
+    INVULNERABILITY_TIME: 2000, // 2 seconds
+    SCORE_THRESHOLDS: {
+      MEDIUM_DIFFICULTY: 50,
+      HARD_DIFFICULTY: 200,
+    },
+  },
   
   // Visual settings
   COLORS: {
@@ -33,7 +46,7 @@ export const GAME_CONFIG = {
     MATH_PROBLEM: 0.9,
   },
   
-  // Render layers
+  // Render layers (z-index ordering)
   LAYERS: {
     BACKGROUND: 0,
     MATH_PROBLEMS: 1,
@@ -41,6 +54,13 @@ export const GAME_CONFIG = {
     UI: 10,
   },
 } as const;
+
+// Legacy compatibility - maintain old naming for existing code
+export const GRID_WIDTH = GAME_CONFIG.GRID.WIDTH;
+export const GRID_HEIGHT = GAME_CONFIG.GRID.HEIGHT;
+export const CELL_SIZE = GAME_CONFIG.GRID.CELL_SIZE;
+export const PLAYER_LIVES = GAME_CONFIG.GAMEPLAY.PLAYER_LIVES;
+export const STARTING_SCORE = GAME_CONFIG.GAMEPLAY.STARTING_SCORE;
 
 // Math problem difficulty settings
 export const DIFFICULTY_CONFIG = {

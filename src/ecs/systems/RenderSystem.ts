@@ -1,4 +1,5 @@
-import { gameEngine, GAME_CONFIG } from '../Engine';
+import { gameEngine } from '../Engine';
+import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
 
 // Canvas context and configuration
 let canvas: HTMLCanvasElement | null = null;
@@ -32,19 +33,21 @@ export function cleanupRenderSystem(): void {
 function resizeCanvas(): void {
   if (!canvas) return;
   
-  const gameWidth = GAME_CONFIG.GRID_WIDTH * GAME_CONFIG.CELL_SIZE;
-  const gameHeight = GAME_CONFIG.GRID_HEIGHT * GAME_CONFIG.CELL_SIZE;
+  const gameWidth = GRID_WIDTH * CELL_SIZE;
+  const gameHeight = GRID_HEIGHT * CELL_SIZE;
   
   // Calculate scale to fit screen while maintaining aspect ratio
-  const scaleX = window.innerWidth / gameWidth;
-  const scaleY = window.innerHeight / gameHeight;
+  const scaleX = (window.innerWidth * 0.8) / gameWidth; // Leave some margin
+  const scaleY = (window.innerHeight * 0.8) / gameHeight; // Leave some margin
   const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond 1:1
   
-  canvas.width = gameWidth * scale;
-  canvas.height = gameHeight * scale;
+  // Set actual canvas size (for drawing)
+  canvas.width = gameWidth;
+  canvas.height = gameHeight;
   
-  canvas.style.width = `${canvas.width}px`;
-  canvas.style.height = `${canvas.height}px`;
+  // Set display size (CSS)
+  canvas.style.width = `${gameWidth * scale}px`;
+  canvas.style.height = `${gameHeight * scale}px`;
   
   // Center the canvas
   canvas.style.position = 'absolute';
@@ -53,8 +56,8 @@ function resizeCanvas(): void {
   canvas.style.transform = 'translate(-50%, -50%)';
   
   if (ctx) {
-    // Scale the context to match the canvas size
-    ctx.scale(scale, scale);
+    // Reset any previous transforms
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     
     // Set up pixel perfect rendering
     ctx.imageSmoothingEnabled = false;
@@ -64,7 +67,7 @@ function resizeCanvas(): void {
 // Add the render system to ECSpresso
 export function addRenderSystemToEngine(): void {
   gameEngine.addSystem('renderSystem')
-    .setPriority(0) // Lowest priority - render last
+    .setPriority(10) // Render after all other systems
     .addQuery('renderableEntities', {
       with: ['position', 'renderable']
     })
@@ -72,7 +75,7 @@ export function addRenderSystemToEngine(): void {
       if (!ctx || !canvas) return;
       
       // Clear the canvas
-      ctx.clearRect(0, 0, GAME_CONFIG.GRID_WIDTH * GAME_CONFIG.CELL_SIZE, GAME_CONFIG.GRID_HEIGHT * GAME_CONFIG.CELL_SIZE);
+      ctx.clearRect(0, 0, GRID_WIDTH * CELL_SIZE, GRID_HEIGHT * CELL_SIZE);
       
       // Draw grid background
       drawGrid();
@@ -101,20 +104,20 @@ function drawGrid(): void {
   ctx.lineWidth = 1;
   
   // Draw vertical lines
-  for (let x = 0; x <= GAME_CONFIG.GRID_WIDTH; x++) {
-    const pixelX = x * GAME_CONFIG.CELL_SIZE;
+  for (let x = 0; x <= GRID_WIDTH; x++) {
+    const pixelX = x * CELL_SIZE;
     ctx.beginPath();
     ctx.moveTo(pixelX, 0);
-    ctx.lineTo(pixelX, GAME_CONFIG.GRID_HEIGHT * GAME_CONFIG.CELL_SIZE);
+    ctx.lineTo(pixelX, GRID_HEIGHT * CELL_SIZE);
     ctx.stroke();
   }
   
   // Draw horizontal lines
-  for (let y = 0; y <= GAME_CONFIG.GRID_HEIGHT; y++) {
-    const pixelY = y * GAME_CONFIG.CELL_SIZE;
+  for (let y = 0; y <= GRID_HEIGHT; y++) {
+    const pixelY = y * CELL_SIZE;
     ctx.beginPath();
     ctx.moveTo(0, pixelY);
-    ctx.lineTo(GAME_CONFIG.GRID_WIDTH * GAME_CONFIG.CELL_SIZE, pixelY);
+    ctx.lineTo(GRID_WIDTH * CELL_SIZE, pixelY);
     ctx.stroke();
   }
 }
@@ -125,8 +128,8 @@ function drawEntity(position: { x: number; y: number }, renderable: { shape: 'ci
   
   ctx.fillStyle = renderable.color;
   
-  const centerX = position.x + GAME_CONFIG.CELL_SIZE / 2;
-  const centerY = position.y + GAME_CONFIG.CELL_SIZE / 2;
+  const centerX = position.x + CELL_SIZE / 2;
+  const centerY = position.y + CELL_SIZE / 2;
   
   if (renderable.shape === 'circle') {
     ctx.beginPath();

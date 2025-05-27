@@ -1,4 +1,5 @@
-import { gameEngine, GAME_CONFIG } from '../Engine';
+import { gameEngine } from '../Engine';
+import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
 
 // Add the movement system to ECSpresso
 export function addMovementSystemToEngine(): void {
@@ -14,8 +15,8 @@ export function addMovementSystemToEngine(): void {
         const player = entity.components.player;
         
         // Convert current pixel position to grid coordinates
-        const currentGridX = Math.round(position.x / GAME_CONFIG.CELL_SIZE);
-        const currentGridY = Math.round(position.y / GAME_CONFIG.CELL_SIZE);
+        const currentGridX = Math.round(position.x / CELL_SIZE);
+        const currentGridY = Math.round(position.y / CELL_SIZE);
         
         // Calculate new grid position based on input
         let newGridX = currentGridX;
@@ -25,16 +26,16 @@ export function addMovementSystemToEngine(): void {
         if (player.inputState.left && !player.inputState.right && !player.inputState.up && !player.inputState.down) {
           newGridX = Math.max(0, currentGridX - 1);
         } else if (player.inputState.right && !player.inputState.left && !player.inputState.up && !player.inputState.down) {
-          newGridX = Math.min(GAME_CONFIG.GRID_WIDTH - 1, currentGridX + 1);
+          newGridX = Math.min(GRID_WIDTH - 1, currentGridX + 1);
         } else if (player.inputState.up && !player.inputState.down && !player.inputState.left && !player.inputState.right) {
           newGridY = Math.max(0, currentGridY - 1);
         } else if (player.inputState.down && !player.inputState.up && !player.inputState.left && !player.inputState.right) {
-          newGridY = Math.min(GAME_CONFIG.GRID_HEIGHT - 1, currentGridY + 1);
+          newGridY = Math.min(GRID_HEIGHT - 1, currentGridY + 1);
         }
         
         // Convert new grid position back to pixel coordinates
-        const newPixelX = newGridX * GAME_CONFIG.CELL_SIZE;
-        const newPixelY = newGridY * GAME_CONFIG.CELL_SIZE;
+        const newPixelX = newGridX * CELL_SIZE;
+        const newPixelY = newGridY * CELL_SIZE;
         
         // Update position if it changed
         if (newPixelX !== position.x || newPixelY !== position.y) {
@@ -55,16 +56,16 @@ export function addMovementSystemToEngine(): void {
 // Helper function to convert grid coordinates to pixel coordinates
 export function gridToPixel(gridX: number, gridY: number): { x: number; y: number } {
   return {
-    x: gridX * GAME_CONFIG.CELL_SIZE,
-    y: gridY * GAME_CONFIG.CELL_SIZE
+    x: gridX * CELL_SIZE,
+    y: gridY * CELL_SIZE
   };
 }
 
 // Helper function to convert pixel coordinates to grid coordinates
 export function pixelToGrid(pixelX: number, pixelY: number): { x: number; y: number } {
   return {
-    x: Math.round(pixelX / GAME_CONFIG.CELL_SIZE),
-    y: Math.round(pixelY / GAME_CONFIG.CELL_SIZE)
+    x: Math.round(pixelX / CELL_SIZE),
+    y: Math.round(pixelY / CELL_SIZE)
   };
 }
 

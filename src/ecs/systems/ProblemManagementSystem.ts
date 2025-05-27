@@ -1,4 +1,5 @@
-import { gameEngine, EntityFactory, GAME_CONFIG } from '../Engine';
+import { gameEngine, EntityFactory } from '../Engine';
+import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
 import { gridToPixel } from './MovementSystem';
 import { mathProblemGenerator } from '../../game/MathProblemGenerator';
 
@@ -101,8 +102,8 @@ function findEmptyGridPosition(allPositionEntities: any[]): { x: number; y: numb
   for (const entity of allPositionEntities) {
     const position = entity.components.position;
     if (position) {
-      const gridX = Math.round(position.x / GAME_CONFIG.CELL_SIZE);
-      const gridY = Math.round(position.y / GAME_CONFIG.CELL_SIZE);
+      const gridX = Math.round(position.x / CELL_SIZE);
+      const gridY = Math.round(position.y / CELL_SIZE);
       occupiedPositions.add(`${gridX},${gridY}`);
     }
   }
@@ -110,8 +111,8 @@ function findEmptyGridPosition(allPositionEntities: any[]): { x: number; y: numb
   // Find empty positions (try random positions first)
   const maxAttempts = 50;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const x = Math.floor(Math.random() * GAME_CONFIG.GRID_WIDTH);
-    const y = Math.floor(Math.random() * GAME_CONFIG.GRID_HEIGHT);
+    const x = Math.floor(Math.random() * GRID_WIDTH);
+    const y = Math.floor(Math.random() * GRID_HEIGHT);
     const key = `${x},${y}`;
     
     if (!occupiedPositions.has(key)) {
@@ -120,8 +121,8 @@ function findEmptyGridPosition(allPositionEntities: any[]): { x: number; y: numb
   }
   
   // If random search fails, do systematic search
-  for (let y = 0; y < GAME_CONFIG.GRID_HEIGHT; y++) {
-    for (let x = 0; x < GAME_CONFIG.GRID_WIDTH; x++) {
+  for (let y = 0; y < GRID_HEIGHT; y++) {
+    for (let x = 0; x < GRID_WIDTH; x++) {
       const key = `${x},${y}`;
       if (!occupiedPositions.has(key)) {
         return { x, y };
