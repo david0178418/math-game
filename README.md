@@ -150,13 +150,40 @@ npm run build
 
 ## 🚀 Deployment
 
-The game is built for static hosting and can be deployed to:
+### Automatic GitHub Pages Deployment
+
+This repository includes GitHub Actions for automatic deployment to GitHub Pages:
+
+1. **Enable GitHub Pages** in your repository settings:
+   - Go to Settings → Pages
+   - Set Source to "GitHub Actions"
+
+2. **Update Repository Name** in `vite.config.ts` if different from "math":
+   ```typescript
+   base: process.env.NODE_ENV === 'production' ? '/your-repo-name/' : '/',
+   ```
+
+3. **Push to main branch** to trigger automatic deployment:
+   ```bash
+   git push origin main
+   ```
+
+4. **Access your game** at: `https://your-username.github.io/your-repo-name/`
+
+### Manual Deployment
+
+The game can also be deployed to any static hosting service:
 - Netlify
 - Vercel
-- GitHub Pages
+- GitHub Pages (manual)
 - Any static file server
 
-Build the project with `npm run build` and deploy the `dist` folder.
+```bash
+npm run build
+# Deploy the 'dist' folder to your hosting service
+```
+
+For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## 🤝 Contributing
 
