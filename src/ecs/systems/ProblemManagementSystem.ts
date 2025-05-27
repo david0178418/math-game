@@ -10,8 +10,8 @@ import { mathProblemGenerator } from '../../game/MathProblemGenerator';
 
 // Configuration for problem management
 const PROBLEM_CONFIG = {
-  MIN_PROBLEMS: 8,           // Minimum number of problems on screen
-  MAX_PROBLEMS: 12,          // Maximum number of problems on screen
+  MIN_PROBLEMS: 4,           // Minimum number of problems on screen (reduced for 6x5 grid)
+  MAX_PROBLEMS: 8,           // Maximum number of problems on screen (reduced for 6x5 grid)
   SPAWN_DELAY: 1000,         // Milliseconds between spawn attempts
 } as const;
 

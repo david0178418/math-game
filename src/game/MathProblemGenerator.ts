@@ -43,12 +43,12 @@ export class MathProblemGenerator {
       });
     }
     
-    // Add some incorrect numbers to make it challenging
+    // Add some incorrect numbers to make it challenging (fewer for smaller grid)
     const incorrectNumbers = new Set<number>();
     const correctNumbers = new Set(problems.map(p => p.value));
     
     // Generate numbers that are NOT multiples of the target
-    while (incorrectNumbers.size < 8) {
+    while (incorrectNumbers.size < 4) { // Reduced from 8 to 4 for smaller grid
       const randomNum = Math.floor(Math.random() * (multipleOf * 12)) + 1;
       
       // Make sure it's not a multiple and not already used

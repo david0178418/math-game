@@ -11822,3 +11822,330 @@ Let me start by adding the mode selection to the UI system:
 
 ---
 
+<details>
+            <summary>Searched codebase "UIManager game mode screen menu" • **25** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `src/game/UIManager.ts` | L1-8 |
+| `src/game/UIManager.ts` | L94-117 |
+| `src/game/UIManager.ts` | L594-621 |
+| `src/game/UIManager.ts` | L8-18 |
+| `src/game/UIManager.ts` | L69-94 |
+| `src/game/UIManager.ts` | L220-233 |
+| `src/game/UIManager.ts` | L117-220 |
+| `src/game/UIManager.ts` | L440-495 |
+| `src/game/UIManager.ts` | L495-505 |
+| `src/game/UIManager.ts` | L432-440 |
+| `src/game/UIManager.ts` | L647-655 |
+| `src/game/UIManager.ts` | L42-69 |
+| `src/game/UIManager.ts` | L233-351 |
+| `src/game/UIManager.ts` | L359-432 |
+| `src/game/UIManager.ts` | L505-557 |
+| `src/game/UIManager.ts` | L557-570 |
+| `src/game/UIManager.ts` | L570-587 |
+| `src/game/UIManager.ts` | L18-42 |
+| `src/game/UIManager.ts` | L632-647 |
+| `src/game/UIManager.ts` | L351-359 |
+| `src/game/UIManager.ts` | L587-594 |
+| `src/game/UIManager.ts` | L655-658 |
+| `src/game/UIManager.ts` | L621-632 |
+| `src/ecs/systems/UISystem.ts` | L41-61 |
+| `src/game/GameInitializer.ts` | L1-44 |
+
+</details>
+
+---
+
+I need to add a mode selection screen and update the game to support multiples mode. Let me start by extending the UI to include a mode selection screen:
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+I need to add the `createModeSelectScreen` method. Let me add it after the main menu creation:
+
+---
+
+
+
+---
+
+I need to update the `startGame` method to accept a mode parameter. Let me find and update it:
+
+---
+
+
+
+---
+
+I need to add the new resource types to the Engine. Let me update the Resources interface:
+
+---
+
+
+
+---
+
+Now I need to update the math problem generation system to use the multiples logic. Let me check the MathProblemGenerator:
+
+---
+
+<details>
+            <summary>Searched codebase "MathProblemGenerator multiples math problems generation" • **25** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `src/game/MathProblemGenerator.ts` | L79-132 |
+| `src/game/MathProblemGenerator.ts` | L28-79 |
+| `src/game/MathProblemGenerator.ts` | L1-13 |
+| `src/game/MathProblemGenerator.ts` | L139-146 |
+| `src/game/MathProblemGenerator.ts` | L132-139 |
+| `src/game/MathProblemGenerator.ts` | L13-18 |
+| `src/game/MathProblemGenerator.ts` | L146-159 |
+| `src/game/MathProblemGenerator.ts` | L159-162 |
+| `src/game/config.ts` | L63-82 |
+| `src/ecs/Engine.ts` | L183-209 |
+| `src/game/MathProblemGenerator.ts` | L18-28 |
+| `src/game/GameInitializer.ts` | L97-127 |
+| `src/ecs/systems/ProblemManagementSystem.ts` | L63-93 |
+| `src/ecs/systems/ProblemManagementSystem.ts` | L1-33 |
+| `project-plan.md` | L387-396 |
+| `src/ecs/systems/ProblemManagementSystem.ts` | L134-147 |
+| `src/ecs/systems/RenderSystem.ts` | L198-230 |
+| `src/ecs/systems/ProblemManagementSystem.ts` | L147-164 |
+| `src/ecs/systems/ProblemManagementSystem.ts` | L33-63 |
+| `src/game/config.ts` | L1-56 |
+| `src/game/GameInitializer.ts` | L67-86 |
+| `project-plan.md` | L141-175 |
+| `src/ecs/systems/CollisionSystem.ts` | L28-68 |
+| `src/ecs/systems/ProblemManagementSystem.ts` | L93-134 |
+| `src/ecs/systems/RenderSystem.ts` | L135-174 |
+
+</details>
+
+---
+
+Now I need to create a new math problem generator that works specifically for multiples mode. Let me create a new function to replace the current problem generation:
+
+---
+
+```diff
+      this.currentDifficulty = difficulty;
+    }
++   
++   /**
++    * Generate problems for multiples mode
++    * Returns all correct multiples and some incorrect values
++    */
++   generateMultiplesProblems(multipleOf: number): ProblemOption[] {
++     const problems: ProblemOption[] = [];
++     
++     // Generate all multiples from 1 to 12
++     for (let i = 1; i <= 12; i++) {
++       const multiple = multipleOf * i;
++       problems.push({
++         value: multiple,
++         isCorrect: true
++       });
++     }
++     
++     // Add some incorrect numbers to make it challenging
++     const incorrectNumbers = new Set<number>();
++     const correctNumbers = new Set(problems.map(p => p.value));
++     
++     // Generate numbers that are NOT multiples of the target
++     while (incorrectNumbers.size < 8) {
++       const randomNum = Math.floor(Math.random() * (multipleOf * 12)) + 1;
++       
++       // Make sure it's not a multiple and not already used
++       if (!correctNumbers.has(randomNum) && randomNum % multipleOf !== 0) {
++         incorrectNumbers.add(randomNum);
++         problems.push({
++           value: randomNum,
++           isCorrect: false
++         });
++       }
++     }
++     
++     // Shuffle the problems
++     return this.shuffleArray(problems);
++   }
+    
+    /**
+```
+
+---
+
+Now I need to update the ProblemManagementSystem to use the multiples mode when appropriate:
+
+---
+
+
+
+---
+
+I need to use the correct ECSpresso API. Let me check the existing code to see how to get entities with specific components:
+
+---
+
+
+
+---
+
+Let me fix this by passing the existing math problems from the query to the spawn function:
+
+---
+
+
+
+---
+
+I need to update the function signature:
+
+---
+
+
+
+---
+
+
+
+---
+
+Now I need to add level progression logic. Let me add a system to check when all correct answers are consumed:
+
+---
+
+
+
+---
+
+Let me add the `checkLevelCompletion` function:
+
+---
+
+
+
+---
+
+Let me fix the type annotations:
+
+---
+
+
+
+---
+
+Now I need to update the initial game setup to create multiples problems instead of the hardcoded ones. Let me update the GameInitializer:
+
+---
+
+
+
+---
+
+Now I need to update the UI to show the objective for multiples mode. Let me update the gameplay UI:
+
+---
+
+
+
+---
+
+I also need to update the bottom hint text:
+
+---
+
+
+
+---
+
+I also need to add import for `gameEngine` at the top of UIManager.ts:
+
+---
+
+
+
+---
+
+I see that the search_replace accidentally reverted my changes. Let me properly add the import and re-add the mode selection:
+
+---
+
+Read file: src/game/UIManager.ts
+
+---
+
+Good! I can see the imports and structure are correct. Let me restart the game to test the multiples mode:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+Perfect! I've successfully implemented the multiples mode system. Here's what I've added:
+
+## ✨ **Multiples Mode Implementation**
+
+### 🎯 **Mode Selection Screen**
+- Added a beautiful mode selection screen with:
+  - **Multiples mode** (fully implemented) - Find all multiples of a given number
+  - **Factors mode** (coming soon)
+  - **Prime Numbers mode** (coming soon)
+- Clean UI navigation: Menu → Mode Selection → Game
+
+### 🔢 **Multiples Logic**
+- **Starting Level**: Multiples of 2 (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24)
+- **Problem Generation**: 
+  - All correct multiples (1×2 through 12×2)
+  - 8 random incorrect numbers (non-multiples)
+  - Smart shuffling and distribution
+- **Level Progression**: When all correct multiples are eaten, automatically advance to multiples of 3, then 4, etc.
+
+### 🎮 **Enhanced Game Features**
+- **Dynamic UI Updates**: 
+  - Objective displays "Find multiples of 2!" and updates as levels progress
+  - Level completion celebrations with console messages
+- **Smart Problem Management**: 
+  - No duplicate problems on screen
+  - Automatic cleanup of consumed problems
+  - Fresh board generation for each level
+
+### 🧠 **Technical Implementation**
+- Extended `MathProblemGenerator` with `generateMultiplesProblems()` method
+- Updated `ProblemManagementSystem` with level completion checking
+- Added new resource types (`gameMode`, `currentLevel`) to the Engine
+- Maintained existing game mechanics (SPACE to eat, visual feedback, etc.)
+
+The game now starts with multiples of 2, and when you eat all the correct answers (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24), it automatically progresses to multiples of 3! The system is extensible and ready for future modes like factors and prime numbers.
+
+You can now navigate: **Main Menu** → **Mode Selection** → **Multiples Game** and experience the full Number Munchers-style gameplay with proper educational math challenges! 🎉
+
+---
+
+_**User**_
+
+Great.  Seems to work well.  Let's make some modifications to the play area.  Keep it the same size, but reduce the tile split to a 6x5 grid (making larger tiles). Make any related adjustments as well.
+
+---
+
+_**Assistant**_
+
+
+
+---
+

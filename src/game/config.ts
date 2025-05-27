@@ -6,9 +6,9 @@
 export const GAME_CONFIG = {
   // Grid settings
   GRID: {
-    WIDTH: 20,
-    HEIGHT: 20,
-    CELL_SIZE: 32,
+    WIDTH: 6,
+    HEIGHT: 5,
+    CELL_SIZE: 106,
   },
   
   // Performance settings

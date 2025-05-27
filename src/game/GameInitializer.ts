@@ -73,8 +73,8 @@ export class GameInitializer {
     // Reset game state first
     this.resetGameState();
     
-    // Create player in center of grid
-    const playerGridPos = { x: 10, y: 10 };
+    // Create player in center of grid (3,2 for 6x5 grid)
+    const playerGridPos = { x: 3, y: 2 };
     const playerPixelPos = gridToPixel(playerGridPos.x, playerGridPos.y);
     EntityFactory.createPlayer(playerPixelPos.x, playerPixelPos.y);
 
@@ -111,16 +111,16 @@ export class GameInitializer {
   private createInitialEnemies(): void {
     const enemies = [
       // Chase enemy - will pursue the player
-      { gridX: 3, gridY: 3, behaviorType: 'chase' as const },
+      { gridX: 1, gridY: 1, behaviorType: 'chase' as const },
       
       // Random enemy - moves randomly
-      { gridX: 17, gridY: 3, behaviorType: 'random' as const },
+      { gridX: 5, gridY: 1, behaviorType: 'random' as const },
       
       // Patrol enemy - follows a set path
-      { gridX: 3, gridY: 17, behaviorType: 'patrol' as const },
+      { gridX: 1, gridY: 4, behaviorType: 'patrol' as const },
       
       // Guard enemy - stays in one area
-      { gridX: 17, gridY: 17, behaviorType: 'guard' as const },
+      { gridX: 5, gridY: 4, behaviorType: 'guard' as const },
     ];
 
     for (const enemy of enemies) {

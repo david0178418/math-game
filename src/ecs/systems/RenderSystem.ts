@@ -203,7 +203,7 @@ function drawMathProblemNumbers(mathProblems: any[]): void {
   
   // Set up text styling
   ctx.save();
-  ctx.font = 'bold 14px Arial';
+  ctx.font = 'bold 32px Arial'; // Larger font for bigger tiles
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
@@ -219,7 +219,7 @@ function drawMathProblemNumbers(mathProblems: any[]): void {
     
     // Use white text with black outline for visibility on both green and gray backgrounds
     ctx.strokeStyle = 'black';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 6; // Thicker outline for larger font
     ctx.strokeText(mathProblemComp.value.toString(), centerX, centerY);
     
     ctx.fillStyle = 'white';
