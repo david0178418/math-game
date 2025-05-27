@@ -10,7 +10,7 @@ import { mathProblemGenerator } from '../../game/MathProblemGenerator';
 
 // Configuration for problem management
 const PROBLEM_CONFIG = {
-  TOTAL_PROBLEMS: 25,        // Total problems needed to fill 6x5 grid (30 - 1 player - 4 enemies)
+  TOTAL_PROBLEMS: 30,        // Total problems needed to fill entire 6x5 grid
   SPAWN_DELAY: 1000,         // Milliseconds between spawn attempts
 } as const;
 
@@ -73,18 +73,18 @@ function populateFullGrid(allPositionEntities: any[]): void {
   
   if (gameMode !== 'multiples') return;
   
-  // Get all problems needed for this level
+  // Get all problems needed for this level (30 problems for full grid)
   const allProblems = mathProblemGenerator.generateMultiplesProblems(currentLevel, PROBLEM_CONFIG.TOTAL_PROBLEMS);
   
-  // Get all empty grid positions
-  const emptyPositions = getAllEmptyGridPositions(allPositionEntities);
+  // Get ALL grid positions that don't already have math problems
+  const availablePositions = getAllGridPositionsWithoutMathProblems(allPositionEntities);
   
-  // Place problems in empty positions
-  const problemsToPlace = Math.min(allProblems.length, emptyPositions.length);
+  // Place problems in all available positions
+  const problemsToPlace = Math.min(allProblems.length, availablePositions.length);
   
   for (let i = 0; i < problemsToPlace; i++) {
     const problem = allProblems[i];
-    const gridPos = emptyPositions[i];
+    const gridPos = availablePositions[i];
     const pixelPos = gridToPixel(gridPos.x, gridPos.y);
     
     EntityFactory.createMathProblem(
@@ -96,37 +96,40 @@ function populateFullGrid(allPositionEntities: any[]): void {
     );
   }
   
-  console.log(`Populated grid with ${problemsToPlace} problems for multiples of ${currentLevel}`);
+  console.log(`Populated grid with ${problemsToPlace} problems for multiples of ${currentLevel} - ALL grid positions filled`);
 }
 
 /**
- * Get all empty grid positions
+ * Get all grid positions that don't already have math problems
+ * This allows players and enemies to coexist with math problems on the same tiles
  */
-function getAllEmptyGridPositions(allPositionEntities: any[]): { x: number; y: number }[] {
-  const occupiedPositions = new Set<string>();
+function getAllGridPositionsWithoutMathProblems(allPositionEntities: any[]): { x: number; y: number }[] {
+  const mathProblemPositions = new Set<string>();
   
-  // Get all occupied positions from entities with position components
+  // Get all positions that already have math problems
   for (const entity of allPositionEntities) {
     const position = entity.components.position;
-    if (position) {
+    const hasMathProblem = entity.components.mathProblem;
+    
+    if (position && hasMathProblem) {
       const gridX = Math.round(position.x / CELL_SIZE);
       const gridY = Math.round(position.y / CELL_SIZE);
-      occupiedPositions.add(`${gridX},${gridY}`);
+      mathProblemPositions.add(`${gridX},${gridY}`);
     }
   }
   
-  // Get all empty positions
-  const emptyPositions: { x: number; y: number }[] = [];
+  // Get all positions that don't have math problems yet
+  const availablePositions: { x: number; y: number }[] = [];
   for (let y = 0; y < GRID_HEIGHT; y++) {
     for (let x = 0; x < GRID_WIDTH; x++) {
       const key = `${x},${y}`;
-      if (!occupiedPositions.has(key)) {
-        emptyPositions.push({ x, y });
+      if (!mathProblemPositions.has(key)) {
+        availablePositions.push({ x, y });
       }
     }
   }
   
-  return emptyPositions;
+  return availablePositions;
 }
 
 
