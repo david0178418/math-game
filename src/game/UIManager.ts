@@ -431,16 +431,6 @@ export class UIManager {
         </div>
         
         <div style="display: flex; gap: 15px; align-items: center;">
-          <div id="objective-display" style="
-            font-size: 1.1rem;
-            background: rgba(156, 39, 176, 0.9);
-            padding: 8px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            max-width: 300px;
-            text-align: center;
-          ">Find multiples of 2!</div>
-          
           <button id="pause-btn" style="
             background: rgba(96, 125, 139, 0.9);
             color: white;
@@ -455,13 +445,40 @@ export class UIManager {
         </div>
       </div>
       
+      <!-- Objective Display - Above Game Area -->
+      <div id="objective-section" style="
+        position: absolute;
+        top: 80px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px 20px;
+        pointer-events: none;
+        z-index: 150;
+      ">
+        <div id="objective-display" style="
+          font-size: 1.4rem;
+          background: linear-gradient(45deg, rgba(156, 39, 176, 0.95), rgba(233, 30, 99, 0.95));
+          color: white;
+          padding: 12px 24px;
+          border-radius: 12px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+          text-align: center;
+          font-weight: bold;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+          border: 2px solid rgba(255,255,255,0.2);
+        ">Find multiples of 2!</div>
+      </div>
+      
       <!-- Game Canvas Container -->
       <div id="canvas-container" style="
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-top: 80px;
+        margin-top: 130px;
       ">
         <canvas id="game-canvas"></canvas>
       </div>

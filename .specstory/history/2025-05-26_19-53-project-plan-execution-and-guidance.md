@@ -13231,3 +13231,143 @@ _**Assistant**_
 
 ---
 
+Great idea! Currently the game gives away the correct answers by making them green and wrong answers light gray. Let's make all math problems the same color so players have to actually calculate the multiples.
+
+Let me first check the current color configuration:
+
+---
+
+Read file: src/game/config.ts
+
+---
+
+Now let me check where the color is assigned in the EntityFactory:
+
+---
+
+Read file: src/ecs/Engine.ts
+
+---
+
+Perfect! I found the issue. In the `createMathProblem` function, the color is set based on whether the answer is correct:
+
+```typescript
+color: isCorrect ? GAME_CONFIG.COLORS.CORRECT_ANSWER : GAME_CONFIG.COLORS.WRONG_ANSWER
+```
+
+Let me fix this by:
+1. Adding a neutral math problem color to the config
+2. Updating the EntityFactory to use the same color for all math problems
+
+First, let's add a neutral color to the config:
+
+---
+
+
+
+---
+
+Now let's update the EntityFactory to use the neutral color for all math problems:
+
+---
+
+
+
+---
+
+Perfect! Now let's build and test the changes:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 18 modules transformed.
+dist/index.html                  0.46 kB │ gzip:  0.29 kB
+dist/assets/index-BixeubOt.css   2.85 kB │ gzip:  1.13 kB
+dist/assets/index-BFWC4XhJ.js   53.38 kB │ gzip: 13.37 kB
+✓ built in 105ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Excellent! The build is successful. Let's start the development server to test the changes:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+Perfect! I've successfully removed the color distinction that was giving away the correct answers. Here's what I changed:
+
+## Changes Made:
+
+### 1. **Added Neutral Math Problem Color**
+Updated the config to include a new neutral color for all math problems:
+```typescript
+COLORS: {
+  PLAYER: 'blue',
+  ENEMY: 'red',
+  CORRECT_ANSWER: 'green',      // Legacy - no longer used
+  WRONG_ANSWER: 'lightgray',    // Legacy - no longer used
+  MATH_PROBLEM: 'lightblue',    // Neutral color for all math problems
+  GRID_LINE: '#ddd',
+  BACKGROUND: 'white',
+}
+```
+
+### 2. **Updated Entity Creation**
+Modified the `createMathProblem` function to use the same color for all math problems:
+```typescript
+// Before:
+color: isCorrect ? GAME_CONFIG.COLORS.CORRECT_ANSWER : GAME_CONFIG.COLORS.WRONG_ANSWER
+
+// After:  
+color: GAME_CONFIG.COLORS.MATH_PROBLEM
+```
+
+## Game Impact:
+
+**Before**: 
+- ✅ Correct multiples were **green** (easy to spot)
+- ❌ Wrong answers were **light gray** 
+- Players could win by just eating green tiles
+
+**After**:
+- 🟦 ALL math problems are now **light blue**
+- Players must actually calculate which numbers are multiples of the current level
+- The game is now properly challenging and educational!
+
+For example, in "multiples of 3" mode:
+- Players see numbers like: `6, 15, 8, 12, 22, 9, 18, 7, 21, 5...` all in the same light blue color
+- They must identify that `6, 15, 12, 9, 18, 21` are multiples of 3
+- No more visual cheating - pure math skills required!
+
+The game now provides the authentic Number Munchers experience where players need to use their math knowledge rather than pattern recognition to succeed.
+
+---
+
+_**User**_
+
+Great.  Now, move the problem message(Multiples of X) from the top right to just above the play area for clarity
+
+---
+
+_**Assistant**_
+
+
+
+---
+
