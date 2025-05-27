@@ -10,8 +10,7 @@ import { mathProblemGenerator } from '../../game/MathProblemGenerator';
 
 // Configuration for problem management
 const PROBLEM_CONFIG = {
-  MIN_PROBLEMS: 4,           // Minimum number of problems on screen (reduced for 6x5 grid)
-  MAX_PROBLEMS: 8,           // Maximum number of problems on screen (reduced for 6x5 grid)
+  TOTAL_PROBLEMS: 25,        // Total problems needed to fill 6x5 grid (30 - 1 player - 4 enemies)
   SPAWN_DELAY: 1000,         // Milliseconds between spawn attempts
 } as const;
 
@@ -36,9 +35,9 @@ export function addProblemManagementSystemToEngine(): void {
         problem => !problem.components.mathProblem.consumed
       );
       
-      // Check if we need to spawn new problems
+      // Check if we need to populate the grid initially or after level completion
       const currentTime = performance.now();
-      if (activeProblems.length < PROBLEM_CONFIG.MIN_PROBLEMS && 
+      if (activeProblems.length === 0 && 
           currentTime - lastSpawnTime > PROBLEM_CONFIG.SPAWN_DELAY) {
         
         // Adjust difficulty based on player score
@@ -47,11 +46,8 @@ export function addProblemManagementSystemToEngine(): void {
           adjustDifficultyBasedOnScore(player.components.player.score);
         }
         
-        // Spawn new problems
-        const problemsToSpawn = PROBLEM_CONFIG.MIN_PROBLEMS - activeProblems.length;
-        for (let i = 0; i < problemsToSpawn; i++) {
-          spawnRandomProblem(queries.allPositions, queries.mathProblems);
-        }
+        // Populate entire grid with problems
+        populateFullGrid(queries.allPositions);
         
         lastSpawnTime = currentTime;
       }
@@ -66,7 +62,72 @@ export function addProblemManagementSystemToEngine(): void {
 }
 
 /**
- * Spawn a new random math problem at an empty grid position
+ * Populate the entire grid with math problems
+ */
+function populateFullGrid(allPositionEntities: any[]): void {
+  const gameMode = gameEngine.getResource('gameMode');
+  const currentLevel = gameEngine.getResource('currentLevel');
+  
+  if (gameMode !== 'multiples') return;
+  
+  // Get all problems needed for this level
+  const allProblems = mathProblemGenerator.generateMultiplesProblems(currentLevel, PROBLEM_CONFIG.TOTAL_PROBLEMS);
+  
+  // Get all empty grid positions
+  const emptyPositions = getAllEmptyGridPositions(allPositionEntities);
+  
+  // Place problems in empty positions
+  const problemsToPlace = Math.min(allProblems.length, emptyPositions.length);
+  
+  for (let i = 0; i < problemsToPlace; i++) {
+    const problem = allProblems[i];
+    const gridPos = emptyPositions[i];
+    const pixelPos = gridToPixel(gridPos.x, gridPos.y);
+    
+    EntityFactory.createMathProblem(
+      pixelPos.x,
+      pixelPos.y,
+      problem.value,
+      problem.isCorrect,
+      1
+    );
+  }
+  
+  console.log(`Populated grid with ${problemsToPlace} problems for multiples of ${currentLevel}`);
+}
+
+/**
+ * Get all empty grid positions
+ */
+function getAllEmptyGridPositions(allPositionEntities: any[]): { x: number; y: number }[] {
+  const occupiedPositions = new Set<string>();
+  
+  // Get all occupied positions from entities with position components
+  for (const entity of allPositionEntities) {
+    const position = entity.components.position;
+    if (position) {
+      const gridX = Math.round(position.x / CELL_SIZE);
+      const gridY = Math.round(position.y / CELL_SIZE);
+      occupiedPositions.add(`${gridX},${gridY}`);
+    }
+  }
+  
+  // Get all empty positions
+  const emptyPositions: { x: number; y: number }[] = [];
+  for (let y = 0; y < GRID_HEIGHT; y++) {
+    for (let x = 0; x < GRID_WIDTH; x++) {
+      const key = `${x},${y}`;
+      if (!occupiedPositions.has(key)) {
+        emptyPositions.push({ x, y });
+      }
+    }
+  }
+  
+  return emptyPositions;
+}
+
+/**
+ * Spawn a new random math problem at an empty grid position (legacy function)
  */
 function spawnRandomProblem(allPositionEntities: any[], mathProblems: any[] = []): void {
   // Check if we're in multiples mode
@@ -251,7 +312,7 @@ function cleanupConsumedProblems(mathProblems: any[]): void {
   );
   
   // Remove consumed problems if we have too many total problems
-  if (mathProblems.length > PROBLEM_CONFIG.MAX_PROBLEMS) {
+  if (mathProblems.length > PROBLEM_CONFIG.TOTAL_PROBLEMS) {
     consumedProblems.forEach(problem => {
       gameEngine.entityManager.removeEntity(problem.id);
     });

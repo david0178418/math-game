@@ -29,9 +29,9 @@ export class MathProblemGenerator {
   
   /**
    * Generate problems for multiples mode
-   * Returns all correct multiples and some incorrect values
+   * Returns all correct multiples and enough incorrect values to fill the grid
    */
-  generateMultiplesProblems(multipleOf: number): ProblemOption[] {
+  generateMultiplesProblems(multipleOf: number, totalProblemsNeeded: number = 25): ProblemOption[] {
     const problems: ProblemOption[] = [];
     
     // Generate all multiples from 1 to 12
@@ -43,13 +43,14 @@ export class MathProblemGenerator {
       });
     }
     
-    // Add some incorrect numbers to make it challenging (fewer for smaller grid)
+    // Calculate how many incorrect numbers we need
+    const incorrectNumbersNeeded = totalProblemsNeeded - 12; // 25 - 12 = 13
     const incorrectNumbers = new Set<number>();
     const correctNumbers = new Set(problems.map(p => p.value));
     
-    // Generate numbers that are NOT multiples of the target
-    while (incorrectNumbers.size < 4) { // Reduced from 8 to 4 for smaller grid
-      const randomNum = Math.floor(Math.random() * (multipleOf * 12)) + 1;
+    // Generate numbers that are NOT multiples of the target, between 2 and 144
+    while (incorrectNumbers.size < incorrectNumbersNeeded) {
+      const randomNum = Math.floor(Math.random() * 143) + 2; // Random between 2 and 144
       
       // Make sure it's not a multiple and not already used
       if (!correctNumbers.has(randomNum) && randomNum % multipleOf !== 0) {
