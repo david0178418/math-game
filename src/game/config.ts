@@ -33,8 +33,9 @@ export const GAME_CONFIG = {
   COLORS: {
     PLAYER: 'blue',
     ENEMY: 'red',
-    CORRECT_ANSWER: 'green',
-    WRONG_ANSWER: 'lightgray',
+    CORRECT_ANSWER: 'green',      // Legacy - no longer used
+    WRONG_ANSWER: 'lightgray',    // Legacy - no longer used
+    MATH_PROBLEM: 'lightblue',    // Neutral color for all math problems
     GRID_LINE: '#ddd',
     BACKGROUND: 'white',
   },

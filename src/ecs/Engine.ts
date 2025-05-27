@@ -190,7 +190,7 @@ export const EntityFactory = {
     gameEngine.entityManager.addComponent(entity.id, 'position', { x, y });
     gameEngine.entityManager.addComponent(entity.id, 'renderable', { 
       shape: 'rectangle', 
-      color: isCorrect ? GAME_CONFIG.COLORS.CORRECT_ANSWER : GAME_CONFIG.COLORS.WRONG_ANSWER, 
+      color: GAME_CONFIG.COLORS.MATH_PROBLEM, 
       size: CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
       layer: GAME_CONFIG.LAYERS.MATH_PROBLEMS
     });
