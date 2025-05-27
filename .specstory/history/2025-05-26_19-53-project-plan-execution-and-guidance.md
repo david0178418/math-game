@@ -12369,3 +12369,321 @@ _**Assistant**_
 
 ---
 
+I'll modify the enemy system to start with 0 enemies and spawn them dynamically from the edges with difficulty-based timing and speed. Let me start by updating the initial setup.
+
+---
+
+
+
+---
+
+Now I need to create an enemy spawning system. Let me create a new file for this:
+
+---
+
+```diff
+- 
++ import { gameEngine, EntityFactory } from '../Engine';
++ import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
++ import { gridToPixel } from './MovementSystem';
++ 
++ /**
++  * Enemy Spawn System
++  * Manages dynamic enemy spawning from grid edges with difficulty scaling
++  */
++ 
++ // Configuration for enemy spawning
++ const ENEMY_SPAWN_CONFIG = {
++   MAX_ENEMIES: 4,               // Maximum enemies on board
++   BASE_SPAWN_INTERVAL: 8000,    // Base spawn interval in milliseconds (8 seconds)
++   MIN_SPAWN_INTERVAL: 3000,     // Minimum spawn interval (3 seconds)
++   DIFFICULTY_SCALE_SCORE: 100,  // Score points per difficulty increase
++ } as const;
++ 
++ let lastSpawnTime = 0;
++ 
++ // Add the enemy spawn system to ECSpresso
++ export function addEnemySpawnSystemToEngine(): void {
++   gameEngine.addSystem('enemySpawnSystem')
++     .setPriority(40) // Run after problem management but before render
++     .addQuery('enemies', {
++       with: ['enemy', 'position']
++     })
++     .addQuery('players', {
++       with: ['player']
++     })
++     .setProcess((queries) => {
++       const currentTime = performance.now();
++       const currentEnemyCount = queries.enemies.length;
++       
++       // Only spawn if we haven't reached max enemies and enough time has passed
++       if (currentEnemyCount < ENEMY_SPAWN_CONFIG.MAX_ENEMIES) {
++         const spawnInterval = calculateSpawnInterval(queries.players[0]);
++         
++         if (currentTime - lastSpawnTime > spawnInterval) {
++           spawnEnemyFromEdge();
++           lastSpawnTime = currentTime;
++         }
++       }
++     })
++     .build();
++ }
++ 
++ /**
++  * Calculate spawn interval based on player score (difficulty)
++  */
++ function calculateSpawnInterval(player: any): number {
++   if (!player) return ENEMY_SPAWN_CONFIG.BASE_SPAWN_INTERVAL;
++   
++   const score = player.components.player.score;
++   const difficultyLevel = Math.floor(score / ENEMY_SPAWN_CONFIG.DIFFICULTY_SCALE_SCORE);
++   
++   // Reduce spawn interval as difficulty increases
++   const interval = ENEMY_SPAWN_CONFIG.BASE_SPAWN_INTERVAL - (difficultyLevel * 1000);
++   return Math.max(interval, ENEMY_SPAWN_CONFIG.MIN_SPAWN_INTERVAL);
++ }
++ 
++ /**
++  * Spawn an enemy from a random edge position
++  */
++ function spawnEnemyFromEdge(): void {
++   const edgePosition = getRandomEdgePosition();
++   const pixelPos = gridToPixel(edgePosition.x, edgePosition.y);
++   
++   // Choose random behavior type
++   const behaviorTypes: Array<'chase' | 'patrol' | 'random' | 'guard'> = ['chase', 'random', 'patrol', 'guard'];
++   const randomBehavior = behaviorTypes[Math.floor(Math.random() * behaviorTypes.length)];
++   
++   EntityFactory.createEnemy(pixelPos.x, pixelPos.y, randomBehavior);
++   
++   console.log(`Spawned ${randomBehavior} enemy at edge position (${edgePosition.x}, ${edgePosition.y})`);
++ }
++ 
++ /**
++  * Get a random position on the edge of the grid
++  */
++ function getRandomEdgePosition(): { x: number; y: number } {
++   const edges = [];
++   
++   // Top edge
++   for (let x = 0; x < GRID_WIDTH; x++) {
++     edges.push({ x, y: 0 });
++   }
++   
++   // Bottom edge
++   for (let x = 0; x < GRID_WIDTH; x++) {
++     edges.push({ x, y: GRID_HEIGHT - 1 });
++   }
++   
++   // Left edge (excluding corners already added)
++   for (let y = 1; y < GRID_HEIGHT - 1; y++) {
++     edges.push({ x: 0, y });
++   }
++   
++   // Right edge (excluding corners already added)
++   for (let y = 1; y < GRID_HEIGHT - 1; y++) {
++     edges.push({ x: GRID_WIDTH - 1, y });
++   }
++   
++   // Return random edge position
++   return edges[Math.floor(Math.random() * edges.length)];
++ } 
+```
+
+---
+
+Now I need to add this new system to the GameInitializer:
+
+---
+
+
+
+---
+
+
+
+---
+
+Now I need to modify the AI system to make enemies move slower and adjust speed based on difficulty. Let me update the AISystem:
+
+---
+
+Read file: src/ecs/systems/AISystem.ts
+
+---
+
+Now let me update the AI system to slow down enemies and make speed scale with difficulty:
+
+---
+
+
+
+---
+
+I need to update all the references to the old constants and implement the new difficulty-based speed calculation. Let me replace the main processing function first:
+
+---
+
+
+
+---
+
+I need to create the `calculateMoveInterval` function and update all the behavior-specific functions. Let me add the new function and then fix the others:
+
+---
+
+
+
+---
+
+I need to update all the individual behavior functions to not return intervals anymore since the interval is now calculated centrally. Let me simplify the behavior functions:
+
+---
+
+
+
+---
+
+I need to update the function signatures to remove the interval return value. Let me fix the function signatures:
+
+---
+
+
+
+---
+
+Since there are multiple occurrences, let me update them one by one. Let me start with the chase function:
+
+---
+
+
+
+---
+
+I need to find and remove all the interval return values in the chase function. Let me read the current chase function to see what needs to be removed:
+
+---
+
+Read file: src/ecs/systems/AISystem.ts
+
+---
+
+Now I can see all the return statements that need to be fixed. Let me remove the interval properties from the return statements in the chase function:
+
+---
+
+
+
+---
+
+Good progress! Let me continue fixing the remaining functions. Let me update the patrol function:
+
+---
+
+
+
+---
+
+Let me fix the patrol function return statement:
+
+---
+
+
+
+---
+
+Good! Now let me fix the random AI function. First update its signature and then its return statement:
+
+---
+
+
+
+---
+
+Let me fix the random AI return statement:
+
+---
+
+
+
+---
+
+Almost there! Now let me fix the guard AI function. First the signature:
+
+---
+
+
+
+---
+
+Now let me fix all the guard AI return statements at once:
+
+---
+
+
+
+---
+
+Perfect! Now let me test the game to see if the new enemy spawning and slowed movement work:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+Excellent! I've successfully implemented the new enemy behavior system. Here's what has been changed:
+
+## ✨ **New Dynamic Enemy System**
+
+### 🚀 **Enemy Spawning**
+- **Start with 0 enemies** on the board (clean slate)
+- **Edge spawning**: Enemies spawn randomly from grid edges (top, bottom, left, right)
+- **Progressive spawning**: Up to 4 enemies maximum
+- **Difficulty scaling**: 
+  - Base spawn interval: 8 seconds
+  - Speeds up as score increases (every 100 points reduces interval by 1 second)
+  - Minimum interval: 3 seconds
+
+### 🐌 **Slowed Movement**
+- **Base movement interval**: Increased from 800ms to 1500ms (much slower)
+- **Behavior-specific speed**:
+  - Chase: 0.8x speed (slightly faster when hunting)
+  - Random: 1.0x speed (normal)
+  - Patrol: 1.2x speed (slower, methodical)
+  - Guard: 1.5x speed (slowest, stays near position)
+
+### 📈 **Difficulty Progression**
+- **Speed increases** with player score (every 100 points)
+- **Spawn rate increases** as difficulty rises
+- **Minimum movement interval**: 800ms (never faster than original speed)
+
+### 🎯 **Strategic Gameplay**
+- **Early game**: Peaceful with no enemies, focus on learning patterns
+- **Mid game**: 1-2 enemies spawn from edges, manageable threat
+- **Late game**: 4 fast enemies with frequent spawning, intense action
+
+### 🧠 **Technical Implementation**
+- `EnemySpawnSystem`: New system handles all dynamic spawning
+- `calculateMoveInterval()`: Centralized speed calculation with difficulty scaling
+- `getRandomEdgePosition()`: Smart edge selection for natural enemy entry
+- Simplified AI behavior functions (removed redundant interval returns)
+
+The game now has a much more balanced difficulty curve, starting peacefully and gradually ramping up the challenge as players progress through the multiples levels! 🎮⚡
+
+---
+
+_**User**_
+
+It looks like the map still has some issues.  It seems that some games will start with some number of tiles blank>. Also, when the next level starts, the board should be completely reset for the new base number.
+
+---
+
+_**Assistant**_
+
+
+
+---
+

@@ -29,6 +29,9 @@ export function addProblemManagementSystemToEngine(): void {
     .addQuery('allPositions', {
       with: ['position']
     })
+    .addQuery('enemies', {
+      with: ['enemy', 'position']
+    })
     .setProcess((queries) => {
       // Count active (non-consumed) problems
       const activeProblems = queries.mathProblems.filter(
@@ -53,7 +56,7 @@ export function addProblemManagementSystemToEngine(): void {
       }
       
       // Check for level completion in multiples mode
-      checkLevelCompletion(queries.mathProblems);
+      checkLevelCompletion(queries.mathProblems, queries.enemies);
       
       // Clean up old consumed problems (optional optimization)
       cleanupConsumedProblems(queries.mathProblems);
@@ -126,110 +129,9 @@ function getAllEmptyGridPositions(allPositionEntities: any[]): { x: number; y: n
   return emptyPositions;
 }
 
-/**
- * Spawn a new random math problem at an empty grid position (legacy function)
- */
-function spawnRandomProblem(allPositionEntities: any[], mathProblems: any[] = []): void {
-  // Check if we're in multiples mode
-  const gameMode = gameEngine.getResource('gameMode');
-  const currentLevel = gameEngine.getResource('currentLevel');
-  
-  let selectedOption: { value: number; isCorrect: boolean };
-  
-  if (gameMode === 'multiples') {
-    // Get all multiples problems for current level
-    const allMultiplesProblems = mathProblemGenerator.generateMultiplesProblems(currentLevel);
-    
-    // Check what problems are already on the board
-    const existingProblemValues = new Set<number>();
-    
-    for (const entity of mathProblems) {
-      const mathProblem = entity.components.mathProblem;
-      if (!mathProblem.consumed) {
-        existingProblemValues.add(mathProblem.value);
-      }
-    }
-    
-    // Filter out problems that are already on the board
-    const availableProblems = allMultiplesProblems.filter(
-      problem => !existingProblemValues.has(problem.value)
-    );
-    
-    if (availableProblems.length === 0) {
-      console.log('All problems for this level are already on the board');
-      return;
-    }
-    
-    // Select a random available problem
-    selectedOption = availableProblems[Math.floor(Math.random() * availableProblems.length)];
-  } else {
-    // Original logic for other modes
-    const problem = mathProblemGenerator.generateProblem();
-    const options = mathProblemGenerator.generateOptions(problem, 4);
-    selectedOption = options[Math.floor(Math.random() * options.length)];
-  }
-  
-  // Find an empty grid position
-  const emptyPosition = findEmptyGridPosition(allPositionEntities);
-  if (!emptyPosition) {
-    console.warn('No empty positions available for new problem');
-    return;
-  }
-  
-  const pixelPos = gridToPixel(emptyPosition.x, emptyPosition.y);
-  
-  // Create the math problem entity
-  EntityFactory.createMathProblem(
-    pixelPos.x,
-    pixelPos.y,
-    selectedOption.value,
-    selectedOption.isCorrect,
-    1
-  );
-  
-  console.log(`Spawned ${gameMode} problem: ${selectedOption.value} (${selectedOption.isCorrect ? 'correct' : 'incorrect'})`);
-}
 
-/**
- * Find an empty grid position that doesn't collide with existing entities
- */
-function findEmptyGridPosition(allPositionEntities: any[]): { x: number; y: number } | null {
-  const occupiedPositions = new Set<string>();
-  
-  // Get all occupied positions from entities with position components
-  for (const entity of allPositionEntities) {
-    const position = entity.components.position;
-    if (position) {
-      const gridX = Math.round(position.x / CELL_SIZE);
-      const gridY = Math.round(position.y / CELL_SIZE);
-      occupiedPositions.add(`${gridX},${gridY}`);
-    }
-  }
-  
-  // Find empty positions (try random positions first)
-  const maxAttempts = 50;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const x = Math.floor(Math.random() * GRID_WIDTH);
-    const y = Math.floor(Math.random() * GRID_HEIGHT);
-    const key = `${x},${y}`;
-    
-    if (!occupiedPositions.has(key)) {
-      return { x, y };
-    }
-  }
-  
-  // If random search fails, do systematic search
-  for (let y = 0; y < GRID_HEIGHT; y++) {
-    for (let x = 0; x < GRID_WIDTH; x++) {
-      const key = `${x},${y}`;
-      if (!occupiedPositions.has(key)) {
-        return { x, y };
-      }
-    }
-  }
-  
-  return null; // No empty positions found
-}
+
+
 
 /**
  * Adjust difficulty based on player score
@@ -247,7 +149,7 @@ function adjustDifficultyBasedOnScore(score: number): void {
 /**
  * Check if all correct answers have been consumed (level completion)
  */
-function checkLevelCompletion(mathProblems: any[]): void {
+function checkLevelCompletion(mathProblems: any[], enemies: any[]): void {
   const gameMode = gameEngine.getResource('gameMode');
   const currentLevel = gameEngine.getResource('currentLevel');
   
@@ -278,15 +180,23 @@ function checkLevelCompletion(mathProblems: any[]): void {
     // Update level and show completion message
     gameEngine.addResource('currentLevel', nextLevel);
     
-    // Clear all remaining problems to start fresh
+    // Clear ALL math problems (consumed and non-consumed)
     mathProblems.forEach(problem => {
-      if (!problem.components.mathProblem.consumed) {
-        gameEngine.entityManager.removeEntity(problem.id);
-      }
+      gameEngine.entityManager.removeEntity(problem.id);
     });
+    
+    // Clear all enemies to start fresh for the new level
+    enemies.forEach((enemy: any) => {
+      gameEngine.entityManager.removeEntity(enemy.id);
+    });
+    
+    // Force immediate grid repopulation by resetting last spawn time
+    lastSpawnTime = 0;
     
     // Update UI to show new level
     updateLevelDisplay();
+    
+    console.log(`Board completely reset for multiples of ${nextLevel}`);
   }
 }
 

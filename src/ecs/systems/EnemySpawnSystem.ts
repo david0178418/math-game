@@ -1,5 +1,5 @@
 import { gameEngine, EntityFactory } from '../Engine';
-import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+import { GRID_WIDTH, GRID_HEIGHT } from '../../game/config';
 import { gridToPixel } from './MovementSystem';
 
 /**
