@@ -20,6 +20,7 @@ import { addCollisionSystemToEngine } from '../ecs/systems/CollisionSystem';
 import { addUISystemToEngine } from '../ecs/systems/UISystem';
 import { addProblemManagementSystemToEngine } from '../ecs/systems/ProblemManagementSystem';
 import { addAISystemToEngine } from '../ecs/systems/AISystem';
+import { addEnemySpawnSystemToEngine } from '../ecs/systems/EnemySpawnSystem';
 import { uiManager } from './UIManager';
 
 /**
@@ -61,6 +62,7 @@ export class GameInitializer {
     addAISystemToEngine();          // Priority 85  - AI behavior
     addCollisionSystemToEngine();   // Priority 70  - Collision detection
     addUISystemToEngine();          // Priority 50  - UI updates
+    addEnemySpawnSystemToEngine();  // Priority 40  - Enemy spawning
     addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
 
     console.log('Core Phase 6 systems initialized (render system will be added when canvas is ready)');
@@ -106,33 +108,11 @@ export class GameInitializer {
   }
 
   /**
-   * Create initial enemy entities
+   * Create initial enemy entities (now starts with 0 enemies)
    */
   private createInitialEnemies(): void {
-    const enemies = [
-      // Chase enemy - will pursue the player
-      { gridX: 1, gridY: 1, behaviorType: 'chase' as const },
-      
-      // Random enemy - moves randomly
-      { gridX: 5, gridY: 1, behaviorType: 'random' as const },
-      
-      // Patrol enemy - follows a set path
-      { gridX: 1, gridY: 4, behaviorType: 'patrol' as const },
-      
-      // Guard enemy - stays in one area
-      { gridX: 5, gridY: 4, behaviorType: 'guard' as const },
-    ];
-
-    for (const enemy of enemies) {
-      const pixelPos = gridToPixel(enemy.gridX, enemy.gridY);
-      EntityFactory.createEnemy(
-        pixelPos.x, 
-        pixelPos.y, 
-        enemy.behaviorType
-      );
-    }
-
-    console.log(`Created ${enemies.length} initial enemies`);
+    // Start with no enemies - they will be spawned dynamically by the EnemySpawnSystem
+    console.log('Starting with 0 enemies - they will spawn dynamically from edges');
   }
 
   /**

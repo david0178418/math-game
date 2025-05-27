@@ -55,12 +55,15 @@ interface AIState {
 
 // Configuration for AI behavior
 const AI_CONFIG = {
-  MOVE_INTERVAL: 800,             // Milliseconds between enemy moves
+  BASE_MOVE_INTERVAL: 1500,       // Base milliseconds between enemy moves (slowed down)
+  MIN_MOVE_INTERVAL: 800,         // Minimum move interval (fastest)
   PATH_UPDATE_INTERVAL: 2000,     // Update pathfinding every 2 seconds
   DETECTION_RANGE: 6,             // Grid cells within which AI detects player
-  CHASE_MOVE_INTERVAL: 600,       // Faster movement when chasing
-  PATROL_MOVE_INTERVAL: 1000,     // Slower movement when patrolling
-  RANDOM_MOVE_INTERVAL: 900,      // Random movement interval
+  CHASE_SPEED_MULTIPLIER: 0.8,    // Chase moves slightly faster
+  PATROL_SPEED_MULTIPLIER: 1.2,   // Patrol moves slower
+  RANDOM_SPEED_MULTIPLIER: 1.0,   // Random normal speed
+  GUARD_SPEED_MULTIPLIER: 1.5,    // Guard moves slowest
+  DIFFICULTY_SCALE_SCORE: 100,    // Score points per difficulty increase
 } as const;
 
 // Add the AI system to ECSpresso
@@ -124,42 +127,37 @@ function processEnemyAI(
   // Determine next move based on behavior type
   let nextGridX = Math.round(enemyPos.x / CELL_SIZE);
   let nextGridY = Math.round(enemyPos.y / CELL_SIZE);
-  let moveInterval: number = AI_CONFIG.MOVE_INTERVAL;
+  let moveInterval: number = calculateMoveInterval(enemyData.behaviorType, player);
   
   switch (enemyData.behaviorType) {
     case 'chase': {
       const result = processChaseAI(enemy, player, obstacles, currentTime, aiState);
       nextGridX = result.x;
       nextGridY = result.y;
-      moveInterval = result.interval;
       break;
     }
     case 'patrol': {
       const result = processPatrolAI(enemy, obstacles, currentTime, aiState);
       nextGridX = result.x;
       nextGridY = result.y;
-      moveInterval = result.interval;
       break;
     }
     case 'random': {
       const result = processRandomAI(enemy, obstacles, currentTime, aiState);
       nextGridX = result.x;
       nextGridY = result.y;
-      moveInterval = result.interval;
       break;
     }
     case 'guard': {
       const result = processGuardAI(enemy, obstacles, currentTime, aiState);
       nextGridX = result.x;
       nextGridY = result.y;
-      moveInterval = result.interval;
       break;
     }
     default: {
       const result = processRandomAI(enemy, obstacles, currentTime, aiState);
       nextGridX = result.x;
       nextGridY = result.y;
-      moveInterval = result.interval;
     }
   }
   
@@ -173,6 +171,39 @@ function processEnemyAI(
 }
 
 /**
+ * Calculate move interval based on behavior type and player score (difficulty)
+ */
+function calculateMoveInterval(behaviorType: AIBehaviorType, player: PlayerEntity): number {
+  const score = player?.components?.player?.score || 0;
+  const difficultyLevel = Math.floor(score / AI_CONFIG.DIFFICULTY_SCALE_SCORE);
+  
+  // Calculate base interval with difficulty scaling
+  const baseInterval = AI_CONFIG.BASE_MOVE_INTERVAL - (difficultyLevel * 100);
+  const difficultyAdjustedInterval = Math.max(baseInterval, AI_CONFIG.MIN_MOVE_INTERVAL);
+  
+  // Apply behavior-specific multipliers
+  let multiplier: number;
+  switch (behaviorType) {
+    case 'chase':
+      multiplier = AI_CONFIG.CHASE_SPEED_MULTIPLIER;
+      break;
+    case 'patrol':
+      multiplier = AI_CONFIG.PATROL_SPEED_MULTIPLIER;
+      break;
+    case 'random':
+      multiplier = AI_CONFIG.RANDOM_SPEED_MULTIPLIER;
+      break;
+    case 'guard':
+      multiplier = AI_CONFIG.GUARD_SPEED_MULTIPLIER;
+      break;
+    default:
+      multiplier = AI_CONFIG.RANDOM_SPEED_MULTIPLIER;
+  }
+  
+  return Math.round(difficultyAdjustedInterval * multiplier);
+}
+
+/**
  * Chase AI: Follows the player using pathfinding
  */
 function processChaseAI(
@@ -181,7 +212,7 @@ function processChaseAI(
   obstacles: Entity[],
   currentTime: number,
   aiState: AIState
-): { x: number, y: number, interval: number } {
+): { x: number, y: number } {
   const enemyPos = enemy.components.position;
   const playerPos = player.components.position;
   
@@ -213,19 +244,19 @@ function processChaseAI(
   
   // Check if the target position is valid (not occupied by obstacles)
   if (!isPositionBlocked(nextX, nextY, obstacles)) {
-    return { x: nextX, y: nextY, interval: AI_CONFIG.CHASE_MOVE_INTERVAL };
+    return { x: nextX, y: nextY };
   }
   
   // If blocked, try alternative directions
   const alternatives = getAlternativeDirections(enemyGrid, playerGrid);
   for (const alt of alternatives) {
     if (!isPositionBlocked(alt.x, alt.y, obstacles)) {
-      return { x: alt.x, y: alt.y, interval: AI_CONFIG.CHASE_MOVE_INTERVAL };
+      return { x: alt.x, y: alt.y };
     }
   }
   
   // If all directions blocked, stay in place
-  return { x: enemyGrid.x, y: enemyGrid.y, interval: AI_CONFIG.CHASE_MOVE_INTERVAL };
+  return { x: enemyGrid.x, y: enemyGrid.y };
 }
 
 /**
@@ -236,7 +267,7 @@ function processPatrolAI(
   _obstacles: Entity[],
   _currentTime: number,
   _aiState: AIState
-): { x: number, y: number, interval: number } {
+): { x: number, y: number } {
   const enemyData = enemy.components.enemy;
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
   
@@ -264,7 +295,7 @@ function processPatrolAI(
     enemyData.currentWaypoint = (currentWaypointIndex + 1) % waypoints.length;
   }
   
-  return { x: nextX, y: nextY, interval: AI_CONFIG.PATROL_MOVE_INTERVAL };
+  return { x: nextX, y: nextY };
 }
 
 /**
@@ -275,7 +306,7 @@ function processRandomAI(
   _obstacles: Entity[],
   _currentTime: number,
   _aiState: AIState
-): { x: number, y: number, interval: number } {
+): { x: number, y: number } {
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
   
   // Random direction
@@ -297,7 +328,7 @@ function processRandomAI(
     nextY = currentGrid.y;
   }
   
-  return { x: nextX, y: nextY, interval: AI_CONFIG.RANDOM_MOVE_INTERVAL };
+  return { x: nextX, y: nextY };
 }
 
 /**
@@ -308,7 +339,7 @@ function processGuardAI(
   _obstacles: Entity[],
   _currentTime: number,
   _aiState: AIState
-): { x: number, y: number, interval: number } {
+): { x: number, y: number } {
   const enemyData = enemy.components.enemy;
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
   
@@ -325,7 +356,7 @@ function processGuardAI(
     const direction = getDirectionToTarget(currentGrid, guardPos);
     const nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + direction.x));
     const nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + direction.y));
-    return { x: nextX, y: nextY, interval: AI_CONFIG.MOVE_INTERVAL };
+    return { x: nextX, y: nextY };
   } else {
     // Stay near guard position, occasional small movements
     const shouldMove = Math.random() < 0.3; // 30% chance to move
@@ -340,11 +371,11 @@ function processGuardAI(
       // Only move if it keeps us close to guard position
       const newDistance = Math.abs(nextX - guardPos.x) + Math.abs(nextY - guardPos.y);
       if (newDistance <= 2) {
-        return { x: nextX, y: nextY, interval: AI_CONFIG.MOVE_INTERVAL };
+        return { x: nextX, y: nextY };
       }
     }
     // Stay in place
-    return { x: currentGrid.x, y: currentGrid.y, interval: AI_CONFIG.MOVE_INTERVAL };
+    return { x: currentGrid.x, y: currentGrid.y };
   }
 }
 

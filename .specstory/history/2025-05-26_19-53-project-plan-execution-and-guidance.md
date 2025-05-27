@@ -12282,6 +12282,89 @@ I'll modify the system to populate all tiles on the 6x5 grid. With 30 total tile
 
 ---
 
+Now I need to update the ProblemManagementSystem to populate all tiles at once instead of gradually spawning problems:
+
+---
+
+
+
+---
+
+I need to update the logic that references the old MIN_PROBLEMS and MAX_PROBLEMS constants. Let me replace the entire system process logic:
+
+---
+
+
+
+---
+
+I need to create the `populateFullGrid` function and fix the cleanup function. Let me add the new function and update the cleanup:
+
+---
+
+
+
+---
+
+Now I need to fix the cleanup function that still references the old MAX_PROBLEMS:
+
+---
+
+
+
+---
+
+Now let me test the game to see if it properly populates all tiles:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+Perfect! I've successfully updated the game to populate all tiles on the 6x5 grid. Here's what the new system does:
+
+## ✨ **Full Grid Population System**
+
+### 🎯 **Complete Tile Coverage**
+- **30 total tiles** in 6x5 grid
+- **1 player** + **4 enemies** = 5 occupied tiles
+- **25 math problems** fill all remaining spaces
+- **No empty tiles** - every space is used
+
+### 🔢 **Problem Distribution**
+- **12 correct answers**: All multiples of current level (1×N through 12×N)
+- **13 incorrect answers**: Random numbers between 2-144 that are NOT multiples
+- **Example for multiples of 3**: 
+  - Correct: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36
+  - Incorrect: Random non-multiples like 5, 7, 8, 11, 13, 14, 16, 17, 19, 20, 22, 23, 25...
+
+### 🎮 **New Behavior**
+- **Initial spawn**: All 25 problems placed at game start
+- **Level completion**: When all 12 correct multiples are eaten, grid clears and repopulates with next level
+- **No gradual spawning**: Grid is always completely filled
+- **Smart positioning**: Problems are distributed across all available empty spaces
+
+### 🧠 **Technical Implementation**
+- `populateFullGrid()`: Places all problems at once
+- `getAllEmptyGridPositions()`: Finds all available spaces
+- `generateMultiplesProblems()`: Creates exactly 25 problems (12 correct + 13 incorrect)
+- Grid is repopulated when `activeProblems.length === 0` (after level completion)
+
+The game now provides a classic Number Munchers experience where every tile has a purpose and players must navigate through a completely filled grid to find the correct multiples! 🎯🔢
+
+---
+
+_**User**_
+
+Now, let's alter the enemy behavior slightly.  Let's slow them down a bit. And let's start with 0 on the board. Spawn one from the edge randomly at some interval until a max of 4 are on the board.  Decrease the interval and increase the speed with the difficulty.
+
+---
+
+_**Assistant**_
+
 
 
 ---
