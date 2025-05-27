@@ -1,5 +1,6 @@
-import { gameEngine, GAME_CONFIG } from '../Engine';
-import { sameGridPosition, pixelToGrid, gridToPixel } from './MovementSystem';
+import { gameEngine } from '../Engine';
+import { pixelToGrid, gridToPixel } from './MovementSystem';
+import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
 
 /**
  * AI System
@@ -66,7 +67,6 @@ function processEnemyAI(
 ): void {
   const enemyPos = enemy.components.position;
   const enemyData = enemy.components.enemy;
-  const playerPos = player.components.position;
   
   // Check if it's time for this enemy to move
   if (currentTime < enemyData.nextMoveTime) {
@@ -88,8 +88,8 @@ function processEnemyAI(
   const aiState = enemyData.aiState as AIState;
   
   // Determine next move based on behavior type
-  let nextGridX = Math.round(enemyPos.x / GAME_CONFIG.CELL_SIZE);
-  let nextGridY = Math.round(enemyPos.y / GAME_CONFIG.CELL_SIZE);
+  let nextGridX = Math.round(enemyPos.x / CELL_SIZE);
+  let nextGridY = Math.round(enemyPos.y / CELL_SIZE);
   let moveInterval: number = AI_CONFIG.MOVE_INTERVAL;
   
   switch (enemyData.behaviorType) {
@@ -168,11 +168,11 @@ function processChaseAI(
   
   // Move horizontally first, then vertically (prevents diagonal movement)
   if (enemyGrid.x < playerGrid.x) {
-    nextX = Math.min(GAME_CONFIG.GRID_WIDTH - 1, enemyGrid.x + 1);
+    nextX = Math.min(GRID_WIDTH - 1, enemyGrid.x + 1);
   } else if (enemyGrid.x > playerGrid.x) {
     nextX = Math.max(0, enemyGrid.x - 1);
   } else if (enemyGrid.y < playerGrid.y) {
-    nextY = Math.min(GAME_CONFIG.GRID_HEIGHT - 1, enemyGrid.y + 1);
+    nextY = Math.min(GRID_HEIGHT - 1, enemyGrid.y + 1);
   } else if (enemyGrid.y > playerGrid.y) {
     nextY = Math.max(0, enemyGrid.y - 1);
   }
@@ -221,8 +221,8 @@ function processPatrolAI(
   let nextY = currentGrid.y + direction.y;
   
   // Clamp to grid boundaries
-  nextX = Math.max(0, Math.min(GAME_CONFIG.GRID_WIDTH - 1, nextX));
-  nextY = Math.max(0, Math.min(GAME_CONFIG.GRID_HEIGHT - 1, nextY));
+  nextX = Math.max(0, Math.min(GRID_WIDTH - 1, nextX));
+  nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, nextY));
   
   // Check if reached waypoint
   if (nextX === targetWaypoint.x && nextY === targetWaypoint.y) {
@@ -253,8 +253,8 @@ function processRandomAI(
   ];
   
   const randomDir = directions[Math.floor(Math.random() * directions.length)];
-  let nextX = Math.max(0, Math.min(GAME_CONFIG.GRID_WIDTH - 1, currentGrid.x + randomDir.x));
-  let nextY = Math.max(0, Math.min(GAME_CONFIG.GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
+  let nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + randomDir.x));
+  let nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
   
   // If the chosen position is blocked, stay in place
   if (isPositionBlocked(nextX, nextY, obstacles)) {
@@ -288,8 +288,8 @@ function processGuardAI(
   // If too far from guard position, move back towards it
   if (distance > 2) { // 2 grid cells
     const direction = getDirectionToTarget(currentGrid, guardPos);
-    const nextX = Math.max(0, Math.min(GAME_CONFIG.GRID_WIDTH - 1, currentGrid.x + direction.x));
-    const nextY = Math.max(0, Math.min(GAME_CONFIG.GRID_HEIGHT - 1, currentGrid.y + direction.y));
+    const nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + direction.x));
+    const nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + direction.y));
     return { x: nextX, y: nextY, interval: AI_CONFIG.MOVE_INTERVAL };
   } else {
     // Stay near guard position, occasional small movements
@@ -299,8 +299,8 @@ function processGuardAI(
         { x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 }
       ];
       const randomDir = directions[Math.floor(Math.random() * directions.length)];
-      const nextX = Math.max(0, Math.min(GAME_CONFIG.GRID_WIDTH - 1, currentGrid.x + randomDir.x));
-      const nextY = Math.max(0, Math.min(GAME_CONFIG.GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
+      const nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + randomDir.x));
+      const nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
       
       // Only move if it keeps us close to guard position
       const newDistance = Math.abs(nextX - guardPos.x) + Math.abs(nextY - guardPos.y);
@@ -318,8 +318,8 @@ function processGuardAI(
  */
 function isPositionBlocked(gridX: number, gridY: number, obstacles: any[]): boolean {
   // For now, only check boundaries (no obstacle collision implemented yet)
-  return gridX < 0 || gridX >= GAME_CONFIG.GRID_WIDTH || 
-         gridY < 0 || gridY >= GAME_CONFIG.GRID_HEIGHT;
+  return gridX < 0 || gridX >= GRID_WIDTH || 
+         gridY < 0 || gridY >= GRID_HEIGHT;
 }
 
 /**
@@ -347,13 +347,13 @@ function getAlternativeDirections(
   // If trying to move horizontally, try vertical directions
   if (from.x !== to.x) {
     if (from.y > 0) alternatives.push({ x: from.x, y: from.y - 1 });
-    if (from.y < GAME_CONFIG.GRID_HEIGHT - 1) alternatives.push({ x: from.x, y: from.y + 1 });
+    if (from.y < GRID_HEIGHT - 1) alternatives.push({ x: from.x, y: from.y + 1 });
   }
   
   // If trying to move vertically, try horizontal directions
   if (from.y !== to.y) {
     if (from.x > 0) alternatives.push({ x: from.x - 1, y: from.y });
-    if (from.x < GAME_CONFIG.GRID_WIDTH - 1) alternatives.push({ x: from.x + 1, y: from.y });
+    if (from.x < GRID_WIDTH - 1) alternatives.push({ x: from.x + 1, y: from.y });
   }
   
   return alternatives;
@@ -366,8 +366,8 @@ function generatePatrolWaypoints(startPos: { x: number, y: number }): Array<{ x:
   const size = 3; // Patrol area size
   return [
     { x: startPos.x, y: startPos.y },
-    { x: Math.min(GAME_CONFIG.GRID_WIDTH - 1, startPos.x + size), y: startPos.y },
-    { x: Math.min(GAME_CONFIG.GRID_WIDTH - 1, startPos.x + size), y: Math.min(GAME_CONFIG.GRID_HEIGHT - 1, startPos.y + size) },
-    { x: startPos.x, y: Math.min(GAME_CONFIG.GRID_HEIGHT - 1, startPos.y + size) },
+    { x: Math.min(GRID_WIDTH - 1, startPos.x + size), y: startPos.y },
+    { x: Math.min(GRID_WIDTH - 1, startPos.x + size), y: Math.min(GRID_HEIGHT - 1, startPos.y + size) },
+    { x: startPos.x, y: Math.min(GRID_HEIGHT - 1, startPos.y + size) },
   ];
 } 

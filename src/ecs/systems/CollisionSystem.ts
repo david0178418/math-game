@@ -112,7 +112,7 @@ function handlePlayerProblemCollision(
  */
 function handlePlayerEnemyCollision(
   player: any, 
-  enemy: any
+  _enemy: any
 ): void {
   const playerComp = player.components.player;
   const healthComp = player.components.health;
