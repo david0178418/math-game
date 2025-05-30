@@ -5,7 +5,7 @@ import { GAME_CONFIG, CELL_SIZE, PLAYER_LIVES, STARTING_SCORE } from '../game/co
 export { GAME_CONFIG };
 
 // Define component type interfaces
-interface Components {
+export interface Components {
   position: { x: number; y: number };
   renderable: { 
     shape: 'circle' | 'rectangle'; 
@@ -46,14 +46,14 @@ interface Components {
 }
 
 // Define event types (for future use)
-interface Events {
+export interface Events {
   playerMoved: { x: number; y: number };
   problemSolved: { value: number; correct: boolean };
   enemyCollision: { playerId: number; enemyId: number };
 }
 
 // Define resource types (for future use)
-interface Resources {
+export interface Resources {
   gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
   score: { value: number };
   gameMode: string;

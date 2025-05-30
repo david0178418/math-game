@@ -1,45 +1,33 @@
 import { gameEngine } from '../Engine';
 import { pixelToGrid, gridToPixel } from './MovementSystem';
 import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
+
+// Import Components type from Engine for use with QueryResultEntity
+import type { Components } from '../Engine';
 
 /**
  * AI System
  * Handles AI behavior for enemy entities using grid-based movement like Number Munchers
  */
 
-// Basic entity types for better type safety
-interface Position {
-  x: number;
-  y: number;
-}
+// Create reusable query definitions
+const enemyQuery = createQueryDefinition({
+  with: ['position', 'enemy']
+});
 
-interface Entity {
-  components: {
-    position: Position;
-    [key: string]: any;
-  };
-}
+const playerQuery = createQueryDefinition({
+  with: ['position', 'player']
+});
 
-interface EnemyEntity extends Entity {
-  components: {
-    position: Position;
-    enemy: {
-      behaviorType: AIBehaviorType;
-      nextMoveTime: number;
-      aiState?: AIState;
-      waypoints?: Array<{ x: number; y: number }>;
-      currentWaypoint?: number;
-      guardPosition?: { x: number; y: number };
-    };
-  };
-}
+const obstacleQuery = createQueryDefinition({
+  with: ['position', 'collider']
+});
 
-interface PlayerEntity extends Entity {
-  components: {
-    position: Position;
-    player: any;
-  };
-}
+// Extract entity types using ECSpresso utilities
+type EnemyEntity = QueryResultEntity<Components, typeof enemyQuery>;
+type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
+type ObstacleEntity = QueryResultEntity<Components, typeof obstacleQuery>;
 
 // AI behavior types
 export type AIBehaviorType = 'chase' | 'patrol' | 'random' | 'guard';
@@ -64,21 +52,15 @@ const AI_CONFIG = {
   RANDOM_SPEED_MULTIPLIER: 1.0,   // Random normal speed
   GUARD_SPEED_MULTIPLIER: 1.5,    // Guard moves slowest
   DIFFICULTY_SCALE_SCORE: 100,    // Score points per difficulty increase
-} as const;
+};
 
 // Add the AI system to ECSpresso
 export function addAISystemToEngine(): void {
   gameEngine.addSystem('aiSystem')
     .setPriority(85) // After input, before movement
-    .addQuery('enemies', {
-      with: ['position', 'enemy']
-    })
-    .addQuery('players', {
-      with: ['position', 'player']
-    })
-    .addQuery('obstacles', {
-      with: ['position', 'collider']
-    })
+    .addQuery('enemies', enemyQuery)
+    .addQuery('players', playerQuery)
+    .addQuery('obstacles', obstacleQuery)
     .setProcess((queries) => {
       const currentTime = performance.now();
       
@@ -99,7 +81,7 @@ export function addAISystemToEngine(): void {
 function processEnemyAI(
   enemy: EnemyEntity,
   player: PlayerEntity,
-  obstacles: Entity[],
+  obstacles: ObstacleEntity[],
   currentTime: number
 ): void {
   const enemyPos = enemy.components.position;
@@ -209,7 +191,7 @@ function calculateMoveInterval(behaviorType: AIBehaviorType, player: PlayerEntit
 function processChaseAI(
   enemy: EnemyEntity,
   player: PlayerEntity,
-  obstacles: Entity[],
+  obstacles: ObstacleEntity[],
   currentTime: number,
   aiState: AIState
 ): { x: number, y: number } {
@@ -264,7 +246,7 @@ function processChaseAI(
  */
 function processPatrolAI(
   enemy: EnemyEntity,
-  _obstacles: Entity[],
+  _obstacles: ObstacleEntity[],
   _currentTime: number,
   _aiState: AIState
 ): { x: number, y: number } {
@@ -303,7 +285,7 @@ function processPatrolAI(
  */
 function processRandomAI(
   enemy: EnemyEntity,
-  _obstacles: Entity[],
+  _obstacles: ObstacleEntity[],
   _currentTime: number,
   _aiState: AIState
 ): { x: number, y: number } {
@@ -336,7 +318,7 @@ function processRandomAI(
  */
 function processGuardAI(
   enemy: EnemyEntity,
-  _obstacles: Entity[],
+  _obstacles: ObstacleEntity[],
   _currentTime: number,
   _aiState: AIState
 ): { x: number, y: number } {
@@ -382,7 +364,7 @@ function processGuardAI(
 /**
  * Check if a grid position is blocked by obstacles
  */
-function isPositionBlocked(gridX: number, gridY: number, _obstacles: Entity[]): boolean {
+function isPositionBlocked(gridX: number, gridY: number, _obstacles: ObstacleEntity[]): boolean {
   // For now, only check boundaries (no obstacle collision implemented yet)
   return gridX < 0 || gridX >= GRID_WIDTH || 
          gridY < 0 || gridY >= GRID_HEIGHT;
