@@ -101,10 +101,10 @@ function processEnemyAI(
       path: [],
       pathIndex: 0,
       lastPathUpdate: 0
-    } as AIState;
+    };
   }
   
-  const aiState = enemyData.aiState as AIState;
+  const aiState = enemyData.aiState;
   
   // Determine next move based on behavior type
   let nextGridX = Math.round(enemyPos.x / CELL_SIZE);
