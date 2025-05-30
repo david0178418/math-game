@@ -77,6 +77,15 @@ export function addRenderSystemToEngine(): void {
     .addQuery('mathProblems', {
       with: ['position', 'mathProblem']
     })
+    .setOnInitialize((_ecs) => {
+      console.log('🎨 Render system initialized');
+      // Could set up additional rendering resources here
+    })
+    .setOnDetach((_ecs) => {
+      console.log('🎨 Render system detached');
+      // Clean up rendering resources
+      cleanupRenderSystem();
+    })
     .setProcess((queries) => {
       if (!ctx || !canvas) return;
       

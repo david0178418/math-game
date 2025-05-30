@@ -41,6 +41,12 @@ export function addMovementSystemToEngine(): void {
         if (newPixelX !== position.x || newPixelY !== position.y) {
           position.x = newPixelX;
           position.y = newPixelY;
+          
+          // Publish player moved event
+          gameEngine.eventBus.publish('playerMoved', {
+            x: newPixelX,
+            y: newPixelY
+          });
         }
         
         // Clear input state after processing (prevents continuous movement)

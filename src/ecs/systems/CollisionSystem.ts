@@ -83,6 +83,12 @@ function handlePlayerProblemCollision(
   // Mark problem as consumed
   mathProblemComp.consumed = true;
   
+  // Publish problem solved event
+  gameEngine.eventBus.publish('problemSolved', {
+    value: mathProblemComp.value,
+    correct: mathProblemComp.isCorrect
+  });
+  
   // Update score based on correctness
   if (mathProblemComp.isCorrect) {
     // Correct answer: increase score
@@ -119,7 +125,7 @@ function handlePlayerProblemCollision(
  */
 function handlePlayerEnemyCollision(
   player: any, 
-  _enemy: any
+  enemy: any
 ): void {
   const playerComp = player.components.player;
   const healthComp = player.components.health;
@@ -130,6 +136,12 @@ function handlePlayerEnemyCollision(
   }
   
   console.log('Player hit by enemy!');
+  
+  // Publish enemy collision event
+  gameEngine.eventBus.publish('enemyCollision', {
+    playerId: player.id,
+    enemyId: enemy.id
+  });
   
   // Lose a life
   playerComp.lives -= 1;
