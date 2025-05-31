@@ -6,7 +6,18 @@ export { GAME_CONFIG };
 
 // Define component type interfaces
 export interface Components {
-  position: { x: number; y: number };
+  position: { 
+    x: number; 
+    y: number;
+    // Animation properties for smooth grid movement
+    targetX?: number;
+    targetY?: number;
+    isAnimating?: boolean;
+    animationStartTime?: number;
+    animationDuration?: number;
+    animationStartX?: number;
+    animationStartY?: number;
+  };
   renderable: { 
     shape: 'circle' | 'rectangle'; 
     color: string; 
@@ -51,11 +62,16 @@ export interface Components {
   };
 }
 
-// Define event types (for future use)
+// Define event types for type safety
 export interface Events {
   playerMoved: { x: number; y: number };
   problemSolved: { value: number; correct: boolean };
   enemyCollision: { playerId: number; enemyId: number };
+  scoreChanged: { newScore: number; oldScore: number };
+  livesChanged: { newLives: number; oldLives: number };
+  enemyKilled: { x: number; y: number };
+  difficultyChanged: { newDifficulty: string };
+  animationComplete: { entityId: number; x: number; y: number };
 }
 
 // Define resource types (for future use)

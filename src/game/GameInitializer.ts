@@ -13,6 +13,9 @@ import {
   gridToPixel 
 } from '../ecs/systems/MovementSystem';
 import { 
+  addAnimationSystemToEngine 
+} from '../ecs/systems/AnimationSystem';
+import { 
   initializeRenderSystem, 
   addRenderSystemToEngine 
 } from '../ecs/systems/RenderSystem';
@@ -44,8 +47,6 @@ export class GameInitializer {
     uiManager.showScreen('menu');
   }
 
-
-
   /**
    * Initialize all ECS systems
    */
@@ -58,14 +59,58 @@ export class GameInitializer {
 
     // Add all non-render systems to engine in priority order
     addInputSystemToEngine();       // Priority 100 - Input handling
-    addMovementSystemToEngine();    // Priority 90  - Movement processing
     addAISystemToEngine();          // Priority 85  - AI behavior
+    addMovementSystemToEngine();    // Priority 80  - Movement processing
+    addAnimationSystemToEngine();   // Priority 75  - Animation (after movement)
     addCollisionSystemToEngine();   // Priority 70  - Collision detection
     addUISystemToEngine();          // Priority 50  - UI updates
     addEnemySpawnSystemToEngine();  // Priority 40  - Enemy spawning
     addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
 
-    console.log('Core Phase 6 systems initialized (render system will be added when canvas is ready)');
+    console.log('Core systems initialized (render system will be added when canvas is ready)');
+  }
+
+  /**
+   * Set up integration between UI and game systems
+   */
+  private setupUIIntegration(): void {
+    // Override the UIManager's startGame method to properly initialize entities
+    const originalStartGame = uiManager['startGame'].bind(uiManager);
+    uiManager['startGame'] = () => {
+      // First show the playing screen to create the canvas element
+      originalStartGame();
+      
+      // Then set up the canvas and game entities
+      setTimeout(() => {
+        this.setupCanvas();
+        this.createEntities();
+        this.startGame();
+      }, 0); // Use setTimeout to ensure DOM update completes
+    };
+  }
+
+  /**
+   * Get and validate the canvas element, initialize render system
+   */
+  private setupCanvas(): void {
+    this.canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
+    if (!this.canvas) {
+      throw new Error('Canvas element not found');
+    }
+
+    // Now initialize render system with the canvas
+    initializeRenderSystem(this.canvas);
+    addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
+    
+    console.log('Render system initialized');
+  }
+
+  /**
+   * Start the game loop
+   */
+  private startGame(): void {
+    startGameLoop();
+    console.log('Math Game Phase 6 started successfully!');
   }
 
   /**
@@ -121,48 +166,5 @@ export class GameInitializer {
   private createInitialEnemies(): void {
     // Start with no enemies - they will be spawned dynamically by the EnemySpawnSystem
     console.log('Starting with 0 enemies - they will spawn dynamically from edges');
-  }
-
-  /**
-   * Set up integration between UI and game systems
-   */
-  private setupUIIntegration(): void {
-    // Override the UIManager's startGame method to properly initialize entities
-    const originalStartGame = uiManager['startGame'].bind(uiManager);
-    uiManager['startGame'] = () => {
-      // First show the playing screen to create the canvas element
-      originalStartGame();
-      
-      // Then set up the canvas and game entities
-      setTimeout(() => {
-        this.setupCanvas();
-        this.createEntities();
-        this.startGame();
-      }, 0); // Use setTimeout to ensure DOM update completes
-    };
-  }
-
-  /**
-   * Get and validate the canvas element, initialize render system
-   */
-  private setupCanvas(): void {
-    this.canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
-    if (!this.canvas) {
-      throw new Error('Canvas element not found');
-    }
-
-    // Now initialize render system with the canvas
-    initializeRenderSystem(this.canvas);
-    addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
-    
-    console.log('Render system initialized');
-  }
-
-  /**
-   * Start the game loop
-   */
-  private startGame(): void {
-    startGameLoop();
-    console.log('Math Game Phase 6 started successfully!');
   }
 } 

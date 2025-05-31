@@ -12,7 +12,7 @@ const keyPressed = {
   KeyD: false,
   Space: false,
   Enter: false,
-} as const;
+};
 
 // Previous key state for edge detection
 const prevKeyState = {
@@ -26,7 +26,15 @@ const prevKeyState = {
   KeyD: false,
   Space: false,
   Enter: false,
-} as const;
+};
+
+// Type for valid key codes
+type ValidKeyCode = keyof typeof keyPressed;
+
+// Type guard to check if a key code is valid
+function isValidKeyCode(code: string): code is ValidKeyCode {
+  return code in keyPressed;
+}
 
 // Initialize input system
 export function initializeInputSystem(): void {
@@ -47,17 +55,17 @@ export function cleanupInputSystem(): void {
 
 // Handle key down events
 function handleKeyDown(event: KeyboardEvent): void {
-  if (event.code in keyPressed) {
+  if (isValidKeyCode(event.code)) {
     event.preventDefault();
-    (keyPressed as Record<string, boolean>)[event.code] = true;
+    keyPressed[event.code] = true;
   }
 }
 
 // Handle key up events
 function handleKeyUp(event: KeyboardEvent): void {
-  if (event.code in keyPressed) {
+  if (isValidKeyCode(event.code)) {
     event.preventDefault();
-    (keyPressed as Record<string, boolean>)[event.code] = false;
+    keyPressed[event.code] = false;
   }
 }
 
@@ -89,9 +97,9 @@ export function addInputSystemToEngine(): void {
       }
       
       // Update previous key state for next frame
-      Object.keys(prevKeyState).forEach(key => {
-        (prevKeyState as Record<string, boolean>)[key] = (keyPressed as Record<string, boolean>)[key];
-      });
+      for (const key of Object.keys(prevKeyState) as ValidKeyCode[]) {
+        prevKeyState[key] = keyPressed[key];
+      }
     })
     .build();
 }

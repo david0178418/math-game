@@ -8,6 +8,7 @@ import {
   type PlayerEntity
 } from '../queries';
 import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
+import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
 
 /**
  * AI System
@@ -47,14 +48,24 @@ export function addAISystemToEngine(): void {
     .addQuery('players', playerQuery)
     .addQuery('obstacles', obstacleQuery)
     .setProcess((queries) => {
-      const currentTime = performance.now();
+      const currentTime = Date.now();
+      const enemies = queries.enemies;
+      const players = queries.players;
+      const obstacles = queries.obstacles;
+      
+      // Skip if no player exists
+      if (players.length === 0) return;
+      
+      const player = players[0]; // Use first player for AI targeting
       
       // Process each enemy
-      for (const enemy of queries.enemies) {
-        const player = queries.players[0]; // Assume single player
-        if (player) {
-          processEnemyAI(enemy, player, queries.obstacles, currentTime);
+      for (const enemy of enemies) {
+        // Skip if enemy is currently animating (prevent movement during transitions)
+        if (isEntityAnimating(enemy.components.position)) {
+          continue;
         }
+        
+        processEnemyAI(enemy, player, obstacles, currentTime);
       }
     })
     .build();
@@ -128,13 +139,19 @@ function processEnemyAI(
     }
   }
   
-  // Apply the movement (convert grid to pixel coordinates)
+  // Apply the movement using smooth animation (convert grid to pixel coordinates)
   const newPixelPos = gridToPixel(nextGridX, nextGridY);
-  enemyPos.x = newPixelPos.x;
-  enemyPos.y = newPixelPos.y;
   
-  // Set next move time
-  enemyData.nextMoveTime = currentTime + moveInterval;
+  // Only animate if position actually changed
+  if (newPixelPos.x !== enemyPos.x || newPixelPos.y !== enemyPos.y) {
+    startMovementAnimation(enemyPos, newPixelPos.x, newPixelPos.y);
+  }
+  
+  // Set next move time with some randomization
+  const baseInterval = moveInterval;
+  const randomVariation = baseInterval * 0.2; // ±20% variation
+  const variation = (Math.random() - 0.5) * randomVariation;
+  enemyData.nextMoveTime = currentTime + baseInterval + variation;
 }
 
 /**

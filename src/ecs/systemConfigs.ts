@@ -40,6 +40,7 @@ export const SYSTEM_PRIORITIES = {
   INPUT: 100,                   // Input handling
   AI: 85,                       // AI behavior
   MOVEMENT: 80,                 // Movement processing
+  ANIMATION: 75,                // Animation interpolation (after movement, before collision)
   COLLISION: 70,                // Collision detection
   UI: 50,                       // UI updates
   ENEMY_SPAWN: 40,              // Enemy spawning

@@ -1,10 +1,12 @@
 import { gameEngine } from '../Engine';
 import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
+import { SYSTEM_PRIORITIES } from '../systemConfigs';
 
 // Add the movement system to ECSpresso
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
-    .setPriority(90) // High priority, but after input system and AI system
+    .setPriority(SYSTEM_PRIORITIES.MOVEMENT)
     .addQuery('playerEntities', {
       with: ['position', 'player']
     })
@@ -13,6 +15,16 @@ export function addMovementSystemToEngine(): void {
       for (const entity of queries.playerEntities) {
         const position = entity.components.position;
         const player = entity.components.player;
+        
+        // Skip if already animating (prevent input during transitions)
+        if (isEntityAnimating(position)) {
+          // Clear input state to prevent queuing
+          player.inputState.up = false;
+          player.inputState.down = false;
+          player.inputState.left = false;
+          player.inputState.right = false;
+          continue;
+        }
         
         // Convert current pixel position to grid coordinates
         const currentGridX = Math.round(position.x / CELL_SIZE);
@@ -37,12 +49,11 @@ export function addMovementSystemToEngine(): void {
         const newPixelX = newGridX * CELL_SIZE;
         const newPixelY = newGridY * CELL_SIZE;
         
-        // Update position if it changed
+        // Start animation if position changed
         if (newPixelX !== position.x || newPixelY !== position.y) {
-          position.x = newPixelX;
-          position.y = newPixelY;
+          startMovementAnimation(position, newPixelX, newPixelY);
           
-          // Publish player moved event
+          // Publish player moved event (with target position)
           gameEngine.eventBus.publish('playerMoved', {
             x: newPixelX,
             y: newPixelY

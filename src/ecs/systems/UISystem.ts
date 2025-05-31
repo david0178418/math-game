@@ -109,6 +109,10 @@ function updateLivesDisplay(lives: number): void {
 function checkIfPlayerCanEat(player: PlayerEntity, mathProblems: MathProblemEntity[]): boolean {
   const playerPos = player.components.position;
   
+  // Use target position if player is animating, otherwise use current position
+  const checkX = playerPos.isAnimating && playerPos.targetX != null ? playerPos.targetX : playerPos.x;
+  const checkY = playerPos.isAnimating && playerPos.targetY != null ? playerPos.targetY : playerPos.y;
+  
   for (const problem of mathProblems) {
     const problemPos = problem.components.position;
     const mathProblemComp = problem.components.mathProblem;
@@ -117,8 +121,8 @@ function checkIfPlayerCanEat(player: PlayerEntity, mathProblems: MathProblemEnti
     if (mathProblemComp.consumed) continue;
     
     // Check if player is on the same grid position as a math problem
-    const sameX = Math.abs(playerPos.x - problemPos.x) < 10; // Small tolerance
-    const sameY = Math.abs(playerPos.y - problemPos.y) < 10;
+    const sameX = Math.abs(checkX - problemPos.x) < 10; // Small tolerance
+    const sameY = Math.abs(checkY - problemPos.y) < 10;
     
     if (sameX && sameY) {
       return true;

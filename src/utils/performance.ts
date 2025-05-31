@@ -149,11 +149,13 @@ export function throttle<T extends (...args: any[]) => any>(
  */
 export function getMemoryUsage(): { used: number; total: number } | null {
   if ('memory' in performance) {
-    const memory = (performance as any).memory;
+    const memory: any = performance.memory;
+
     return {
       used: Math.round(memory.usedJSHeapSize / 1024 / 1024), // MB
       total: Math.round(memory.totalJSHeapSize / 1024 / 1024), // MB
     };
   }
+
   return null;
 } 
