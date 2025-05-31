@@ -6,10 +6,10 @@ import { GameInitializer } from './game/GameInitializer';
  */
 async function main(): Promise<void> {
   try {
-    // Show loading state
+    // Show loading state with Tailwind classes
     const appElement = document.querySelector<HTMLDivElement>('#app')!;
     appElement.innerHTML = `
-      <div class="game-loading">Loading Math Game...</div>
+      <div class="game-loading text-blue-400 font-bold">Loading Math Game...</div>
     `;
 
     // Note: GameStyles.apply() removed - UIManager handles all styling now
@@ -27,9 +27,9 @@ async function main(): Promise<void> {
     // Show error state
     document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <div class="game-error">
-        <div>
-          <h2>Failed to Load Game</h2>
-          <p>An error occurred while loading the Math Game.</p>
+        <div class="bg-red-600 text-white p-8 rounded-lg shadow-lg">
+          <h2 class="text-2xl font-bold mb-4">Failed to Load Game</h2>
+          <p class="mb-2">An error occurred while loading the Math Game.</p>
           <p>Please refresh the page to try again.</p>
         </div>
       </div>
