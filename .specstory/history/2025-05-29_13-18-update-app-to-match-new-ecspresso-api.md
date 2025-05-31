@@ -6836,31 +6836,268 @@ Let me update the layer configuration and entity creation:
 
 ---
 
+Now I need to update the EntityFactory to use the new PLAYER layer for the player entity:
+
+---
+
+```diff
+          color: GAME_CONFIG.COLORS.PLAYER, 
+          size: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+-         layer: GAME_CONFIG.LAYERS.ENTITIES 
++         layer: GAME_CONFIG.LAYERS.PLAYER 
+        },
+        player: { 
+```
+
+---
+
+Now let me check how the render system processes layers to make sure it respects the layer ordering:
+
+---
+
+Read file: src/ecs/systems/RenderSystem.ts
+
+---
+
+Perfect! I can see that the render system is already correctly sorting entities by layer in line 98-100:
+
+```typescript
+// Sort entities by layer (lower layer numbers render first)
+const sortedEntities = [...queries.renderableEntities].sort((a, b) => 
+  a.components.renderable.layer - b.components.renderable.layer
+);
+```
+
+This means that with my changes:
+1. Math problems (layer 1) render first
+2. Enemies (layer 2) render second  
+3. Player (layer 3) renders last (on top)
+
+Let me build to make sure everything compiles correctly:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 22 modules transformed.
+dist/index.html                  1.01 kB │ gzip:  0.50 kB
+dist/assets/index-C8bCv55o.css  29.87 kB │ gzip:  6.07 kB
+dist/assets/index-BhO6aEd9.js   52.81 kB │ gzip: 14.67 kB │ map: 171.33 kB
+✓ built in 146ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Perfect! Let me start the development server so you can test the changes:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+## Summary
+
+I've successfully fixed the rendering order to ensure the player is always rendered over enemies by implementing a proper layer system:
+
+### Changes Made:
+
+1. **Updated Layer Configuration (`src/game/config.ts`)**:
+   - Added a new `PLAYER: 3` layer above the existing `ENTITIES: 2` layer
+   - Clear hierarchy: Math Problems (1) → Enemies (2) → Player (3) → UI (10)
+
+2. **Updated Player Entity Creation (`src/ecs/Engine.ts`)**:
+   - Changed player entity to use `GAME_CONFIG.LAYERS.PLAYER` instead of `GAME_CONFIG.LAYERS.ENTITIES`
+   - Enemies continue to use the `ENTITIES` layer
+
+### How It Works:
+
+The **RenderSystem** already had proper layer sorting in place:
+```typescript
+// Sort entities by layer (lower layer numbers render first)
+const sortedEntities = [...queries.renderableEntities].sort((a, b) => 
+  a.components.renderable.layer - b.components.renderable.layer
+);
+```
+
+### Rendering Order (Low to High):
+1. **Background & Grid** (layer 0)
+2. **Math Problems** (layer 1) 
+3. **Enemies** (layer 2)
+4. **Player** (layer 3) ← **Always on top**
+5. **UI Elements** (layer 10)
+
+The player will now **always** be rendered above enemies, regardless of entity creation order or position. The development server is running and ready for testing!
+
+---
+
+_**User**_
+
+Now, ensure that enemies don't move into squares that are occupied by other enemies.
+
+---
+
+_**Assistant**_
+
 
 
 ---
 
-
-
----
-
-
+I need to modify the AI system to prevent enemies from moving into squares occupied by other enemies. Let me first examine the current collision detection in the AI system:
 
 ---
 
-
-
----
-
-
+Read file: src/ecs/systems/AISystem.ts
 
 ---
 
+I can see that the current `isPositionBlocked` function only checks grid boundaries but not for enemy collisions. I need to enhance the AI system to:
 
+1. Pass the list of enemies to the collision detection functions
+2. Modify `isPositionBlocked` to check for enemy positions
+3. Update all AI behavior functions to use the enhanced collision detection
+
+Let me start by modifying the AI system:
 
 ---
 
+```diff
+          }
+          
+-         processEnemyAI(enemy, player, obstacles, currentTime);
++         processEnemyAI(enemy, player, obstacles, enemies, currentTime);
+        }
+      })
+```
 
+```diff
+    player: PlayerEntity,
+    obstacles: ObstacleEntity[],
++   allEnemies: EnemyEntity[],
+    currentTime: number
+  ): void {
+```
+
+```diff
+    switch (enemyData.behaviorType) {
+      case 'chase': {
+-       const result = processChaseAI(enemy, player, obstacles, currentTime, aiState);
++       const result = processChaseAI(enemy, player, obstacles, allEnemies, currentTime, aiState);
+        nextGridX = result.x;
+        nextGridY = result.y;
+        break;
+      }
+      case 'patrol': {
+-       const result = processPatrolAI(enemy, obstacles, currentTime, aiState);
++       const result = processPatrolAI(enemy, obstacles, allEnemies, currentTime, aiState);
+        nextGridX = result.x;
+        nextGridY = result.y;
+        break;
+      }
+      case 'random': {
+-       const result = processRandomAI(enemy, obstacles, currentTime, aiState);
++       const result = processRandomAI(enemy, obstacles, allEnemies, currentTime, aiState);
+        nextGridX = result.x;
+        nextGridY = result.y;
+        break;
+      }
+      case 'guard': {
+-       const result = processGuardAI(enemy, obstacles, currentTime, aiState);
++       const result = processGuardAI(enemy, obstacles, allEnemies, currentTime, aiState);
+        nextGridX = result.x;
+        nextGridY = result.y;
+        break;
+      }
+      default: {
+-       const result = processRandomAI(enemy, obstacles, currentTime, aiState);
++       const result = processRandomAI(enemy, obstacles, allEnemies, currentTime, aiState);
+        nextGridX = result.x;
+        nextGridY = result.y;
+```
+
+```diff
+    player: PlayerEntity,
+    obstacles: ObstacleEntity[],
++   allEnemies: EnemyEntity[],
+    currentTime: number,
+    aiState: AIState
+```
+
+```diff
+    if (distance > AI_CONFIG.DETECTION_RANGE) {
+      // Player too far, switch to random movement
+-     return processRandomAI(enemy, obstacles, currentTime, aiState);
++     return processRandomAI(enemy, obstacles, allEnemies, currentTime, aiState);
+    }
+    
+```
+
+```diff
+  function processPatrolAI(
+    enemy: EnemyEntity,
+-   _obstacles: ObstacleEntity[],
+-   _currentTime: number,
+-   _aiState: AIState
++   obstacles: ObstacleEntity[],
++   allEnemies: EnemyEntity[],
++   currentTime: number,
++   aiState: AIState
+  ): { x: number, y: number } {
+    const enemyData = enemy.components.enemy;
+```
+
+```diff
+  function processRandomAI(
+    enemy: EnemyEntity,
+-   _obstacles: ObstacleEntity[],
+-   _currentTime: number,
+-   _aiState: AIState
++   obstacles: ObstacleEntity[],
++   allEnemies: EnemyEntity[],
++   currentTime: number,
++   aiState: AIState
+  ): { x: number, y: number } {
+    const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
+```
+
+```diff
+    
+    // If the chosen position is blocked, stay in place
+-   if (isPositionBlocked(nextX, nextY, _obstacles)) {
++   if (isPositionBlocked(nextX, nextY, obstacles)) {
+      nextX = currentGrid.x;
+      nextY = currentGrid.y;
+```
+
+```diff
+  function processGuardAI(
+    enemy: EnemyEntity,
+-   _obstacles: ObstacleEntity[],
+-   _currentTime: number,
+-   _aiState: AIState
++   obstacles: ObstacleEntity[],
++   allEnemies: EnemyEntity[],
++   currentTime: number,
++   aiState: AIState
+  ): { x: number, y: number } {
+    const enemyData = enemy.components.enemy;
+```
+
+---
+
+Now I need to update all the AI behavior functions to use enemy collision detection:
 
 ---
 
