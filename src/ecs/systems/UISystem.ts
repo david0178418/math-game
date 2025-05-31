@@ -1,30 +1,23 @@
 import { gameEngine } from '../Engine';
 import { uiManager } from '../../game/UIManager';
-import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
-import type { Components } from '../Engine';
+import { 
+  playerQuery, 
+  mathProblemQuery,
+  type PlayerEntity,
+  type MathProblemEntity
+} from '../queries';
+import { SYSTEM_PRIORITIES } from '../systemConfigs';
+import { getPlayerDifficultyLevel } from '../gameUtils';
 
 /**
  * UI System
  * Handles updating the user interface elements based on game state
  */
 
-// Create reusable query definitions
-const playerQuery = createQueryDefinition({
-  with: ['player', 'position']
-});
-
-const mathProblemQuery = createQueryDefinition({
-  with: ['position', 'mathProblem']
-});
-
-// Extract entity types using ECSpresso utilities
-type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
-type MathProblemEntity = QueryResultEntity<Components, typeof mathProblemQuery>;
-
 // Add the UI system to ECSpresso
 export function addUISystemToEngine(): void {
   gameEngine.addSystem('uiSystem')
-    .setPriority(50) // Lower priority, runs after game logic
+    .setPriority(SYSTEM_PRIORITIES.UI)
     .addQuery('players', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)
     .setProcess((queries) => {
@@ -37,8 +30,7 @@ export function addUISystemToEngine(): void {
           const playerComp = player.components.player;
           
           // Update the new UI manager's gameplay UI
-          const level = playerComp.score < 50 ? 'Easy' : 
-                       playerComp.score < 200 ? 'Medium' : 'Hard';
+          const level = getPlayerDifficultyLevel(player);
           uiManager.updateGameplayUI(playerComp.score, playerComp.lives, level);
           
           // Check if player is on a consumable math problem

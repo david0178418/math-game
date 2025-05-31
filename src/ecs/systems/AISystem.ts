@@ -1,33 +1,31 @@
 import { gameEngine } from '../Engine';
 import { pixelToGrid, gridToPixel } from './MovementSystem';
 import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
-import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
-
-// Import Components type from Engine for use with QueryResultEntity
-import type { Components } from '../Engine';
+import { 
+  enemyQuery, 
+  playerQuery,
+  type EnemyEntity,
+  type PlayerEntity
+} from '../queries';
+import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 
 /**
  * AI System
  * Handles AI behavior for enemy entities using grid-based movement like Number Munchers
  */
 
-// Create reusable query definitions
-const enemyQuery = createQueryDefinition({
-  with: ['position', 'enemy']
-});
-
-const playerQuery = createQueryDefinition({
-  with: ['position', 'player']
-});
-
-const obstacleQuery = createQueryDefinition({
+// Define obstacle query locally since it's specific to AI system
+const obstacleQuery = {
   with: ['position', 'collider']
-});
+} as const;
 
-// Extract entity types using ECSpresso utilities
-type EnemyEntity = QueryResultEntity<Components, typeof enemyQuery>;
-type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
-type ObstacleEntity = QueryResultEntity<Components, typeof obstacleQuery>;
+type ObstacleEntity = { 
+  id: number; 
+  components: { 
+    position: { x: number; y: number };
+    collider: { width: number; height: number; group: string };
+  };
+};
 
 // AI behavior types
 export type AIBehaviorType = 'chase' | 'patrol' | 'random' | 'guard';
@@ -41,23 +39,10 @@ interface AIState {
   lastPathUpdate: number;
 }
 
-// Configuration for AI behavior
-const AI_CONFIG = {
-  BASE_MOVE_INTERVAL: 1500,       // Base milliseconds between enemy moves (slowed down)
-  MIN_MOVE_INTERVAL: 800,         // Minimum move interval (fastest)
-  PATH_UPDATE_INTERVAL: 2000,     // Update pathfinding every 2 seconds
-  DETECTION_RANGE: 6,             // Grid cells within which AI detects player
-  CHASE_SPEED_MULTIPLIER: 0.8,    // Chase moves slightly faster
-  PATROL_SPEED_MULTIPLIER: 1.2,   // Patrol moves slower
-  RANDOM_SPEED_MULTIPLIER: 1.0,   // Random normal speed
-  GUARD_SPEED_MULTIPLIER: 1.5,    // Guard moves slowest
-  DIFFICULTY_SCALE_SCORE: 100,    // Score points per difficulty increase
-};
-
 // Add the AI system to ECSpresso
 export function addAISystemToEngine(): void {
   gameEngine.addSystem('aiSystem')
-    .setPriority(85) // After input, before movement
+    .setPriority(SYSTEM_PRIORITIES.AI)
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
     .addQuery('obstacles', obstacleQuery)

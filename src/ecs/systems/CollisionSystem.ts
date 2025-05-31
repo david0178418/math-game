@@ -1,38 +1,27 @@
 import { gameEngine } from '../Engine';
-import { sameGridPosition } from './MovementSystem';
-import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
-import type { Components } from '../Engine';
+import { sameGridPosition } from '../gameUtils';
+import { 
+  playerWithHealthQuery, 
+  mathProblemWithRenderableQuery, 
+  enemyWithColliderQuery,
+  type PlayerEntityWithHealth,
+  type MathProblemEntityWithRenderable,
+  type EnemyEntityWithCollider
+} from '../queries';
+import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 
 /**
  * Collision Detection System
  * Handles collisions between entities, particularly player-problem interactions
  */
 
-// Create reusable query definitions
-const playerQuery = createQueryDefinition({
-  with: ['position', 'player', 'collider', 'health']
-});
-
-const mathProblemQuery = createQueryDefinition({
-  with: ['position', 'mathProblem', 'collider', 'renderable']
-});
-
-const enemyQuery = createQueryDefinition({
-  with: ['position', 'enemy', 'collider']
-});
-
-// Extract entity types using ECSpresso utilities
-type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
-type MathProblemEntity = QueryResultEntity<Components, typeof mathProblemQuery>;
-type EnemyEntity = QueryResultEntity<Components, typeof enemyQuery>;
-
 // Add the collision system to ECSpresso
 export function addCollisionSystemToEngine(): void {
   gameEngine.addSystem('collisionSystem')
-    .setPriority(70) // After movement, before rendering
-    .addQuery('players', playerQuery)
-    .addQuery('mathProblems', mathProblemQuery)
-    .addQuery('enemies', enemyQuery)
+    .setPriority(SYSTEM_PRIORITIES.COLLISION)
+    .addQuery('players', playerWithHealthQuery)
+    .addQuery('mathProblems', mathProblemWithRenderableQuery)
+    .addQuery('enemies', enemyWithColliderQuery)
     .setProcess((queries) => {
       const currentTime = performance.now();
       
@@ -83,8 +72,8 @@ export function addCollisionSystemToEngine(): void {
  * Handle collision between player and math problem
  */
 function handlePlayerProblemCollision(
-  player: PlayerEntity, 
-  problem: MathProblemEntity
+  player: PlayerEntityWithHealth, 
+  problem: MathProblemEntityWithRenderable
 ): void {
   const playerComp = player.components.player;
   const mathProblemComp = problem.components.mathProblem;
@@ -136,8 +125,8 @@ function handlePlayerProblemCollision(
  * Handle collision between player and enemy
  */
 function handlePlayerEnemyCollision(
-  player: PlayerEntity, 
-  enemy: EnemyEntity
+  player: PlayerEntityWithHealth, 
+  enemy: EnemyEntityWithCollider
 ): void {
   const playerComp = player.components.player;
   const healthComp = player.components.health;
@@ -161,9 +150,9 @@ function handlePlayerEnemyCollision(
   
   console.log(`Lives remaining: ${playerComp.lives}`);
   
-  // Set invulnerability period (2 seconds)
+  // Set invulnerability period using centralized config
   healthComp.invulnerable = true;
-  healthComp.invulnerabilityTime = performance.now() + 2000;
+  healthComp.invulnerabilityTime = performance.now() + COLLISION_CONFIG.INVULNERABILITY_DURATION;
   
   // Check for game over
   if (playerComp.lives <= 0) {

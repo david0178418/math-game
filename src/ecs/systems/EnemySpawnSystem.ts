@@ -1,40 +1,25 @@
 import { gameEngine, EntityFactory } from '../Engine';
 import { GRID_WIDTH, GRID_HEIGHT } from '../../game/config';
-import { gridToPixel } from './MovementSystem';
-import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
-import type { Components } from '../Engine';
+import { gridToPixel } from '../gameUtils';
+import { 
+  enemyQuery, 
+  playerQuery,
+  type PlayerEntity
+} from '../queries';
+import { ENEMY_SPAWN_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
+import { calculateDifficultyInterval } from '../gameUtils';
 
 /**
  * Enemy Spawn System
  * Manages dynamic enemy spawning from grid edges with difficulty scaling
  */
 
-// Create reusable query definitions
-const enemyQuery = createQueryDefinition({
-  with: ['enemy', 'position']
-});
-
-const playerQuery = createQueryDefinition({
-  with: ['player']
-});
-
-// Extract entity types using ECSpresso utilities
-type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
-
-// Configuration for enemy spawning
-const ENEMY_SPAWN_CONFIG = {
-  MAX_ENEMIES: 4,               // Maximum enemies on board
-  BASE_SPAWN_INTERVAL: 8000,    // Base spawn interval in milliseconds (8 seconds)
-  MIN_SPAWN_INTERVAL: 3000,     // Minimum spawn interval (3 seconds)
-  DIFFICULTY_SCALE_SCORE: 100,  // Score points per difficulty increase
-};
-
 let lastSpawnTime = 0;
 
 // Add the enemy spawn system to ECSpresso
 export function addEnemySpawnSystemToEngine(): void {
   gameEngine.addSystem('enemySpawnSystem')
-    .setPriority(40) // Run after problem management but before render
+    .setPriority(SYSTEM_PRIORITIES.ENEMY_SPAWN)
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
     .setProcess((queries) => {
@@ -61,12 +46,14 @@ function calculateSpawnInterval(player: PlayerEntity): number {
   if (!player) return ENEMY_SPAWN_CONFIG.BASE_SPAWN_INTERVAL;
   
   const score = player.components.player.score;
-  const difficultyLevel = Math.floor(score / ENEMY_SPAWN_CONFIG.DIFFICULTY_SCALE_SCORE);
   
-  // Reduce spawn interval as difficulty increases (enemies spawn faster)
-  const interval = ENEMY_SPAWN_CONFIG.BASE_SPAWN_INTERVAL - (difficultyLevel * 500);
-  
-  return Math.max(interval, ENEMY_SPAWN_CONFIG.MIN_SPAWN_INTERVAL);
+  return calculateDifficultyInterval(
+    ENEMY_SPAWN_CONFIG.BASE_SPAWN_INTERVAL,
+    ENEMY_SPAWN_CONFIG.MIN_SPAWN_INTERVAL,
+    ENEMY_SPAWN_CONFIG.DIFFICULTY_SCALE_SCORE,
+    500, // Reduction per level
+    score
+  );
 }
 
 /**

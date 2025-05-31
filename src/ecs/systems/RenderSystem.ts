@@ -1,24 +1,13 @@
 import { gameEngine } from '../Engine';
 import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
-import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
-import type { Components } from '../Engine';
-
-// Create reusable query definitions
-const renderableEntityQuery = createQueryDefinition({
-  with: ['position', 'renderable']
-});
-
-const playerQuery = createQueryDefinition({
-  with: ['position', 'player']
-});
-
-const mathProblemQuery = createQueryDefinition({
-  with: ['position', 'mathProblem']
-});
-
-// Extract entity types using ECSpresso utilities
-type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
-type MathProblemEntity = QueryResultEntity<Components, typeof mathProblemQuery>;
+import { 
+  renderableEntityQuery, 
+  playerQuery, 
+  mathProblemQuery,
+  type PlayerEntity,
+  type MathProblemEntity
+} from '../queries';
+import { SYSTEM_PRIORITIES } from '../systemConfigs';
 
 // Canvas context and configuration
 let canvas: HTMLCanvasElement | null = null;
@@ -86,7 +75,7 @@ function resizeCanvas(): void {
 // Add the render system to ECSpresso
 export function addRenderSystemToEngine(): void {
   gameEngine.addSystem('renderSystem')
-    .setPriority(10) // Render after all other systems
+    .setPriority(SYSTEM_PRIORITIES.RENDER)
     .addQuery('renderableEntities', renderableEntityQuery)
     .addQuery('players', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)
