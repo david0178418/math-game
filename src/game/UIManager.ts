@@ -25,18 +25,7 @@ export class UIManager {
     if (!this.gameContainer) {
       this.gameContainer = document.createElement('div');
       this.gameContainer.id = 'game-container';
-      this.gameContainer.style.cssText = `
-        width: 100vw;
-        height: 100vh;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Arial', sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      `;
+      this.gameContainer.className = 'w-screen h-screen relative overflow-hidden flex flex-col items-center justify-center font-sans app-background';
       document.body.appendChild(this.gameContainer);
     }
   }
@@ -125,99 +114,37 @@ export class UIManager {
   private createMainMenu(): void {
     const menuScreen = document.createElement('div');
     menuScreen.id = 'main-menu';
-    menuScreen.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      z-index: 1000;
-    `;
+    menuScreen.className = 'absolute inset-0 flex flex-col items-center justify-center app-background text-white z-50';
     
     menuScreen.innerHTML = `
-      <div style="text-align: center; max-width: 600px; padding: 40px;">
-        <h1 style="
-          font-size: 4rem;
-          margin: 0 0 20px 0;
-          text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
-          background: linear-gradient(45deg, #FFD700, #FFA500);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        ">Math Munchers</h1>
+      <div class="text-center max-w-sm md:max-w-2xl px-6 md:px-10 py-8 md:py-16">
+        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 md:mb-6 text-gold drop-shadow-lg">
+          Math Munchers
+        </h1>
         
-        <p style="
-          font-size: 1.2rem;
-          margin: 0 0 40px 0;
-          opacity: 0.9;
-          line-height: 1.6;
-        ">Navigate the grid and collect correct answers while avoiding enemies!</p>
+        <p class="text-base md:text-xl mb-8 md:mb-12 opacity-90 leading-relaxed px-4">
+          Navigate the grid and collect correct answers while avoiding enemies!
+        </p>
         
-        <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
-          <button id="start-game-btn" style="
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.3rem;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            min-width: 200px;
-          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(0, 0, 0, 0.4)'"
-             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.3)'">
-            Start Game
+        <div class="flex flex-col gap-4 md:gap-6 items-center">
+          <button id="start-game-btn" class="btn-success text-white border-none px-8 md:px-12 py-4 md:py-5 text-lg md:text-xl font-semibold rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl w-full md:w-auto min-w-48 md:min-w-56 btn-mobile">
+            🎮 Start Game
           </button>
           
-          <button id="settings-btn" style="
-            background: linear-gradient(45deg, #2196F3, #1976D2);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            min-width: 200px;
-          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.4)'"
-             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.3)'">
-            Settings
+          <button id="settings-btn" class="btn-primary text-white border-none px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-medium rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl w-full md:w-auto min-w-48 md:min-w-56 btn-mobile">
+            ⚙️ Settings
           </button>
           
-          <button id="high-scores-btn" style="
-            background: linear-gradient(45deg, #FF9800, #F57C00);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            min-width: 200px;
-          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.4)'"
-             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.3)'">
-            High Scores
+          <button id="high-scores-btn" class="btn-warning text-white border-none px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-medium rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl w-full md:w-auto min-w-48 md:min-w-56 btn-mobile">
+            🏆 High Scores
           </button>
         </div>
         
-        <div style="
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid rgba(255, 255, 255, 0.3);
-          font-size: 0.9rem;
-          opacity: 0.7;
-        ">
-          <p>Controls: Use WASD or Arrow Keys to move</p>
-          <p>ESC to pause • F1 for settings</p>
+        <div class="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-white/30">
+          <div class="text-xs md:text-sm opacity-70 space-y-1">
+            <p>🎯 Controls: Use WASD or Arrow Keys to move</p>
+            <p>⏸️ ESC to pause • ⚙️ F1 for settings</p>
+          </div>
         </div>
       </div>
     `;
@@ -241,119 +168,51 @@ export class UIManager {
   private createModeSelectScreen(): void {
     const modeSelectScreen = document.createElement('div');
     modeSelectScreen.id = 'mode-select-screen';
-    modeSelectScreen.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      z-index: 1000;
-    `;
+    modeSelectScreen.className = 'absolute inset-0 flex flex-col items-center justify-center app-background text-white z-50';
     
     modeSelectScreen.innerHTML = `
-      <div style="text-align: center; max-width: 600px; padding: 40px;">
-        <h1 style="
-          font-size: 3rem;
-          margin: 0 0 20px 0;
-          text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
-          background: linear-gradient(45deg, #FFD700, #FFA500);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        ">Select Game Mode</h1>
+      <div class="text-center max-w-sm md:max-w-3xl px-4 md:px-8 py-6 md:py-12">
+        <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 text-gold drop-shadow-lg">
+          Select Game Mode
+        </h1>
         
-        <p style="
-          font-size: 1.2rem;
-          margin: 0 0 40px 0;
-          opacity: 0.9;
-          line-height: 1.6;
-        ">Choose a math challenge to begin your adventure!</p>
+        <p class="text-base md:text-xl mb-8 md:mb-12 opacity-90 leading-relaxed px-2">
+          Choose a math challenge to begin your adventure!
+        </p>
         
-        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
-          <div id="multiples-mode" style="
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            min-width: 400px;
-            text-align: left;
-          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(0, 0, 0, 0.4)'"
-             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.3)'">
-            <h3 style="margin: 0 0 10px 0; font-size: 1.5rem;">🔢 Multiples</h3>
-            <p style="margin: 0; font-size: 1rem; opacity: 0.9;">
+        <div class="flex flex-col gap-4 md:gap-6 items-center">
+          <div id="multiples-mode" class="mode-card text-white border-none p-4 md:p-6 rounded-xl shadow-lg cursor-pointer w-full max-w-md md:max-w-lg text-left">
+            <h3 class="text-xl md:text-2xl font-bold mb-2 md:mb-3">🔢 Multiples</h3>
+            <p class="text-sm md:text-base opacity-90 mb-2 md:mb-3">
               Find all multiples of the given number! Start with multiples of 2 and work your way up.
             </p>
-            <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">
+            <div class="text-xs md:text-sm opacity-70">
               Example: For multiples of 2, eat 2, 4, 6, 8, 10, 12...
             </div>
           </div>
           
-          <div id="factors-mode" style="
-            background: linear-gradient(45deg, #9E9E9E, #757575);
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 12px;
-            cursor: not-allowed;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-            min-width: 400px;
-            text-align: left;
-            opacity: 0.6;
-          ">
-            <h3 style="margin: 0 0 10px 0; font-size: 1.5rem;">🧮 Factors (Coming Soon)</h3>
-            <p style="margin: 0; font-size: 1rem; opacity: 0.9;">
+          <div id="factors-mode" class="mode-card disabled text-white border-none p-4 md:p-6 rounded-xl shadow-lg w-full max-w-md md:max-w-lg text-left">
+            <h3 class="text-xl md:text-2xl font-bold mb-2 md:mb-3">🧮 Factors (Coming Soon)</h3>
+            <p class="text-sm md:text-base opacity-90 mb-2 md:mb-3">
               Find all factors of the given number! This mode will be available in a future update.
             </p>
-            <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">
+            <div class="text-xs md:text-sm opacity-70">
               Example: For factors of 12, eat 1, 2, 3, 4, 6, 12...
             </div>
           </div>
           
-          <div id="prime-mode" style="
-            background: linear-gradient(45deg, #9E9E9E, #757575);
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 12px;
-            cursor: not-allowed;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-            min-width: 400px;
-            text-align: left;
-            opacity: 0.6;
-          ">
-            <h3 style="margin: 0 0 10px 0; font-size: 1.5rem;">🔑 Prime Numbers (Coming Soon)</h3>
-            <p style="margin: 0; font-size: 1rem; opacity: 0.9;">
+          <div id="prime-mode" class="mode-card disabled text-white border-none p-4 md:p-6 rounded-xl shadow-lg w-full max-w-md md:max-w-lg text-left">
+            <h3 class="text-xl md:text-2xl font-bold mb-2 md:mb-3">🔑 Prime Numbers (Coming Soon)</h3>
+            <p class="text-sm md:text-base opacity-90 mb-2 md:mb-3">
               Find all prime numbers! Only eat numbers that have exactly two factors.
             </p>
-            <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">
+            <div class="text-xs md:text-sm opacity-70">
               Example: Eat 2, 3, 5, 7, 11, 13...
             </div>
           </div>
         </div>
         
-        <button id="back-to-main-btn" style="
-          background: linear-gradient(45deg, #607D8B, #455A64);
-          color: white;
-          border: none;
-          padding: 12px 30px;
-          font-size: 1.1rem;
-          border-radius: 12px;
-          cursor: pointer;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-          transition: all 0.3s ease;
-          margin-top: 30px;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.4)'"
-           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.3)'">
+        <button id="back-to-main-btn" class="btn-secondary text-white border-none px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-medium rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl mt-6 md:mt-8 btn-mobile">
           ← Back to Menu
         </button>
       </div>
@@ -376,132 +235,50 @@ export class UIManager {
   private createGameplayUI(): void {
     const gameplayScreen = document.createElement('div');
     gameplayScreen.id = 'gameplay-ui';
-    gameplayScreen.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      pointer-events: none;
-      z-index: 100;
-    `;
+    gameplayScreen.className = 'absolute inset-0 flex flex-col pointer-events-none z-10';
     
     gameplayScreen.innerHTML = `
       <!-- Top HUD -->
-      <div id="top-hud" style="
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
-        padding: 15px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        color: white;
-        font-weight: bold;
-        pointer-events: auto;
-      ">
-        <div style="display: flex; gap: 30px; align-items: center;">
-          <div id="score-display" style="
-            font-size: 1.4rem;
-            background: rgba(76, 175, 80, 0.9);
-            padding: 8px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          ">Score: 0</div>
+      <div id="top-hud" class="hud-top absolute top-0 inset-x-0 p-3 md:p-4 lg:p-5 flex flex-wrap justify-between items-center text-white font-bold pointer-events-auto gap-2 md:gap-4">
+        <div class="flex flex-wrap gap-2 md:gap-4 lg:gap-6 items-center">
+          <div id="score-display" class="text-sm md:text-base lg:text-lg bg-green-600/90 px-3 md:px-4 py-2 rounded-lg shadow-md whitespace-nowrap">
+            Score: 0
+          </div>
           
-          <div id="lives-display" style="
-            font-size: 1.4rem;
-            background: rgba(244, 67, 54, 0.9);
-            padding: 8px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          ">Lives: 3</div>
+          <div id="lives-display" class="text-sm md:text-base lg:text-lg bg-red-600/90 px-3 md:px-4 py-2 rounded-lg shadow-md whitespace-nowrap">
+            Lives: 3
+          </div>
           
-          <div id="level-display" style="
-            font-size: 1.2rem;
-            background: rgba(33, 150, 243, 0.9);
-            padding: 8px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          ">Level: Easy</div>
+          <div id="level-display" class="text-xs md:text-sm lg:text-base bg-blue-600/90 px-2 md:px-3 py-1 md:py-2 rounded-lg shadow-md whitespace-nowrap">
+            Level: Easy
+          </div>
         </div>
         
-        <div style="display: flex; gap: 15px; align-items: center;">
-          <button id="pause-btn" style="
-            background: rgba(96, 125, 139, 0.9);
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background 0.2s ease;
-          " onmouseover="this.style.background='rgba(96, 125, 139, 1)'"
-             onmouseout="this.style.background='rgba(96, 125, 139, 0.9)'">⏸️</button>
+        <div class="flex gap-2 md:gap-3 items-center">
+          <button id="pause-btn" class="bg-gray-600/90 text-white border-none px-3 md:px-4 py-2 rounded-md cursor-pointer text-sm md:text-base transition-colors duration-200 hover:bg-gray-600 min-h-10 min-w-10 flex items-center justify-center">
+            ⏸️
+          </button>
         </div>
       </div>
       
       <!-- Objective Display - Above Game Area -->
-      <div id="objective-section" style="
-        position: absolute;
-        top: 80px;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 10px 20px;
-        pointer-events: none;
-        z-index: 150;
-      ">
-        <div id="objective-display" style="
-          font-size: 1.4rem;
-          background: linear-gradient(45deg, rgba(156, 39, 176, 0.95), rgba(233, 30, 99, 0.95));
-          color: white;
-          padding: 12px 24px;
-          border-radius: 12px;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-          text-align: center;
-          font-weight: bold;
-          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-          border: 2px solid rgba(255,255,255,0.2);
-        ">Find multiples of 2!</div>
+      <div id="objective-section" class="absolute top-16 md:top-20 lg:top-24 inset-x-0 flex justify-center items-center px-4 pointer-events-none z-20">
+        <div id="objective-display" class="text-sm md:text-base lg:text-lg bg-gradient-to-r from-purple-600/95 to-pink-600/95 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl shadow-lg text-center font-bold border-2 border-white/20 max-w-xs md:max-w-sm lg:max-w-md">
+          Find multiples of 2!
+        </div>
       </div>
       
       <!-- Game Canvas Container -->
-      <div id="canvas-container" style="
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-top: 130px;
-      ">
-        <canvas id="game-canvas"></canvas>
+      <div id="canvas-container" class="flex-1 flex items-center justify-center mt-24 md:mt-28 lg:mt-32 mb-16 md:mb-20 px-2 md:px-4">
+        <canvas id="game-canvas" class="bg-white rounded-lg shadow-2xl max-w-full max-h-full"></canvas>
       </div>
       
       <!-- Bottom HUD (mobile controls, hints) -->
-      <div id="bottom-hud" style="
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
-        padding: 15px 20px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        pointer-events: auto;
-      ">
-        <div id="hints-display" style="
-          font-size: 1rem;
-          text-align: center;
-          opacity: 0.8;
-        ">Move with WASD or Arrow Keys • Press SPACE to eat tiles • Avoid red enemies</div>
+      <div id="bottom-hud" class="hud-bottom absolute bottom-0 inset-x-0 p-3 md:p-4 lg:p-5 flex justify-center items-center text-white pointer-events-auto">
+        <div id="hints-display" class="text-xs md:text-sm lg:text-base text-center opacity-80 max-w-xs md:max-w-md lg:max-w-lg px-2">
+          <span class="hidden md:inline">Move with WASD or Arrow Keys • Press SPACE to eat tiles • Avoid red enemies</span>
+          <span class="md:hidden">WASD to move • SPACE to eat • Avoid enemies</span>
+        </div>
       </div>
     `;
     
@@ -519,70 +296,56 @@ export class UIManager {
   private createSettingsScreen(): void {
     const settingsScreen = document.createElement('div');
     settingsScreen.id = 'settings-screen';
-    settingsScreen.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      z-index: 1000;
-    `;
+    settingsScreen.className = 'absolute inset-0 flex flex-col items-center justify-center app-background text-white z-50';
     
     settingsScreen.innerHTML = `
-      <div style="text-align: center; max-width: 500px; padding: 40px;">
-        <h2 style="font-size: 2.5rem; margin: 0 0 30px 0; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);">Settings</h2>
+      <div class="text-center max-w-sm md:max-w-lg px-4 md:px-8 py-6 md:py-8">
+        <h2 class="text-3xl md:text-4xl font-bold mb-6 md:mb-8 text-gold drop-shadow-lg">⚙️ Settings</h2>
         
-        <div style="display: flex; flex-direction: column; gap: 20px; text-align: left;">
-          <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 12px;">
-            <h3 style="margin: 0 0 15px 0;">Game Difficulty</h3>
-            <div style="display: flex; gap: 10px;">
-              <button class="difficulty-btn" data-difficulty="easy" style="
-                background: #4CAF50; color: white; border: none; padding: 10px 20px;
-                border-radius: 6px; cursor: pointer; flex: 1;
-              ">Easy</button>
-              <button class="difficulty-btn" data-difficulty="medium" style="
-                background: #FF9800; color: white; border: none; padding: 10px 20px;
-                border-radius: 6px; cursor: pointer; flex: 1;
-              ">Medium</button>
-              <button class="difficulty-btn" data-difficulty="hard" style="
-                background: #f44336; color: white; border: none; padding: 10px 20px;
-                border-radius: 6px; cursor: pointer; flex: 1;
-              ">Hard</button>
+        <div class="flex flex-col gap-4 md:gap-6 text-left">
+          <div class="bg-white/10 p-4 md:p-6 rounded-xl backdrop-blur-sm">
+            <h3 class="text-lg md:text-xl font-semibold mb-3 md:mb-4">🎯 Game Difficulty</h3>
+            <div class="flex flex-col md:flex-row gap-2 md:gap-3">
+              <button class="difficulty-btn flex-1 bg-green-600 text-white border-none px-4 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-green-700 btn-mobile" data-difficulty="easy">
+                Easy
+              </button>
+              <button class="difficulty-btn flex-1 bg-orange-600 text-white border-none px-4 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-orange-700 btn-mobile" data-difficulty="medium">
+                Medium
+              </button>
+              <button class="difficulty-btn flex-1 bg-red-600 text-white border-none px-4 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-red-700 btn-mobile" data-difficulty="hard">
+                Hard
+              </button>
             </div>
           </div>
           
-          <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 12px;">
-            <h3 style="margin: 0 0 15px 0;">Audio</h3>
-            <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-              <input type="checkbox" id="sound-effects" checked>
-              Sound Effects
-            </label>
-            <label style="display: flex; align-items: center; gap: 10px;">
-              <input type="checkbox" id="background-music" checked>
-              Background Music
-            </label>
+          <div class="bg-white/10 p-4 md:p-6 rounded-xl backdrop-blur-sm">
+            <h3 class="text-lg md:text-xl font-semibold mb-3 md:mb-4">🔊 Audio</h3>
+            <div class="space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="sound-effects" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-sm md:text-base">Sound Effects</span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="background-music" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-sm md:text-base">Background Music</span>
+              </label>
+            </div>
           </div>
           
-          <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 12px;">
-            <h3 style="margin: 0 0 15px 0;">Controls</h3>
-            <p style="margin: 5px 0;">WASD or Arrow Keys: Move</p>
-            <p style="margin: 5px 0;">ESC: Pause/Resume</p>
-            <p style="margin: 5px 0;">F1: Settings</p>
+          <div class="bg-white/10 p-4 md:p-6 rounded-xl backdrop-blur-sm">
+            <h3 class="text-lg md:text-xl font-semibold mb-3 md:mb-4">🎮 Controls</h3>
+            <div class="text-sm md:text-base space-y-1 opacity-90">
+              <p>🔤 WASD or Arrow Keys: Move</p>
+              <p>⏸️ ESC: Pause/Resume</p>
+              <p>⚙️ F1: Settings</p>
+              <p>🍽️ SPACE: Eat tiles</p>
+            </div>
           </div>
         </div>
         
-        <button id="back-to-menu-btn" style="
-          background: linear-gradient(45deg, #607D8B, #455A64);
-          color: white; border: none; padding: 15px 30px; font-size: 1.2rem;
-          border-radius: 12px; cursor: pointer; margin-top: 30px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        ">Back to Menu</button>
+        <button id="back-to-menu-btn" class="btn-secondary text-white border-none px-8 py-4 text-lg font-semibold rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl mt-6 md:mt-8 w-full md:w-auto btn-mobile">
+          ← Back to Menu
+        </button>
       </div>
     `;
     
@@ -600,47 +363,26 @@ export class UIManager {
   private createGameOverScreen(): void {
     const gameOverScreen = document.createElement('div');
     gameOverScreen.id = 'game-over-screen';
-    gameOverScreen.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      z-index: 1000;
-    `;
+    gameOverScreen.className = 'absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white z-50';
     
     gameOverScreen.innerHTML = `
-      <div style="text-align: center; max-width: 500px; padding: 40px;">
-        <h1 style="
-          color: #f44336; font-size: 4rem; margin: 0 0 20px 0;
-          text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
-        ">GAME OVER</h1>
+      <div class="text-center max-w-sm md:max-w-md px-6 py-8">
+        <h1 class="text-red-400 text-4xl md:text-6xl font-bold mb-6 md:mb-8 drop-shadow-lg animate-pulse">
+          💀 GAME OVER
+        </h1>
         
-        <div id="final-score" style="
-          font-size: 2rem; margin: 20px 0; color: #4CAF50;
-          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-        ">Final Score: 0</div>
+        <div id="final-score" class="text-2xl md:text-3xl mb-8 text-green-400 font-bold drop-shadow-md">
+          Final Score: 0
+        </div>
         
-        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 30px;">
-          <button id="play-again-btn" style="
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white; border: none; padding: 15px 30px; font-size: 1.3rem;
-            border-radius: 12px; cursor: pointer;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-          ">Play Again</button>
+        <div class="flex flex-col gap-4 md:gap-5 mt-8">
+          <button id="play-again-btn" class="btn-success text-white border-none px-8 py-4 text-lg font-semibold rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl w-full btn-mobile">
+            🔄 Play Again
+          </button>
           
-          <button id="main-menu-btn" style="
-            background: linear-gradient(45deg, #607D8B, #455A64);
-            color: white; border: none; padding: 12px 25px; font-size: 1.1rem;
-            border-radius: 12px; cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-          ">Main Menu</button>
+          <button id="main-menu-btn" class="btn-secondary text-white border-none px-6 py-3 text-base font-medium rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl w-full btn-mobile">
+            🏠 Main Menu
+          </button>
         </div>
       </div>
     `;
@@ -665,49 +407,27 @@ export class UIManager {
   private createPauseScreen(): void {
     const pauseScreen = document.createElement('div');
     pauseScreen.id = 'pause-screen';
-    pauseScreen.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      z-index: 1000;
-    `;
+    pauseScreen.className = 'absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white z-50';
     
     pauseScreen.innerHTML = `
-      <div style="text-align: center; max-width: 400px; padding: 40px;">
-        <h2 style="font-size: 3rem; margin: 0 0 30px 0; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);">PAUSED</h2>
+      <div class="text-center max-w-sm md:max-w-md px-6 py-8">
+        <h2 class="text-4xl md:text-5xl font-bold mb-8 md:mb-12 drop-shadow-lg">⏸️ PAUSED</h2>
         
-        <div style="display: flex; flex-direction: column; gap: 15px;">
-          <button id="resume-btn" style="
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white; border: none; padding: 15px 30px; font-size: 1.3rem;
-            border-radius: 12px; cursor: pointer;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-          ">Resume Game</button>
+        <div class="flex flex-col gap-4 md:gap-5">
+          <button id="resume-btn" class="btn-success text-white border-none px-8 py-4 text-lg font-semibold rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl w-full btn-mobile">
+            ▶️ Resume Game
+          </button>
           
-          <button id="pause-settings-btn" style="
-            background: linear-gradient(45deg, #2196F3, #1976D2);
-            color: white; border: none; padding: 12px 25px; font-size: 1.1rem;
-            border-radius: 12px; cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-          ">Settings</button>
+          <button id="pause-settings-btn" class="btn-primary text-white border-none px-6 py-3 text-base font-medium rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl w-full btn-mobile">
+            ⚙️ Settings
+          </button>
           
-          <button id="quit-to-menu-btn" style="
-            background: linear-gradient(45deg, #f44336, #d32f2f);
-            color: white; border: none; padding: 12px 25px; font-size: 1.1rem;
-            border-radius: 12px; cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-          ">Quit to Menu</button>
+          <button id="quit-to-menu-btn" class="btn-danger text-white border-none px-6 py-3 text-base font-medium rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl w-full btn-mobile">
+            🏠 Quit to Menu
+          </button>
         </div>
         
-        <p style="margin-top: 30px; opacity: 0.7; font-size: 0.9rem;">Press ESC to resume</p>
+        <p class="mt-8 opacity-70 text-sm">Press ESC to resume</p>
       </div>
     `;
     

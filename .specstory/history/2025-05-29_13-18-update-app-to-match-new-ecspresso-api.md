@@ -3293,3 +3293,398 @@ Perfect! Now I have the current installation instructions for Tailwind CSS with 
 
 ---
 
+```bash
+npm install -D tailwindcss postcss autoprefixer
+```
+
+```
+dgranado@MacBook-Pro math % npm install -D tailwindcss postcss autoprefixer
+
+added 5 packages, and audited 705 packages in 2s
+
+171 packages are looking for funding
+  run `npm fund` for details
+
+5 moderate severity vulnerabilities
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+dgranado@MacBook-Pro math %
+```
+
+---
+
+```bash
+npx tailwindcss init -p
+```
+
+```
+dgranado@MacBook-Pro math % npx tailwindcss init -p
+npm error could not determine executable to run
+npm error A complete log of this run can be found in: /Users/dgranado/.npm/_logs/2025-05-31T01_52_52_018Z-de
+bug-0.log
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Let me try a different approach to initialize Tailwind:
+
+---
+
+```bash
+./node_modules/.bin/tailwindcss init -p
+```
+
+```
+dgranado@MacBook-Pro math % ./node_modules/.bin/tailwindcss init -p
+zsh: no such file or directory: ./node_modules/.bin/tailwindcss
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Let me check what was actually installed and create the config files manually:
+
+---
+
+<details>
+            <summary>Listed directory node_modules/.bin • **30** results</summary>
+        
+| Name |
+|-------|
+| 📄 `autoprefixer` |
+| 📄 `eslint` |
+| 📄 `parser` |
+| 📄 `esbuild` |
+| 📄 `browserslist` |
+| 📄 `terser` |
+| 📄 `vitest` |
+| 📄 `workbox` |
+| 📄 `vite-node` |
+| 📄 `why-is-node-running` |
+| 📄 `is-ci` |
+| 📄 `playwright-core` |
+| 📄 `playwright` |
+| 📄 `semver` |
+| 📄 `js-yaml` |
+| 📄 `resolve` |
+| 📄 `regjsparser` |
+| 📄 `node-which` |
+| 📄 `rc` |
+| 📄 `jake` |
+| 📄 `update-browserslist-db` |
+| 📄 `acorn` |
+| 📄 `jsesc` |
+| 📄 `json5` |
+| 📄 `ejs` |
+| 📄 `vite` |
+| 📄 `rollup` |
+| 📄 `nanoid` |
+| 📄 `tsserver` |
+| 📄 `tsc` |
+
+</details>
+
+---
+
+I see that `tailwindcss` binary is not there, which suggests the package might not have installed correctly. Let me check the package.json to see what was installed:
+
+---
+
+Read file: package.json
+
+---
+
+I see that Tailwind CSS v4.1.8 was installed, which is the newer version that doesn't use the traditional CLI. Let me check if we need to use the newer approach with the Vite plugin. Let me check the current vite.config.ts file:
+
+---
+
+Read file: vite.config.ts
+
+---
+
+Based on the version installed (v4.1.8), I need to use the new Tailwind v4 approach. Let me install the Vite plugin and configure it properly:
+
+---
+
+```bash
+npm install -D @tailwindcss/vite
+```
+
+```
+dgranado@MacBook-Pro math % npm install -D @tailwindcss/vite
+
+added 37 packages, and audited 742 packages in 3s
+
+183 packages are looking for funding
+  run `npm fund` for details
+
+5 moderate severity vulnerabilities
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Now let me update the Vite configuration to include the Tailwind CSS plugin:
+
+---
+
+```diff
+  import { defineConfig } from 'vite'
++ import tailwindcss from '@tailwindcss/vite'
+  
+  // https://vitejs.dev/config/
+```
+
+```diff
+    // Change this to match your repository name
+    base: process.env.NODE_ENV === 'production' ? '/math-game/' : '/',
++   
++   plugins: [
++     tailwindcss(),
++   ],
+    
+    build: {
+```
+
+---
+
+Now I need to check if there's already a CSS file in the project that I can add the Tailwind directives to:
+
+---
+
+<details>
+            <summary>Searched codebase "*.css" • **5** results</summary>
+        
+| File |
+|------|
+| `undefined` |
+| `undefined` |
+| `undefined` |
+| `undefined` |
+| `undefined` |
+
+</details>
+
+---
+
+Perfect! Let me check the current contents of the style.css file:
+
+---
+
+Read file: src/style.css
+
+---
+
+I can see this is a comprehensive CSS file for the game. For Tailwind CSS v4, I need to add the import directive. Let me add it at the top of the file:
+
+---
+
+```diff
++ @import "tailwindcss";
++ 
+  /**
+   * Math Game Styles
+```
+
+---
+
+Now let me check if the style.css file is being imported in the main.ts file:
+
+---
+
+<details>
+            <summary>Searched codebase "main.ts main.js" • **2** results</summary>
+        
+| File |
+|------|
+| `undefined` |
+| `undefined` |
+
+</details>
+
+---
+
+Read file: src/main.ts
+
+---
+
+Perfect! The CSS file is already being imported. Now let me test if Tailwind CSS is working by running the development server:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+Let me wait a moment for the dev server to start and then check the build to see if Tailwind is working:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 21 modules transformed.
+dist/index.html                  0.49 kB │ gzip:  0.30 kB
+dist/assets/index-BvxE3X7a.css  11.60 kB │ gzip:  3.23 kB
+dist/assets/index-ON6h7q6c.js   57.08 kB │ gzip: 14.60 kB │ map: 171.91 kB
+✓ built in 134ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Excellent! The build completed successfully and I can see the CSS file is larger (11.60 kB) which indicates that Tailwind CSS has been included. Let me verify that Tailwind CSS is working by checking the generated CSS:
+
+---
+
+Read file: dist/assets/index-BvxE3X7a.css
+
+---
+
+Perfect! I can see that Tailwind CSS has been successfully integrated. The generated CSS file shows the Tailwind CSS header comment and includes the base styles, utilities, and custom CSS variables. Let me verify that the package.json was updated correctly:
+
+---
+
+Read file: package.json
+
+---
+
+Perfect! Tailwind CSS has been successfully installed and configured. Let me create a simple test to verify that Tailwind classes are working:
+
+---
+
+```diff
+  async function main(): Promise<void> {
+    try {
+-     // Show loading state
++     // Show loading state with Tailwind classes
+      const appElement = document.querySelector<HTMLDivElement>('#app')!;
+      appElement.innerHTML = `
+-       <div class="game-loading">Loading Math Game...</div>
++       <div class="game-loading text-blue-400 font-bold">Loading Math Game...</div>
+      `;
+  
+```
+
+```diff
+      document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+        <div class="game-error">
+-         <div>
+-           <h2>Failed to Load Game</h2>
+-           <p>An error occurred while loading the Math Game.</p>
++         <div class="bg-red-600 text-white p-8 rounded-lg shadow-lg">
++           <h2 class="text-2xl font-bold mb-4">Failed to Load Game</h2>
++           <p class="mb-2">An error occurred while loading the Math Game.</p>
+            <p>Please refresh the page to try again.</p>
+          </div>
+```
+
+---
+
+Now let me build the project again to confirm that the Tailwind classes are being processed:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 21 modules transformed.
+dist/index.html                  0.49 kB │ gzip:  0.30 kB
+dist/assets/index-G_N_qf2X.css  12.63 kB │ gzip:  3.50 kB
+dist/assets/index-BJVIAbGz.js   57.21 kB │ gzip: 14.67 kB │ map: 172.06 kB
+✓ built in 131ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Excellent! I can see the CSS file has grown to 12.63 kB (from 11.60 kB previously), which indicates that the new Tailwind CSS classes I added are being processed and included in the build.
+
+## **Tailwind CSS Installation Complete! ✅**
+
+Tailwind CSS has been successfully installed and configured in your Math Munchers project. Here's a summary of what was implemented:
+
+### **📦 Packages Installed:**
+- `tailwindcss` v4.1.8 (latest version)
+- `@tailwindcss/vite` v4.1.8 (Vite plugin for Tailwind v4)
+- `postcss` v8.5.4 (CSS processor)
+- `autoprefixer` v10.4.21 (vendor prefix automation)
+
+### **⚙️ Configuration Added:**
+
+**1. Vite Configuration (`vite.config.ts`):**
+```typescript
+import tailwindcss from '@tailwindcss/vite'
+
+// Added to plugins array
+plugins: [
+  tailwindcss(),
+]
+```
+
+**2. CSS Import (`src/style.css`):**
+```css
+@import "tailwindcss";
+```
+
+**3. Test Implementation:**
+Added Tailwind classes to the loading and error states in `main.ts` to verify functionality.
+
+### **✅ Verification Results:**
+- Build process completes successfully
+- CSS bundle includes Tailwind utilities (12.63 kB)
+- Tailwind CSS v4.1.8 header present in generated CSS
+- Base styles, components, and utilities layers are properly included
+
+### **🚀 Ready to Use:**
+You can now start using Tailwind CSS classes throughout your project! The installation uses the latest Tailwind CSS v4 approach with the Vite plugin, which provides:
+
+- ⚡ Lightning-fast HMR (Hot Module Replacement)
+- 🎯 JIT (Just-In-Time) compilation
+- 📦 Automatic purging of unused styles
+- 🔧 Modern CSS features and optimizations
+
+### **Next Steps:**
+You're all set to start styling your Math Munchers game with Tailwind's utility classes. The framework will work seamlessly alongside your existing custom CSS styles.
+
+---
+
+_**User**_
+
+We need to do a styling pass.  Let's make the layout more mobile friendly. Use tailwind for any new styles. Convert existing css to leverage tailwind classes where convenient.  Don't worry about retaining the exactly look. We will be iterating significantly on that later.
+
+---
+
+_**Assistant**_
+
+
+
+---
+

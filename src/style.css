@@ -1,196 +1,101 @@
 @import "tailwindcss";
 
 /**
- * Math Game Styles
- * Organized and optimized styles for better maintainability
+ * Math Game Styles - Mobile-First with Tailwind CSS
+ * Custom styles only for what Tailwind doesn't cover
  */
 
-/* ===== CSS CUSTOM PROPERTIES ===== */
+/* ===== CUSTOM PROPERTIES (for complex gradients not easily expressed in Tailwind) ===== */
 :root {
-  /* Colors */
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --button-success: linear-gradient(45deg, #4CAF50, #45a049);
-  --button-primary: linear-gradient(45deg, #2196F3, #1976D2);
-  --button-warning: linear-gradient(45deg, #FF9800, #F57C00);
-  --button-danger: linear-gradient(45deg, #f44336, #d32f2f);
-  --text-gold: linear-gradient(45deg, #FFD700, #FFA500);
-  
-  /* Spacing */
-  --spacing-xs: 5px;
-  --spacing-sm: 10px;
-  --spacing-md: 20px;
-  --spacing-lg: 40px;
-  
-  /* Border radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  
-  /* Shadows */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
-  
-  /* Transitions */
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
+  --success-gradient: linear-gradient(45deg, #4CAF50, #45a049);
+  --primary-button-gradient: linear-gradient(45deg, #2196F3, #1976D2);
+  --warning-gradient: linear-gradient(45deg, #FF9800, #F57C00);
+  --danger-gradient: linear-gradient(45deg, #f44336, #d32f2f);
+  --gold-gradient: linear-gradient(45deg, #FFD700, #FFA500);
 }
 
-/* ===== RESET & BASE STYLES ===== */
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ===== GAME-SPECIFIC CUSTOM STYLES ===== */
+
+/* Main app background gradient */
+.app-background {
+  background: var(--primary-gradient);
 }
 
-body {
-  font-family: 'Arial', sans-serif;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: #2c3e50;
-  line-height: 1.6;
-}
-
-#app {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Loading & Error States */
-.game-loading, .game-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-size: 1.5rem;
-  text-align: center;
-}
-
-.game-error div {
-  background: rgba(244, 67, 54, 0.9);
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-.game-error h2 {
-  margin-bottom: 20px;
-  font-size: 2rem;
-}
-
-/* Game Canvas Styles */
+/* Canvas border with subtle transparency */
 #game-canvas {
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  background: white;
-  max-width: 90vw;
-  max-height: 70vh;
 }
 
-/* UI System Enhancements */
-button {
+/* Button gradients for primary actions */
+.btn-success {
+  background: var(--success-gradient);
+}
+
+.btn-primary {
+  background: var(--primary-button-gradient);
+}
+
+.btn-warning {
+  background: var(--warning-gradient);
+}
+
+.btn-danger {
+  background: var(--danger-gradient);
+}
+
+.btn-secondary {
+  background: linear-gradient(45deg, #607D8B, #455A64);
+}
+
+/* Gold text gradient for titles */
+.text-gold {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* HUD backgrounds with transparency */
+.hud-top {
+  background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+}
+
+.hud-bottom {
+  background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+}
+
+/* Game mode cards with hover effects */
+.mode-card {
+  background: var(--success-gradient);
   transition: all 0.3s ease;
-  font-family: inherit;
-  cursor: pointer;
-  outline: none;
 }
 
-button:hover {
+.mode-card:hover {
   transform: translateY(-2px);
-  filter: brightness(1.1);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
-button:active {
-  transform: translateY(0);
-  transition: all 0.1s ease;
+.mode-card.disabled {
+  background: linear-gradient(45deg, #9E9E9E, #757575);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-/* Responsive Design */
+.mode-card.disabled:hover {
+  transform: none;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Touch-friendly button enhancements for mobile */
 @media (max-width: 768px) {
-  #game-canvas {
-    max-width: 95vw;
-    max-height: 60vh;
+  .btn-mobile {
+    min-height: 44px; /* iOS touch target minimum */
+    padding: 12px 20px;
   }
   
-  /* Adjust font sizes for mobile */
-  h1 {
-    font-size: 2.5rem !important;
-  }
-  
-  h2 {
-    font-size: 2rem !important;
-  }
-  
-  button {
-    padding: 12px 20px !important;
-    font-size: 1rem !important;
-  }
-  
-  /* Adjust HUD for mobile */
-  #top-hud {
-    padding: 10px 15px !important;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  
-  #top-hud > div {
-    gap: 15px !important;
-  }
-  
-  #top-hud [id$="-display"] {
-    font-size: 1rem !important;
-    padding: 6px 12px !important;
-  }
-  
-  #bottom-hud {
-    font-size: 0.9rem !important;
-    padding: 10px 15px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  #game-canvas {
-    max-width: 98vw;
-    max-height: 50vh;
-  }
-  
-  h1 {
-    font-size: 2rem !important;
-  }
-  
-  /* Stack HUD elements vertically on very small screens */
-  #top-hud {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  #top-hud > div {
-    justify-content: center;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  body {
-    background: #000;
-  }
-  
-  #game-canvas {
-    border-color: #fff;
-  }
-  
-  button {
-    border: 2px solid #fff;
+  .mode-card {
+    min-height: 60px; /* Larger touch targets on mobile */
   }
 }
 
@@ -202,38 +107,7 @@ button:active {
     transition-duration: 0.01ms !important;
   }
   
-  button:hover {
+  .mode-card:hover {
     transform: none;
-  }
-}
-
-/* Focus styles for accessibility */
-button:focus {
-  outline: 3px solid #4CAF50;
-  outline-offset: 2px;
-}
-
-input:focus {
-  outline: 3px solid #2196F3;
-  outline-offset: 2px;
-}
-
-/* Print styles */
-@media print {
-  body {
-    background: white;
-    color: black;
-  }
-  
-  #game-container {
-    display: none;
-  }
-  
-  body::after {
-    content: "Math Munchers - A web-based educational game";
-    display: block;
-    text-align: center;
-    font-size: 24px;
-    margin-top: 100px;
   }
 }
