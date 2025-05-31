@@ -11,7 +11,6 @@ import { lerp } from '../gameUtils';
 // Animation configuration
 export const ANIMATION_CONFIG = {
   MOVEMENT_DURATION: 750, // milliseconds for grid movement
-  EASING: 'ease-out', // easing type
 } as const;
 
 // Add the animation system to ECSpresso
