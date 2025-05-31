@@ -1,26 +1,38 @@
 import { gameEngine } from '../Engine';
 import { sameGridPosition } from './MovementSystem';
+import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
+import type { Components } from '../Engine';
 
 /**
  * Collision Detection System
  * Handles collisions between entities, particularly player-problem interactions
  */
 
+// Create reusable query definitions
+const playerQuery = createQueryDefinition({
+  with: ['position', 'player', 'collider', 'health']
+});
 
+const mathProblemQuery = createQueryDefinition({
+  with: ['position', 'mathProblem', 'collider', 'renderable']
+});
+
+const enemyQuery = createQueryDefinition({
+  with: ['position', 'enemy', 'collider']
+});
+
+// Extract entity types using ECSpresso utilities
+type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
+type MathProblemEntity = QueryResultEntity<Components, typeof mathProblemQuery>;
+type EnemyEntity = QueryResultEntity<Components, typeof enemyQuery>;
 
 // Add the collision system to ECSpresso
 export function addCollisionSystemToEngine(): void {
   gameEngine.addSystem('collisionSystem')
     .setPriority(70) // After movement, before rendering
-    .addQuery('players', {
-      with: ['position', 'player', 'collider', 'health']
-    })
-    .addQuery('mathProblems', {
-      with: ['position', 'mathProblem', 'collider']
-    })
-    .addQuery('enemies', {
-      with: ['position', 'enemy', 'collider']
-    })
+    .addQuery('players', playerQuery)
+    .addQuery('mathProblems', mathProblemQuery)
+    .addQuery('enemies', enemyQuery)
     .setProcess((queries) => {
       const currentTime = performance.now();
       
@@ -71,8 +83,8 @@ export function addCollisionSystemToEngine(): void {
  * Handle collision between player and math problem
  */
 function handlePlayerProblemCollision(
-  player: any, 
-  problem: any
+  player: PlayerEntity, 
+  problem: MathProblemEntity
 ): void {
   const playerComp = player.components.player;
   const mathProblemComp = problem.components.mathProblem;
@@ -124,8 +136,8 @@ function handlePlayerProblemCollision(
  * Handle collision between player and enemy
  */
 function handlePlayerEnemyCollision(
-  player: any, 
-  enemy: any
+  player: PlayerEntity, 
+  enemy: EnemyEntity
 ): void {
   const playerComp = player.components.player;
   const healthComp = player.components.health;

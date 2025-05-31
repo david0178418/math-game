@@ -21,7 +21,13 @@ export interface Components {
   enemy: { 
     behaviorType: 'chase' | 'patrol' | 'random' | 'guard';
     nextMoveTime: number;
-    aiState?: any;
+    aiState?: {
+      targetGridX: number;
+      targetGridY: number;
+      path: Array<{ x: number, y: number }>;
+      pathIndex: number;
+      lastPathUpdate: number;
+    };
     waypoints?: Array<{ x: number, y: number }>;
     currentWaypoint?: number;
     guardPosition?: { x: number, y: number };

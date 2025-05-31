@@ -2,11 +2,35 @@ import { gameEngine, EntityFactory } from '../Engine';
 import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
 import { gridToPixel } from './MovementSystem';
 import { mathProblemGenerator } from '../../game/MathProblemGenerator';
+import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
+import type { Components } from '../Engine';
 
 /**
  * Problem Management System
  * Manages the lifecycle of math problems: spawning, tracking, and replacing consumed ones
  */
+
+// Create reusable query definitions
+const mathProblemQuery = createQueryDefinition({
+  with: ['mathProblem', 'position', 'renderable']
+});
+
+const playerQuery = createQueryDefinition({
+  with: ['player']
+});
+
+const allPositionsQuery = createQueryDefinition({
+  with: ['position']
+});
+
+const enemyQuery = createQueryDefinition({
+  with: ['enemy', 'position']
+});
+
+// Extract entity types using ECSpresso utilities
+type MathProblemEntity = QueryResultEntity<Components, typeof mathProblemQuery>;
+type PositionEntity = QueryResultEntity<Components, typeof allPositionsQuery>;
+type EnemyEntity = QueryResultEntity<Components, typeof enemyQuery>;
 
 // Configuration for problem management
 const PROBLEM_CONFIG = {
@@ -20,18 +44,10 @@ let lastSpawnTime = 0;
 export function addProblemManagementSystemToEngine(): void {
   gameEngine.addSystem('problemManagementSystem')
     .setPriority(30) // Lower priority, runs after collision detection
-    .addQuery('mathProblems', {
-      with: ['mathProblem', 'position']
-    })
-    .addQuery('players', {
-      with: ['player']
-    })
-    .addQuery('allPositions', {
-      with: ['position']
-    })
-    .addQuery('enemies', {
-      with: ['enemy', 'position']
-    })
+    .addQuery('mathProblems', mathProblemQuery)
+    .addQuery('players', playerQuery)
+    .addQuery('allPositions', allPositionsQuery)
+    .addQuery('enemies', enemyQuery)
     .setProcess((queries) => {
       // Count active (non-consumed) problems
       const activeProblems = queries.mathProblems.filter(
@@ -67,7 +83,7 @@ export function addProblemManagementSystemToEngine(): void {
 /**
  * Populate the entire grid with math problems
  */
-function populateFullGrid(allPositionEntities: any[]): void {
+function populateFullGrid(allPositionEntities: PositionEntity[]): void {
   const gameMode = gameEngine.getResource('gameMode');
   const currentLevel = gameEngine.getResource('currentLevel');
   
@@ -103,7 +119,7 @@ function populateFullGrid(allPositionEntities: any[]): void {
  * Get all grid positions that don't already have math problems
  * This allows players and enemies to coexist with math problems on the same tiles
  */
-function getAllGridPositionsWithoutMathProblems(allPositionEntities: any[]): { x: number; y: number }[] {
+function getAllGridPositionsWithoutMathProblems(allPositionEntities: PositionEntity[]): { x: number; y: number }[] {
   const mathProblemPositions = new Set<string>();
   
   // Get all positions that already have math problems
@@ -132,10 +148,6 @@ function getAllGridPositionsWithoutMathProblems(allPositionEntities: any[]): { x
   return availablePositions;
 }
 
-
-
-
-
 /**
  * Adjust difficulty based on player score
  */
@@ -152,7 +164,7 @@ function adjustDifficultyBasedOnScore(score: number): void {
 /**
  * Check if all correct answers have been consumed (level completion)
  */
-function checkLevelCompletion(mathProblems: any[], enemies: any[]): void {
+function checkLevelCompletion(mathProblems: MathProblemEntity[], enemies: EnemyEntity[]): void {
   const gameMode = gameEngine.getResource('gameMode');
   const currentLevel = gameEngine.getResource('currentLevel');
   
@@ -189,7 +201,7 @@ function checkLevelCompletion(mathProblems: any[], enemies: any[]): void {
     });
     
     // Clear all enemies to start fresh for the new level
-    enemies.forEach((enemy: any) => {
+    enemies.forEach((enemy) => {
       gameEngine.entityManager.removeEntity(enemy.id);
     });
     
@@ -218,7 +230,7 @@ function updateLevelDisplay(): void {
 /**
  * Clean up consumed problems that are no longer visible
  */
-function cleanupConsumedProblems(mathProblems: any[]): void {
+function cleanupConsumedProblems(mathProblems: MathProblemEntity[]): void {
   const consumedProblems = mathProblems.filter(
     problem => problem.components.mathProblem.consumed &&
                problem.components.renderable.size === 0

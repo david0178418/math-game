@@ -1,21 +1,32 @@
 import { gameEngine } from '../Engine';
 import { uiManager } from '../../game/UIManager';
+import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
+import type { Components } from '../Engine';
 
 /**
  * UI System
  * Handles updating the user interface elements based on game state
  */
 
+// Create reusable query definitions
+const playerQuery = createQueryDefinition({
+  with: ['player', 'position']
+});
+
+const mathProblemQuery = createQueryDefinition({
+  with: ['position', 'mathProblem']
+});
+
+// Extract entity types using ECSpresso utilities
+type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
+type MathProblemEntity = QueryResultEntity<Components, typeof mathProblemQuery>;
+
 // Add the UI system to ECSpresso
 export function addUISystemToEngine(): void {
   gameEngine.addSystem('uiSystem')
     .setPriority(50) // Lower priority, runs after game logic
-    .addQuery('players', {
-      with: ['player', 'position']
-    })
-    .addQuery('mathProblems', {
-      with: ['position', 'mathProblem']
-    })
+    .addQuery('players', playerQuery)
+    .addQuery('mathProblems', mathProblemQuery)
     .setProcess((queries) => {
       const gameState = gameEngine.getResource('gameState');
       
@@ -101,9 +112,9 @@ function updateLivesDisplay(lives: number): void {
 }
 
 /**
- * Check if player is on a consumable math problem
+ * Check if player is positioned on a math problem that can be consumed
  */
-function checkIfPlayerCanEat(player: any, mathProblems: any[]): boolean {
+function checkIfPlayerCanEat(player: PlayerEntity, mathProblems: MathProblemEntity[]): boolean {
   const playerPos = player.components.position;
   
   for (const problem of mathProblems) {
@@ -113,9 +124,11 @@ function checkIfPlayerCanEat(player: any, mathProblems: any[]): boolean {
     // Skip consumed problems
     if (mathProblemComp.consumed) continue;
     
-    // Check if positions match (same grid cell)
-    if (Math.abs(playerPos.x - problemPos.x) < 16 && 
-        Math.abs(playerPos.y - problemPos.y) < 16) {
+    // Check if player is on the same grid position as a math problem
+    const sameX = Math.abs(playerPos.x - problemPos.x) < 10; // Small tolerance
+    const sameY = Math.abs(playerPos.y - problemPos.y) < 10;
+    
+    if (sameX && sameY) {
       return true;
     }
   }

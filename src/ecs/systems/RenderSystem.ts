@@ -1,5 +1,24 @@
 import { gameEngine } from '../Engine';
 import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
+import type { Components } from '../Engine';
+
+// Create reusable query definitions
+const renderableEntityQuery = createQueryDefinition({
+  with: ['position', 'renderable']
+});
+
+const playerQuery = createQueryDefinition({
+  with: ['position', 'player']
+});
+
+const mathProblemQuery = createQueryDefinition({
+  with: ['position', 'mathProblem']
+});
+
+// Extract entity types using ECSpresso utilities
+type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
+type MathProblemEntity = QueryResultEntity<Components, typeof mathProblemQuery>;
 
 // Canvas context and configuration
 let canvas: HTMLCanvasElement | null = null;
@@ -68,15 +87,9 @@ function resizeCanvas(): void {
 export function addRenderSystemToEngine(): void {
   gameEngine.addSystem('renderSystem')
     .setPriority(10) // Render after all other systems
-    .addQuery('renderableEntities', {
-      with: ['position', 'renderable']
-    })
-    .addQuery('players', {
-      with: ['position', 'player']
-    })
-    .addQuery('mathProblems', {
-      with: ['position', 'mathProblem']
-    })
+    .addQuery('renderableEntities', renderableEntityQuery)
+    .addQuery('players', playerQuery)
+    .addQuery('mathProblems', mathProblemQuery)
     .setOnInitialize((_ecs) => {
       console.log('🎨 Render system initialized');
       // Could set up additional rendering resources here
@@ -144,7 +157,7 @@ function drawGrid(): void {
 }
 
 // Draw highlight when player is on a consumable math problem
-function drawPlayerHighlight(players: any[], mathProblems: any[]): void {
+function drawPlayerHighlight(players: PlayerEntity[], mathProblems: MathProblemEntity[]): void {
   if (!ctx) return;
   
   for (const player of players) {
@@ -207,7 +220,7 @@ function drawEntity(position: { x: number; y: number }, renderable: { shape: 'ci
 }
 
 // Draw numbers on math problem tiles
-function drawMathProblemNumbers(mathProblems: any[]): void {
+function drawMathProblemNumbers(mathProblems: MathProblemEntity[]): void {
   if (!ctx) return;
   
   // Set up text styling

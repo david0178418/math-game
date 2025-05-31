@@ -1083,6 +1083,236 @@ I need to fix the import issues. Let me export the Components type from Engine a
 
 ---
 
+```diff
+  
+  // Define component type interfaces
+- interface Components {
++ export interface Components {
+    position: { x: number; y: number };
+    renderable: { 
+```
+
+```diff
+  
+  // Define event types (for future use)
+- interface Events {
++ export interface Events {
+    playerMoved: { x: number; y: number };
+    problemSolved: { value: number; correct: boolean };
+```
+
+```diff
+  
+  // Define resource types (for future use)
+- interface Resources {
++ export interface Resources {
+    gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
+    score: { value: number };
+```
+
+---
+
+Now let me fix the import in AISystem to use type-only imports:
+
+---
+
+```diff
+  import { pixelToGrid, gridToPixel } from './MovementSystem';
+  import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+- import { createQueryDefinition, QueryResultEntity } from 'ecspresso';
++ import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
+  
+  // Import Components type from Engine for use with QueryResultEntity
+```
+
+---
+
+Now let me test the build to see if the linter errors are resolved:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 18 modules transformed.
+dist/index.html                  0.49 kB │ gzip:  0.30 kB
+dist/assets/index-BixeubOt.css   2.85 kB │ gzip:  1.13 kB
+dist/assets/index-DxC02FP7.js   56.83 kB │ gzip: 14.31 kB │ map: 162.98 kB
+✓ built in 107ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Excellent! The build is successful. Now let me also update the system queries to use the predefined query definitions for consistency:
+
+---
+
+```diff
+    gameEngine.addSystem('aiSystem')
+      .setPriority(85) // After input, before movement
+-     .addQuery('enemies', {
+-       with: ['position', 'enemy']
+-     })
+-     .addQuery('players', {
+-       with: ['position', 'player']
+-     })
+-     .addQuery('obstacles', {
+-       with: ['position', 'collider']
+-     })
++     .addQuery('enemies', enemyQuery)
++     .addQuery('players', playerQuery)
++     .addQuery('obstacles', obstacleQuery)
+      .setProcess((queries) => {
+        const currentTime = performance.now();
+```
+
+---
+
+Let me test the build one more time to ensure everything is working correctly:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 18 modules transformed.
+dist/index.html                  0.49 kB │ gzip:  0.30 kB
+dist/assets/index-BixeubOt.css   2.85 kB │ gzip:  1.13 kB
+dist/assets/index-BFbyBYga.js   56.84 kB │ gzip: 14.33 kB │ map: 162.95 kB
+✓ built in 102ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Perfect! I have successfully updated the AISystem.ts file to leverage ECSpresso's `QueryResultEntity` and `createQueryDefinition` utilities. Here's a summary of the changes made:
+
+## ✅ **Changes Made to AISystem.ts**
+
+### **Removed Manual Type Declarations**
+- Removed manually declared `Position`, `Entity`, `EnemyEntity`, and `PlayerEntity` interfaces
+- These were duplicating functionality that ECSpresso provides
+
+### **Added ECSpresso Utility Types**
+1. **Imported Required Utilities**:
+   ```typescript
+   import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
+   import type { Components } from '../Engine';
+   ```
+
+2. **Created Reusable Query Definitions**:
+   ```typescript
+   const enemyQuery = createQueryDefinition({
+     with: ['position', 'enemy'] as const
+   } as const);
+   
+   const playerQuery = createQueryDefinition({
+     with: ['position', 'player'] as const
+   } as const);
+   
+   const obstacleQuery = createQueryDefinition({
+     with: ['position', 'collider'] as const
+   } as const);
+   ```
+
+3. **Derived Entity Types Using ECSpresso Utilities**:
+   ```typescript
+   type EnemyEntity = QueryResultEntity<Components, typeof enemyQuery>;
+   type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
+   type ObstacleEntity = QueryResultEntity<Components, typeof obstacleQuery>;
+   ```
+
+4. **Updated System Queries**:
+   - Changed from inline query objects to using the predefined query definitions
+   - More maintainable and reusable
+
+### **Additional Infrastructure Updates**
+- **Exported Types from Engine.ts**: Made `Components`, `Events`, and `Resources` interfaces available for import
+- **Type Safety**: All function signatures now use the ECSpresso-derived types
+- **Consistency**: All query definitions follow the same pattern
+
+### **Benefits of These Changes**
+
+1. **🎯 Type Safety**: Better TypeScript inference and type checking
+2. **🔄 Reusability**: Query definitions can be reused across systems
+3. **🧹 Cleaner Code**: Eliminates duplicate type declarations
+4. **📚 Maintainability**: Single source of truth for query definitions
+5. **🔧 ECSpresso Best Practices**: Follows the recommended patterns from the library
+
+The build passes successfully and all existing functionality is preserved while now using the modern ECSpresso utility types. This approach provides better type safety and follows the library's recommended patterns for query definition and entity type derivation.
+
+---
+
+_**User**_
+
+Great. There are more instances of "any" throughout the project. Many of these I suspect are attempts to get around the awkwardness that these utilities are made to address.  Make these updates
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+You're absolutely right! Let me search for instances of "any" throughout the project and fix them using the proper ECSpresso utilities.
+
+---
+
+<details>
+            <summary>Grep search for ": any" • **10** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/dgranado/PersonalProjects/math/src/utils/performance.ts` | L116 | `export function debounce<T extends (...args: any[]) => any>(` |
+| `file:///Users/dgranado/PersonalProjects/math/src/utils/performance.ts` | L131 | `export function throttle<T extends (...args: any[]) => any>(` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L23 | `aiState?: any;` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/ProblemManagementSystem.ts` | L69 | `function populateFullGrid(allPositionEntities: any[]): void {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/ProblemManagementSystem.ts` | L105 | `function getAllGridPositionsWithoutMathProblems(allPositionEntities: any[]): { x: number; y: number }[] {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/ProblemManagementSystem.ts` | L154 | `function checkLevelCompletion(mathProblems: any[], enemies: any[]): void {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/ProblemManagementSystem.ts` | L191 | `enemies.forEach((enemy: any) => {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/ProblemManagementSystem.ts` | L220 | `function cleanupConsumedProblems(mathProblems: any[]): void {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/RenderSystem.ts` | L146 | `function drawPlayerHighlight(players: any[], mathProblems: any[]): void {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/RenderSystem.ts` | L209 | `function drawMathProblemNumbers(mathProblems: any[]): void {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/UISystem.ts` | L105 | `function checkIfPlayerCanEat(player: any, mathProblems: any[]): boolean {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L73 | `player: any,` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L74 | `problem: any` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L126 | `player: any,` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L127 | `enemy: any` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/EnemySpawnSystem.ts` | L49 | `function calculateSpawnInterval(player: any): number {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L23 | `aiState?: any;` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L73 | `player: any,` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L74 | `problem: any` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L126 | `player: any,` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L127 | `enemy: any` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/RenderSystem.ts` | L146 | `function drawPlayerHighlight(players: any[], mathProblems: any[]): void {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/RenderSystem.ts` | L209 | `function drawMathProblemNumbers(mathProblems: any[]): void {` |
+
+</details>
+
+---
+
+Let me start by fixing the most critical ones. First, I'll create a proper type for `aiState` in the Engine:
+
+---
+
 
 
 ---
