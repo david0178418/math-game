@@ -8,10 +8,41 @@ import {
   type MathProblemEntity
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
+import flyImage from '../../assets/images/fly.svg';
 
 // Canvas context and configuration
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
+
+// Image cache for loaded images
+const imageCache = new Map<string, HTMLImageElement>();
+
+// Load and cache an image
+function loadImage(src: string): Promise<HTMLImageElement> {
+  if (imageCache.has(src)) {
+    return Promise.resolve(imageCache.get(src)!);
+  }
+  
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      imageCache.set(src, img);
+      resolve(img);
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+// Preload player image
+async function preloadPlayerImage(): Promise<void> {
+  try {
+    await loadImage(flyImage);
+    console.log('🖼️ Player image loaded successfully');
+  } catch (error) {
+    console.warn('⚠️ Failed to load player image:', error);
+  }
+}
 
 // Initialize the render system
 export function initializeRenderSystem(canvasElement: HTMLCanvasElement): void {
@@ -27,6 +58,9 @@ export function initializeRenderSystem(canvasElement: HTMLCanvasElement): void {
   
   // Set up canvas resize handling
   window.addEventListener('resize', resizeCanvas);
+  
+  // Preload player image
+  preloadPlayerImage();
   
   console.log('Render system initialized');
 }
@@ -185,19 +219,69 @@ function drawPlayerHighlight(players: PlayerEntity[], mathProblems: MathProblemE
 }
 
 // Draw an individual entity
-function drawEntity(position: { x: number; y: number }, renderable: { shape: 'circle' | 'rectangle'; color: string; size: number }): void {
+function drawEntity(
+  position: { x: number; y: number }, 
+  renderable: { 
+    shape: 'circle' | 'rectangle' | 'image'; 
+    color: string; 
+    size: number; 
+    imageSrc?: string;
+    imageWidth?: number;
+    imageHeight?: number;
+  }
+): void {
   if (!ctx) return;
-  
-  ctx.fillStyle = renderable.color;
   
   const centerX = position.x + CELL_SIZE / 2;
   const centerY = position.y + CELL_SIZE / 2;
   
-  if (renderable.shape === 'circle') {
+  if (renderable.shape === 'image' && renderable.imageSrc) {
+    // Draw image
+    const img = imageCache.get(renderable.imageSrc);
+    if (img && img.complete) {
+      // Calculate size to fit in grid while maintaining aspect ratio
+      const aspectRatio = img.width / img.height;
+      let renderWidth = renderable.imageWidth || CELL_SIZE * 0.8;
+      let renderHeight = renderable.imageHeight || CELL_SIZE * 0.8;
+      
+      // Adjust to maintain aspect ratio and fit in cell
+      if (aspectRatio > 1) {
+        // Wider than tall
+        renderHeight = renderWidth / aspectRatio;
+        if (renderHeight > CELL_SIZE * 0.8) {
+          renderHeight = CELL_SIZE * 0.8;
+          renderWidth = renderHeight * aspectRatio;
+        }
+      } else {
+        // Taller than wide or square
+        renderWidth = renderHeight * aspectRatio;
+        if (renderWidth > CELL_SIZE * 0.8) {
+          renderWidth = CELL_SIZE * 0.8;
+          renderHeight = renderWidth / aspectRatio;
+        }
+      }
+      
+      ctx.drawImage(
+        img,
+        centerX - renderWidth / 2,
+        centerY - renderHeight / 2,
+        renderWidth,
+        renderHeight
+      );
+    } else {
+      // Fallback to circle if image not loaded
+      ctx.fillStyle = renderable.color;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, renderable.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (renderable.shape === 'circle') {
+    ctx.fillStyle = renderable.color;
     ctx.beginPath();
     ctx.arc(centerX, centerY, renderable.size / 2, 0, Math.PI * 2);
     ctx.fill();
   } else if (renderable.shape === 'rectangle') {
+    ctx.fillStyle = renderable.color;
     const halfSize = renderable.size / 2;
     ctx.fillRect(
       centerX - halfSize,

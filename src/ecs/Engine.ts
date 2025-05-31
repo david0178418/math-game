@@ -1,5 +1,6 @@
 import ECSpresso from 'ecspresso';
 import { GAME_CONFIG, CELL_SIZE, PLAYER_LIVES, STARTING_SCORE } from '../game/config';
+import flyImage from '../assets/images/fly.svg';
 
 // Re-export for convenience
 export { GAME_CONFIG };
@@ -19,10 +20,14 @@ export interface Components {
     animationStartY?: number;
   };
   renderable: { 
-    shape: 'circle' | 'rectangle'; 
+    shape: 'circle' | 'rectangle' | 'image'; 
     color: string; 
     size: number;
     layer: number;
+    // Image-specific properties
+    imageSrc?: string;
+    imageWidth?: number;
+    imageHeight?: number;
   };
   player: { 
     score: number; 
@@ -221,10 +226,11 @@ export const EntityFactory = {
     const entity = gameEngine.spawn({
       position: { x, y },
       renderable: { 
-        shape: 'circle', 
-        color: GAME_CONFIG.COLORS.PLAYER, 
+        shape: 'image', 
+        color: GAME_CONFIG.COLORS.PLAYER, // Fallback color if image fails to load
         size: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
-        layer: GAME_CONFIG.LAYERS.PLAYER 
+        layer: GAME_CONFIG.LAYERS.PLAYER,
+        imageSrc: flyImage
       },
       player: { 
         score: STARTING_SCORE, 

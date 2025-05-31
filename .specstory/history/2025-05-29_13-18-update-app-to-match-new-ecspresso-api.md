@@ -7101,9 +7101,375 @@ Now I need to update all the AI behavior functions to use enemy collision detect
 
 ---
 
+```diff
+    }
+    
+-   // Check if the target position is valid (not occupied by obstacles)
+-   if (!isPositionBlocked(nextX, nextY, obstacles)) {
++   // Check if the target position is valid (not occupied by obstacles or other enemies)
++   if (!isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+      return { x: nextX, y: nextY };
+    }
+```
 
+```diff
+    const alternatives = getAlternativeDirections(enemyGrid, playerGrid);
+    for (const alt of alternatives) {
+-     if (!isPositionBlocked(alt.x, alt.y, obstacles)) {
++     if (!isPositionBlocked(alt.x, alt.y, obstacles, allEnemies, enemy)) {
+        return { x: alt.x, y: alt.y };
+      }
+```
+
+```diff
+    
+    // If the chosen position is blocked, stay in place
+-   if (isPositionBlocked(nextX, nextY, obstacles)) {
++   if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+      nextX = currentGrid.x;
+      nextY = currentGrid.y;
+```
+
+```diff
+   * Check if a grid position is blocked by obstacles
+   */
+- function isPositionBlocked(gridX: number, gridY: number, _obstacles: ObstacleEntity[]): boolean {
++ function isPositionBlocked(gridX: number, gridY: number, _obstacles: ObstacleEntity[], _allEnemies: EnemyEntity[], _enemy: EnemyEntity): boolean {
+    // For now, only check boundaries (no obstacle collision implemented yet)
+    return gridX < 0 || gridX >= GRID_WIDTH || 
+```
 
 ---
+
+Now I need to update the patrol and guard AI functions and implement the actual enemy collision detection:
+
+---
+
+```diff
+    nextX = Math.max(0, Math.min(GRID_WIDTH - 1, nextX));
+    nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, nextY));
++   
++   // Check if target position is blocked by other enemies
++   if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
++     // Try alternative directions if blocked
++     const alternatives = [
++       { x: currentGrid.x + 1, y: currentGrid.y },
++       { x: currentGrid.x - 1, y: currentGrid.y },
++       { x: currentGrid.x, y: currentGrid.y + 1 },
++       { x: currentGrid.x, y: currentGrid.y - 1 }
++     ];
++     
++     for (const alt of alternatives) {
++       if (alt.x >= 0 && alt.x < GRID_WIDTH && alt.y >= 0 && alt.y < GRID_HEIGHT &&
++           !isPositionBlocked(alt.x, alt.y, obstacles, allEnemies, enemy)) {
++         nextX = alt.x;
++         nextY = alt.y;
++         break;
++       }
++     }
++     
++     // If all alternatives blocked, stay in place
++     if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
++       nextX = currentGrid.x;
++       nextY = currentGrid.y;
++     }
++   }
+    
+    // Check if reached waypoint
+```
+
+---
+
+Now let me update the guard AI function and then implement the actual collision detection logic:
+
+---
+
+```diff
+    if (distance > 2) { // 2 grid cells
+      const direction = getDirectionToTarget(currentGrid, guardPos);
+-     const nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + direction.x));
+-     const nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + direction.y));
++     let nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + direction.x));
++     let nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + direction.y));
++     
++     // Check if position is blocked by other enemies
++     if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
++       // Try alternative directions
++       const alternatives = [
++         { x: currentGrid.x + 1, y: currentGrid.y },
++         { x: currentGrid.x - 1, y: currentGrid.y },
++         { x: currentGrid.x, y: currentGrid.y + 1 },
++         { x: currentGrid.x, y: currentGrid.y - 1 }
++       ];
++       
++       for (const alt of alternatives) {
++         if (alt.x >= 0 && alt.x < GRID_WIDTH && alt.y >= 0 && alt.y < GRID_HEIGHT &&
++             !isPositionBlocked(alt.x, alt.y, obstacles, allEnemies, enemy)) {
++           nextX = alt.x;
++           nextY = alt.y;
++           break;
++         }
++       }
++       
++       // If all alternatives blocked, stay in place
++       if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
++         nextX = currentGrid.x;
++         nextY = currentGrid.y;
++       }
++     }
++     
+      return { x: nextX, y: nextY };
+    } else {
+```
+
+```diff
+        ];
+        const randomDir = directions[Math.floor(Math.random() * directions.length)];
+-       const nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + randomDir.x));
+-       const nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
++       let nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + randomDir.x));
++       let nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
+        
+-       // Only move if it keeps us close to guard position
++       // Only move if it keeps us close to guard position and isn't blocked
+        const newDistance = Math.abs(nextX - guardPos.x) + Math.abs(nextY - guardPos.y);
+-       if (newDistance <= 2) {
++       if (newDistance <= 2 && !isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+          return { x: nextX, y: nextY };
+        }
+```
+
+```diff
+  
+  /**
+-  * Check if a grid position is blocked by obstacles
++  * Check if a grid position is blocked by obstacles or other enemies
+   */
+- function isPositionBlocked(gridX: number, gridY: number, _obstacles: ObstacleEntity[], _allEnemies: EnemyEntity[], _enemy: EnemyEntity): boolean {
+-   // For now, only check boundaries (no obstacle collision implemented yet)
+-   return gridX < 0 || gridX >= GRID_WIDTH || 
+-          gridY < 0 || gridY >= GRID_HEIGHT;
++ function isPositionBlocked(
++   gridX: number, 
++   gridY: number, 
++   _obstacles: ObstacleEntity[], 
++   allEnemies: EnemyEntity[], 
++   currentEnemy: EnemyEntity
++ ): boolean {
++   // Check boundaries
++   if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
++     return true;
++   }
++   
++   // Check if another enemy is already at this position
++   for (const otherEnemy of allEnemies) {
++     // Skip self
++     if (otherEnemy.id === currentEnemy.id) continue;
++     
++     // Get the other enemy's grid position
++     const otherPos = otherEnemy.components.position;
++     const otherGridX = Math.round(otherPos.x / CELL_SIZE);
++     const otherGridY = Math.round(otherPos.y / CELL_SIZE);
++     
++     // Check if positions match
++     if (otherGridX === gridX && otherGridY === gridY) {
++       return true;
++     }
++   }
++   
++   // Future: Check obstacles here when implemented
++   // for (const obstacle of obstacles) { ... }
++   
++   return false;
+  }
+  
+```
+
+---
+
+Now let me build to make sure all the changes compile correctly:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+src/ecs/systems/AISystem.ts:255:3 - error TS6133: 'currentTime' is declared but its value is never read.
+
+255   currentTime: number,
+      ~~~~~~~~~~~
+
+src/ecs/systems/AISystem.ts:256:3 - error TS6133: 'aiState' is declared but its value is never read.
+
+256   aiState: AIState
+      ~~~~~~~
+
+src/ecs/systems/AISystem.ts:321:3 - error TS6133: 'currentTime' is declared but its value is never read.
+
+321   currentTime: number,
+      ~~~~~~~~~~~
+
+src/ecs/systems/AISystem.ts:322:3 - error TS6133: 'aiState' is declared but its value is never read.
+
+322   aiState: AIState
+      ~~~~~~~
+
+src/ecs/systems/AISystem.ts:355:3 - error TS6133: 'currentTime' is declared but its value is never read.
+
+355   currentTime: number,
+      ~~~~~~~~~~~
+
+src/ecs/systems/AISystem.ts:356:3 - error TS6133: 'aiState' is declared but its value is never read.
+
+356   aiState: AIState
+      ~~~~~~~
+
+
+Found 6 errors in the same file, starting at: src/ecs/systems/AISystem.ts:255
+
+dgranado@MacBook-Pro math %
+```
+
+---
+
+I need to fix the TypeScript errors by adding underscore prefixes to unused parameters:
+
+---
+
+```diff
+    obstacles: ObstacleEntity[],
+    allEnemies: EnemyEntity[],
+-   currentTime: number,
+-   aiState: AIState
++   _currentTime: number,
++   _aiState: AIState
+  ): { x: number, y: number } {
+    const enemyData = enemy.components.enemy;
+```
+
+---
+
+```diff
+    obstacles: ObstacleEntity[],
+    allEnemies: EnemyEntity[],
+-   currentTime: number,
+-   aiState: AIState
++   _currentTime: number,
++   _aiState: AIState
+  ): { x: number, y: number } {
+    const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
+```
+
+---
+
+```diff
+    obstacles: ObstacleEntity[],
+    allEnemies: EnemyEntity[],
+-   currentTime: number,
+-   aiState: AIState
++   _currentTime: number,
++   _aiState: AIState
+  ): { x: number, y: number } {
+    const enemyData = enemy.components.enemy;
+```
+
+---
+
+Now let me build again to verify all errors are fixed:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 22 modules transformed.
+dist/index.html                  1.01 kB │ gzip:  0.50 kB
+dist/assets/index-C8bCv55o.css  29.87 kB │ gzip:  6.07 kB
+dist/assets/index-BXpMBAsG.js   53.46 kB │ gzip: 14.90 kB │ map: 175.96 kB
+✓ built in 146ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Perfect! Now let me start the development server so you can test the enemy collision prevention:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+## Summary
+
+I've successfully implemented enemy collision prevention to ensure enemies don't move into squares occupied by other enemies. Here's what was changed:
+
+### Changes Made:
+
+1. **Enhanced AI System Function Signatures**:
+   - Added `allEnemies: EnemyEntity[]` parameter to all AI behavior functions
+   - Updated `processEnemyAI()` to pass the enemies list to all AI functions
+
+2. **Updated Collision Detection**:
+   - Enhanced `isPositionBlocked()` function to check for enemy collisions
+   - Added boundary checking (existing)
+   - Added enemy position checking (new)
+   - Excludes the current enemy from collision checks (prevents self-collision)
+
+3. **Improved AI Behavior**:
+   - **Chase AI**: Now checks for enemy collisions and tries alternative directions
+   - **Patrol AI**: Checks target position for enemies, tries alternatives if blocked
+   - **Random AI**: Prevents moving into enemy-occupied squares
+   - **Guard AI**: Checks for enemy collisions in both guard movement and random movement
+
+### How It Works:
+
+1. **Grid Position Calculation**: Each enemy's position is converted to grid coordinates using `Math.round(pos.x / CELL_SIZE)`
+
+2. **Collision Detection**: Before moving, each enemy checks if the target grid position is occupied by another enemy
+
+3. **Alternative Movement**: If the preferred move is blocked:
+   - Chase AI tries alternative directions toward the player
+   - Patrol AI tries adjacent squares 
+   - Guard AI tries alternative directions
+   - Random AI stays in place if blocked
+
+4. **Fallback Behavior**: If all alternatives are blocked, enemies stay in their current position
+
+### Benefits:
+- **No Overlapping**: Enemies will never occupy the same grid square
+- **Intelligent Pathfinding**: Enemies try alternative routes when blocked
+- **Smooth Gameplay**: No visual glitches from overlapping entities
+- **Realistic Movement**: Enemies behave more naturally by avoiding each other
+
+The development server is running and ready for testing. You should now see that enemies avoid moving into squares occupied by other enemies!
+
+---
+
+_**User**_
+
+A new image "fly.png" has been added to the project.  Update the player graphics to use this. Fit the image in the grid, but retain the aspect ratio.
+
+---
+
+_**Assistant**_
 
 
 
