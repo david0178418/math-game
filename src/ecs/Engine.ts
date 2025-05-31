@@ -224,7 +224,7 @@ export const EntityFactory = {
         shape: 'circle', 
         color: GAME_CONFIG.COLORS.PLAYER, 
         size: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
-        layer: GAME_CONFIG.LAYERS.ENTITIES 
+        layer: GAME_CONFIG.LAYERS.PLAYER 
       },
       player: { 
         score: STARTING_SCORE, 

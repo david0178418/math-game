@@ -51,7 +51,8 @@ export const GAME_CONFIG = {
   LAYERS: {
     BACKGROUND: 0,
     MATH_PROBLEMS: 1,
-    ENTITIES: 2,
+    ENTITIES: 2,        // Enemies and other entities
+    PLAYER: 3,          // Player (rendered above enemies)
     UI: 10,
   },
 } as const;
