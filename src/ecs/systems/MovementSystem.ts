@@ -2,6 +2,7 @@ import { gameEngine } from '../Engine';
 import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
 import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
+import { startRotationAnimation } from './AnimationSystem';
 
 // Add the movement system to ECSpresso
 export function addMovementSystemToEngine(): void {
@@ -51,7 +52,33 @@ export function addMovementSystemToEngine(): void {
         
         // Start animation if position changed
         if (newPixelX !== position.x || newPixelY !== position.y) {
+          // Calculate rotation based on movement direction
+          let targetRotation = position.rotation || 0; // Default to current rotation or 0 (up)
+          
+          if (player.inputState.up) {
+            targetRotation = 0; // Up
+          } else if (player.inputState.right) {
+            targetRotation = 90; // Right
+          } else if (player.inputState.down) {
+            targetRotation = 180; // Down
+          } else if (player.inputState.left) {
+            targetRotation = 270; // Left
+          }
+          
+          // Handle rotation wrapping (e.g., 350° to 10° should go through 360°, not backwards)
+          const currentRotation = position.rotation || 0;
+          if (Math.abs(targetRotation - currentRotation) > 180) {
+            if (targetRotation > currentRotation) {
+              targetRotation -= 360;
+            } else {
+              targetRotation += 360;
+            }
+          }
+          
+          // Start rotation animation (25% of movement duration)
+          const rotationDuration = 750 * 0.25; // 25% of 750ms movement duration
           startMovementAnimation(position, newPixelX, newPixelY);
+          startRotationAnimation(position, targetRotation, rotationDuration);
           
           // Publish player moved event (with target position)
           gameEngine.eventBus.publish('playerMoved', {

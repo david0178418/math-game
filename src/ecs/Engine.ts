@@ -18,6 +18,12 @@ export interface Components {
     animationDuration?: number;
     animationStartX?: number;
     animationStartY?: number;
+    // Rotation properties for directional sprites
+    rotation?: number; // Current rotation in degrees (0 = up, 90 = right, 180 = down, 270 = left)
+    targetRotation?: number;
+    rotationStartTime?: number;
+    rotationDuration?: number;
+    startRotation?: number;
   };
   renderable: { 
     shape: 'circle' | 'rectangle' | 'image'; 
@@ -224,7 +230,7 @@ export function getEngine(): ECSpresso<Components, Events, Resources> {
 export const EntityFactory = {
   createPlayer(x: number, y: number): { id: number } {
     const entity = gameEngine.spawn({
-      position: { x, y },
+      position: { x, y, rotation: 0 },
       renderable: { 
         shape: 'image', 
         color: GAME_CONFIG.COLORS.PLAYER, // Fallback color if image fails to load

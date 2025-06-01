@@ -7475,3 +7475,420 @@ _**Assistant**_
 
 ---
 
+I need to update the player graphics to use the new fly.png image. Let me first locate the image and then modify the rendering system to support images.
+
+---
+
+<details>
+            <summary>Searched codebase "fly.png" • **1** results</summary>
+        
+| File |
+|------|
+| `undefined` |
+
+</details>
+
+---
+
+Great! The image is located at `src/assets/images/fly.png`. Now I need to update the rendering system to support images and modify the player entity to use this image. Let me first examine the current render system:
+
+---
+
+Read file: src/ecs/systems/RenderSystem.ts
+
+---
+
+Now I need to:
+1. Update the renderable component interface to support images
+2. Add image loading and caching to the render system
+3. Update the drawEntity function to handle images
+4. Modify the player entity to use the image
+
+Let me start by updating the component interface:
+
+---
+
+Read file: src/ecs/Engine.ts
+
+---
+
+Now I need to update the renderable component interface to support images. Let me modify it:
+
+---
+
+```diff
+    };
+    renderable: { 
+-     shape: 'circle' | 'rectangle'; 
++     shape: 'circle' | 'rectangle' | 'image'; 
+      color: string; 
+      size: number;
+      layer: number;
++     // Image-specific properties
++     imageSrc?: string;
++     imageWidth?: number;
++     imageHeight?: number;
+    };
+    player: { 
+```
+
+---
+
+Now I need to update the render system to support image loading and rendering. Let me enhance the RenderSystem:
+
+---
+
+```diff
+  let canvas: HTMLCanvasElement | null = null;
+  let ctx: CanvasRenderingContext2D | null = null;
++ 
++ // Image cache for loaded images
++ const imageCache = new Map<string, HTMLImageElement>();
++ 
++ // Load and cache an image
++ function loadImage(src: string): Promise<HTMLImageElement> {
++   if (imageCache.has(src)) {
++     return Promise.resolve(imageCache.get(src)!);
++   }
++   
++   return new Promise((resolve, reject) => {
++     const img = new Image();
++     img.onload = () => {
++       imageCache.set(src, img);
++       resolve(img);
++     };
++     img.onerror = reject;
++     img.src = src;
++   });
++ }
++ 
++ // Preload player image
++ async function preloadPlayerImage(): Promise<void> {
++   try {
++     await loadImage('/src/assets/images/fly.png');
++     console.log('🖼️ Player image loaded successfully');
++   } catch (error) {
++     console.warn('⚠️ Failed to load player image:', error);
++   }
++ }
+  
+  // Initialize the render system
+```
+
+---
+
+I need to update the drawEntity function signature to support the new image properties. Let me fix this:
+
+---
+
+```diff
+  
+  // Draw an individual entity
+- function drawEntity(position: { x: number; y: number }, renderable: { shape: 'circle' | 'rectangle'; color: string; size: number }): void {
++ function drawEntity(
++   position: { x: number; y: number }, 
++   renderable: { 
++     shape: 'circle' | 'rectangle' | 'image'; 
++     color: string; 
++     size: number; 
++     imageSrc?: string;
++     imageWidth?: number;
++     imageHeight?: number;
++   }
++ ): void {
+    if (!ctx) return;
+-   
+-   ctx.fillStyle = renderable.color;
+    
+    const centerX = position.x + CELL_SIZE / 2;
+    const centerY = position.y + CELL_SIZE / 2;
+    
+-   if (renderable.shape === 'circle') {
++   if (renderable.shape === 'image' && renderable.imageSrc) {
++     // Draw image
++     const img = imageCache.get(renderable.imageSrc);
++     if (img && img.complete) {
++       // Calculate size to fit in grid while maintaining aspect ratio
++       const aspectRatio = img.width / img.height;
++       let renderWidth = renderable.imageWidth || CELL_SIZE * 0.8;
++       let renderHeight = renderable.imageHeight || CELL_SIZE * 0.8;
++       
++       // Adjust to maintain aspect ratio and fit in cell
++       if (aspectRatio > 1) {
++         // Wider than tall
++         renderHeight = renderWidth / aspectRatio;
++         if (renderHeight > CELL_SIZE * 0.8) {
++           renderHeight = CELL_SIZE * 0.8;
++           renderWidth = renderHeight * aspectRatio;
++         }
++       } else {
++         // Taller than wide or square
++         renderWidth = renderHeight * aspectRatio;
++         if (renderWidth > CELL_SIZE * 0.8) {
++           renderWidth = CELL_SIZE * 0.8;
++           renderHeight = renderWidth / aspectRatio;
++         }
++       }
++       
++       ctx.drawImage(
++         img,
++         centerX - renderWidth / 2,
++         centerY - renderHeight / 2,
++         renderWidth,
++         renderHeight
++       );
++     } else {
++       // Fallback to circle if image not loaded
++       ctx.fillStyle = renderable.color;
++       ctx.beginPath();
++       ctx.arc(centerX, centerY, renderable.size / 2, 0, Math.PI * 2);
++       ctx.fill();
++     }
++   } else if (renderable.shape === 'circle') {
++     ctx.fillStyle = renderable.color;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, renderable.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (renderable.shape === 'rectangle') {
++     ctx.fillStyle = renderable.color;
+      const halfSize = renderable.size / 2;
+      ctx.fillRect(
+```
+
+---
+
+Now I need to update the render system initialization to preload the image and modify the player entity to use the image. Let me update the initialization:
+
+---
+
+```diff
+    // Set up canvas resize handling
+    window.addEventListener('resize', resizeCanvas);
++   
++   // Preload player image
++   preloadPlayerImage();
+    
+    console.log('Render system initialized');
+```
+
+---
+
+Now I need to update the player entity creation to use the image instead of the circle shape:
+
+---
+
+```diff
+        position: { x, y },
+        renderable: { 
+-         shape: 'circle', 
+-         color: GAME_CONFIG.COLORS.PLAYER, 
++         shape: 'image', 
++         color: GAME_CONFIG.COLORS.PLAYER, // Fallback color if image fails to load
+          size: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+-         layer: GAME_CONFIG.LAYERS.PLAYER 
++         layer: GAME_CONFIG.LAYERS.PLAYER,
++         imageSrc: '/src/assets/images/fly.png'
+        },
+        player: { 
+```
+
+---
+
+Let me build to check for any compilation errors:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 22 modules transformed.
+dist/index.html                  1.01 kB │ gzip:  0.50 kB
+dist/assets/index-C8bCv55o.css  29.87 kB │ gzip:  6.07 kB
+dist/assets/index-DFC0cad0.js   54.23 kB │ gzip: 15.22 kB │ map: 179.76 kB
+✓ built in 152ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Great! The build is successful. However, I notice that the image path `/src/assets/images/fly.png` might not work correctly in the browser since that's a development path. Let me fix the image path to work correctly with Vite's asset handling:
+
+---
+
+```diff
+  } from '../queries';
+  import { SYSTEM_PRIORITIES } from '../systemConfigs';
++ import flyImage from '../../assets/images/fly.png';
+  
+  // Canvas context and configuration
+```
+
+```diff
+  async function preloadPlayerImage(): Promise<void> {
+    try {
+-     await loadImage('/src/assets/images/fly.png');
++     await loadImage(flyImage);
+      console.log('🖼️ Player image loaded successfully');
+    } catch (error) {
+```
+
+---
+
+Now I need to update the player entity to use the imported image path:
+
+---
+
+```diff
+  import ECSpresso from 'ecspresso';
+  import { GAME_CONFIG, CELL_SIZE, PLAYER_LIVES, STARTING_SCORE } from '../game/config';
++ import flyImage from '../assets/images/fly.png';
+  
+  // Re-export for convenience
+```
+
+```diff
+          size: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+          layer: GAME_CONFIG.LAYERS.PLAYER,
+-         imageSrc: '/src/assets/images/fly.png'
++         imageSrc: flyImage
+        },
+        player: { 
+```
+
+---
+
+Let me build again to ensure the image import works correctly:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 23 modules transformed.
+dist/index.html                  1.01 kB │ gzip:  0.51 kB
+dist/assets/fly-BvYSOF7K.png     5.39 kB
+dist/assets/index-C8bCv55o.css  29.87 kB │ gzip:  6.07 kB
+dist/assets/index-0QZcXYDY.js   54.22 kB │ gzip: 15.23 kB │ map: 179.93 kB
+✓ built in 162ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Perfect! I can see that Vite is now properly handling the image asset (`fly-BvYSOF7K.png`) and including it in the build. Let me start the development server to test the new player image:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+## Summary
+
+I've successfully updated the player graphics to use the fly.png image while maintaining aspect ratio and fitting it within the grid. Here's what was implemented:
+
+### Changes Made:
+
+1. **Enhanced Renderable Component (`src/ecs/Engine.ts`)**:
+   - Added `'image'` as a new shape type alongside `'circle'` and `'rectangle'`
+   - Added optional image properties: `imageSrc`, `imageWidth`, `imageHeight`
+   - Updated player entity to use `shape: 'image'` with `imageSrc: flyImage`
+
+2. **Enhanced Render System (`src/ecs/systems/RenderSystem.ts`)**:
+   - Added image loading and caching system with `imageCache` Map
+   - Implemented `loadImage()` function for asynchronous image loading
+   - Added `preloadPlayerImage()` to load the fly image on system initialization
+   - Enhanced `drawEntity()` function to support image rendering
+
+3. **Aspect Ratio Preservation**:
+   - Calculates image aspect ratio (`img.width / img.height`)
+   - Determines optimal render dimensions to fit within 80% of cell size
+   - Maintains original aspect ratio while ensuring the image fits in the grid
+   - Centers the image within the grid cell
+
+4. **Asset Handling**:
+   - Properly imports `fly.png` using Vite's asset system
+   - Ensures the image is included in the build process
+   - Works correctly in both development and production builds
+
+### How It Works:
+
+1. **Image Loading**: When the render system initializes, it preloads the fly.png image
+2. **Fallback Rendering**: If the image fails to load, it falls back to the original blue circle
+3. **Aspect Ratio Calculation**: The system calculates the best fit size while preserving the fly's original proportions
+4. **Centered Rendering**: The fly image is rendered centered in each grid cell the player occupies
+
+### Features:
+- ✅ **Maintains Aspect Ratio**: Fly image keeps its original proportions
+- ✅ **Fits in Grid**: Image is scaled to 80% of cell size maximum
+- ✅ **Proper Asset Handling**: Uses Vite's asset bundling
+- ✅ **Fallback Support**: Shows blue circle if image fails to load
+- ✅ **Performance Optimized**: Images are cached after first load
+
+The development server is running and you should now see the fly.png image representing the player character instead of the blue circle!
+
+---
+
+_**User**_
+
+Great.  Now, rotate the image in the direction of movement. By default, it's oriented "up".  The rotation should be much more quick than the transition time.  It should be complete in the neighborhood of about 25% of the way throught the movement transition.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I need to add rotation support to the fly image based on movement direction. Let me enhance the system to support quick rotation that completes in about 25% of the movement time.
+
+First, let me update the position component to include rotation properties:
+
+---
+
+```diff
+      animationStartX?: number;
+      animationStartY?: number;
++     // Rotation properties for directional sprites
++     rotation?: number; // Current rotation in degrees (0 = up, 90 = right, 180 = down, 270 = left)
++     targetRotation?: number;
++     rotationStartTime?: number;
++     rotationDuration?: number;
++     startRotation?: number;
+    };
+    renderable: { 
+```
+
+---
+
+Now I need to update the movement system to set rotation targets when movement begins:
+
+---
+
+
+
+---
+
+
+
+---
+

@@ -220,7 +220,7 @@ function drawPlayerHighlight(players: PlayerEntity[], mathProblems: MathProblemE
 
 // Draw an individual entity
 function drawEntity(
-  position: { x: number; y: number }, 
+  position: { x: number; y: number; rotation?: number }, 
   renderable: { 
     shape: 'circle' | 'rectangle' | 'image'; 
     color: string; 
@@ -261,13 +261,29 @@ function drawEntity(
         }
       }
       
-      ctx.drawImage(
-        img,
-        centerX - renderWidth / 2,
-        centerY - renderHeight / 2,
-        renderWidth,
-        renderHeight
-      );
+      // Apply rotation if specified
+      if (position.rotation !== undefined && position.rotation !== 0) {
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate((position.rotation * Math.PI) / 180); // Convert degrees to radians
+        ctx.drawImage(
+          img,
+          -renderWidth / 2,
+          -renderHeight / 2,
+          renderWidth,
+          renderHeight
+        );
+        ctx.restore();
+      } else {
+        // Draw without rotation
+        ctx.drawImage(
+          img,
+          centerX - renderWidth / 2,
+          centerY - renderHeight / 2,
+          renderWidth,
+          renderHeight
+        );
+      }
     } else {
       // Fallback to circle if image not loaded
       ctx.fillStyle = renderable.color;
