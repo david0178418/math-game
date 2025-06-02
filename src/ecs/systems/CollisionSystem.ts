@@ -118,6 +118,10 @@ function handlePlayerProblemCollision(
       console.log('Game Over!');
       // Disable player controls immediately
       playerComp.gameOverPending = true;
+      // Start death animation
+      playerComp.deathAnimationActive = true;
+      playerComp.deathAnimationStartTime = Date.now();
+      playerComp.deathAnimationDuration = 1000; // 1 second to match delay
       // Add 1 second delay before showing game over screen
       setTimeout(() => {
         gameEngine.addResource('gameState', 'gameOver');
@@ -171,6 +175,10 @@ function handlePlayerEnemyCollision(
     console.log('Game Over!');
     // Disable player controls immediately
     playerComp.gameOverPending = true;
+    // Start death animation
+    playerComp.deathAnimationActive = true;
+    playerComp.deathAnimationStartTime = Date.now();
+    playerComp.deathAnimationDuration = 1000; // 1 second to match delay
     // Add 1 second delay before showing game over screen
     setTimeout(() => {
       gameEngine.addResource('gameState', 'gameOver');

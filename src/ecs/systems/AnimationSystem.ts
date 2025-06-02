@@ -1,5 +1,5 @@
 import { gameEngine } from '../Engine';
-import { positionEntityQuery } from '../queries';
+import { positionEntityQuery, playerQuery } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { lerp } from '../gameUtils';
 
@@ -18,9 +18,39 @@ export function addAnimationSystemToEngine(): void {
   gameEngine.addSystem('animationSystem')
     .setPriority(SYSTEM_PRIORITIES.ANIMATION) // Run after movement but before rendering
     .addQuery('animatedEntities', positionEntityQuery)
+    .addQuery('players', playerQuery)
     .setProcess((queries) => {
       const currentTime = Date.now();
       
+      // Handle death animations for players
+      for (const player of queries.players) {
+        const playerComp = player.components.player;
+        const position = player.components.position;
+        
+        if (playerComp.deathAnimationActive && playerComp.deathAnimationStartTime && playerComp.deathAnimationDuration) {
+          const elapsed = currentTime - playerComp.deathAnimationStartTime;
+          
+          if (elapsed >= playerComp.deathAnimationDuration) {
+            // Death animation complete
+            playerComp.deathAnimationActive = false;
+            playerComp.deathAnimationStartTime = undefined;
+            playerComp.deathAnimationDuration = undefined;
+            playerComp.deathScale = 0; // Fully shrunk
+          } else {
+            // Calculate death animation progress
+            const progress = elapsed / playerComp.deathAnimationDuration;
+            
+            // Shrink effect: scale from 1.0 to 0.0
+            playerComp.deathScale = 1.0 - progress;
+            
+            // Spinning effect: rotate continuously (3 full rotations during the animation)
+            const spinSpeed = 3 * 360; // 3 full rotations in degrees
+            position.rotation = (progress * spinSpeed) % 360;
+          }
+        }
+      }
+      
+      // Handle regular position and rotation animations
       for (const entity of queries.animatedEntities) {
         const position = entity.components.position;
         

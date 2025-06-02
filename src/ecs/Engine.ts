@@ -46,6 +46,11 @@ export interface Components {
     lives: number; 
     inputState: { up: boolean; down: boolean; left: boolean; right: boolean; eat: boolean };
     gameOverPending?: boolean; // Flag to disable controls during game over delay
+    // Death animation properties
+    deathAnimationActive?: boolean;
+    deathAnimationStartTime?: number;
+    deathAnimationDuration?: number;
+    deathScale?: number; // Scale factor for shrinking effect
   };
   enemy: { 
     behaviorType: 'chase' | 'patrol' | 'random' | 'guard';
@@ -249,7 +254,9 @@ export const EntityFactory = {
         score: STARTING_SCORE, 
         lives: PLAYER_LIVES, 
         inputState: { up: false, down: false, left: false, right: false, eat: false },
-        gameOverPending: false
+        gameOverPending: false,
+        deathAnimationActive: false,
+        deathScale: 1.0
       },
       collider: { 
         width: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 

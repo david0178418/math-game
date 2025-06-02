@@ -148,7 +148,11 @@ export function addRenderSystemToEngine(): void {
         const healthComp = 'health' in entity.components ? entity.components.health : undefined;
         const isInvulnerable = healthComp?.invulnerable || false;
         
-        drawEntity(position, renderable, isInvulnerable);
+        // Check if entity has player component for death scaling
+        const playerComp = 'player' in entity.components ? entity.components.player : undefined;
+        const deathScale = playerComp?.deathScale ?? 1.0;
+        
+        drawEntity(position, renderable, isInvulnerable, deathScale);
       }
       
       // Draw numbers on math problem tiles (after drawing the entities)
@@ -233,7 +237,8 @@ function drawEntity(
     imageWidth?: number;
     imageHeight?: number;
   },
-  isInvulnerable: boolean = false
+  isInvulnerable: boolean = false,
+  deathScale: number = 1.0
 ): void {
   if (!ctx) return;
   
@@ -275,6 +280,10 @@ function drawEntity(
         }
       }
       
+      // Apply death scale
+      renderWidth *= deathScale;
+      renderHeight *= deathScale;
+      
       // Apply rotation if specified
       if (position.rotation !== undefined && position.rotation !== 0) {
         // Additional save for rotation (nested within invincibility save if applicable)
@@ -303,22 +312,22 @@ function drawEntity(
       // Fallback to circle if image not loaded
       ctx.fillStyle = renderable.color;
       ctx.beginPath();
-      ctx.arc(centerX, centerY, renderable.size / 2, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, (renderable.size / 2) * deathScale, 0, Math.PI * 2);
       ctx.fill();
     }
   } else if (renderable.shape === 'circle') {
     ctx.fillStyle = renderable.color;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, renderable.size / 2, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, (renderable.size / 2) * deathScale, 0, Math.PI * 2);
     ctx.fill();
   } else if (renderable.shape === 'rectangle') {
     ctx.fillStyle = renderable.color;
-    const halfSize = renderable.size / 2;
+    const halfSize = (renderable.size / 2) * deathScale;
     ctx.fillRect(
       centerX - halfSize,
       centerY - halfSize,
-      renderable.size,
-      renderable.size
+      renderable.size * deathScale,
+      renderable.size * deathScale
     );
   }
   

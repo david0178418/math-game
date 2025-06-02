@@ -8798,7 +8798,70 @@ Perfect! I've successfully implemented the feature to disable player controls du
 - Added a check for the `gameOverPending` flag at the start of input processing
 - When `gameOverPending` is true:
   - Skip all input detection logic
-  - Clear all input states to prevent any
+  - Clear all input states to prevent any remaining movement commands
+  - Use `continue` to skip to the next player entity
+
+## Result:
+- When the player dies (lives reach 0), controls are immediately disabled
+- The player can no longer move, rotate, or eat during the 1 second delay
+- Any pending input states are cleared to prevent delayed actions
+- After 1 second, the game over screen appears
+- This creates a smooth, controlled transition that prevents jarring gameplay during the death sequence
+
+The shake animation will still play out naturally, but the player won't be able to accidentally trigger additional actions during the game over transition period.
+
+---
+
+_**User**_
+
+When the player dies, spin the graphic and shrink it down during the course of the 1 second delay
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll add a death animation that spins and shrinks the player graphic during the 1 second delay. Let me add the necessary properties and animation logic.
+
+First, I'll add death animation properties to the player component:
+
+---
+
+```diff
+      inputState: { up: boolean; down: boolean; left: boolean; right: boolean; eat: boolean };
+      gameOverPending?: boolean; // Flag to disable controls during game over delay
++     // Death animation properties
++     deathAnimationActive?: boolean;
++     deathAnimationStartTime?: number;
++     deathAnimationDuration?: number;
++     deathScale?: number; // Scale factor for shrinking effect
+    };
+    enemy: { 
+```
+
+---
+
+Now I'll update the player entity factory to initialize these new properties:
+
+---
+
+```diff
+          lives: PLAYER_LIVES, 
+          inputState: { up: false, down: false, left: false, right: false, eat: false },
+-         gameOverPending: false
++         gameOverPending: false,
++         deathAnimationActive: false,
++         deathScale: 1.0
+        },
+        collider: { 
+```
+
+---
+
+
 
 ---
 
