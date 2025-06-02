@@ -9,6 +9,7 @@ import {
 } from '../queries';
 import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
+import { createSpiderWeb } from './SpiderWebSystem';
 
 /**
  * AI System
@@ -146,6 +147,28 @@ function processEnemyAI(
   // Only animate if position actually changed
   if (newPixelPos.x !== enemyPos.x || newPixelPos.y !== enemyPos.y) {
     startMovementAnimation(enemyPos, newPixelPos.x, newPixelPos.y);
+  }
+  
+  // Spider-specific behavior: place web at previous position with some probability
+  if (enemyData.enemyType === 'spider' && 
+      (newPixelPos.x !== enemyPos.x || newPixelPos.y !== enemyPos.y)) {
+    
+    console.log(`🕷️ Spider moved from (${enemyPos.x}, ${enemyPos.y}) to (${newPixelPos.x}, ${newPixelPos.y})`);
+    
+    // 20% chance to place a web when moving
+    if (Math.random() < 0.2) {
+      const oldGridPos = pixelToGrid(enemyPos.x, enemyPos.y);
+      
+      console.log(`🕷️ Attempting to place web at grid (${oldGridPos.x}, ${oldGridPos.y})`);
+      
+      // Check if position is valid for web placement (not occupied by other entities)
+      if (isValidWebPosition(oldGridPos.x, oldGridPos.y, allEnemies, player, enemy)) {
+        createSpiderWeb(oldGridPos.x, oldGridPos.y);
+        console.log(`🕸️ SUCCESS: Web placed at grid (${oldGridPos.x}, ${oldGridPos.y})`);
+      } else {
+        console.log(`❌ BLOCKED: Cannot place web at grid (${oldGridPos.x}, ${oldGridPos.y}) - position occupied`);
+      }
+    }
   }
   
   // Set next move time with some randomization
@@ -493,6 +516,53 @@ function getAlternativeDirections(
   }
   
   return alternatives;
+}
+
+/**
+ * Check if a grid position is valid for placing a spider web
+ */
+function isValidWebPosition(
+  gridX: number, 
+  gridY: number, 
+  allEnemies: EnemyEntity[], 
+  player: PlayerEntity,
+  currentEnemy: EnemyEntity
+): boolean {
+  console.log(`🔍 Checking web position validity for grid (${gridX}, ${gridY})`);
+  
+  // Check boundaries
+  if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
+    console.log(`❌ Position (${gridX}, ${gridY}) is outside grid boundaries`);
+    return false;
+  }
+  
+  // Check if player is at this position
+  const playerGridPos = pixelToGrid(player.components.position.x, player.components.position.y);
+  console.log(`👤 Player is at grid (${playerGridPos.x}, ${playerGridPos.y})`);
+  if (playerGridPos.x === gridX && playerGridPos.y === gridY) {
+    console.log(`❌ Position (${gridX}, ${gridY}) is occupied by player`);
+    return false;
+  }
+  
+  // Check if any OTHER enemy is at this position (exclude the current spider)
+  for (const enemy of allEnemies) {
+    // Skip the current enemy (spider placing the web)
+    if (enemy.id === currentEnemy.id) {
+      console.log(`🕷️ Skipping current spider (${enemy.id}) from collision check`);
+      continue;
+    }
+    
+    const enemyGridPos = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
+    console.log(`👾 Enemy ${enemy.id} (${enemy.components.enemy.enemyType}) is at grid (${enemyGridPos.x}, ${enemyGridPos.y})`);
+    if (enemyGridPos.x === gridX && enemyGridPos.y === gridY) {
+      console.log(`❌ Position (${gridX}, ${gridY}) is occupied by enemy ${enemy.id} (${enemy.components.enemy.enemyType})`);
+      return false;
+    }
+  }
+  
+  console.log(`✅ Position (${gridX}, ${gridY}) is valid for web placement`);
+  // Position is valid for web placement
+  return true;
 }
 
 /**

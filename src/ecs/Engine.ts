@@ -85,15 +85,16 @@ export interface Components {
     invulnerabilityTime: number;
   };
   spiderWeb: {
-    duration: number;        // Time until web disappears (3000ms)
-    freezeTime: number;      // How long to freeze player (2000ms)
-    createdTime: number;     // When web was created
-    isActive: boolean;       // Whether web can freeze players
+    duration: number;        // Time until web disappears (8000ms)
+    freezeTime: number;      // Time player is frozen when caught (2000ms)
+    createdTime: number;     // When the web was created (timestamp)
+    isActive: boolean;       // Whether the web is still active
   };
   freezeEffect: {
     startTime: number;       // When freeze started
     duration: number;        // How long to freeze (2000ms)
     isActive: boolean;       // Whether player is currently frozen
+    sourceWebId?: number;    // ID of the spider web that caused this freeze
   };
   frogTongue: {
     isExtended: boolean;                    // Whether tongue is currently out

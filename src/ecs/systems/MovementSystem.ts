@@ -17,6 +17,20 @@ export function addMovementSystemToEngine(): void {
         const position = entity.components.position;
         const player = entity.components.player;
         
+        // Check if player is frozen by spider web
+        const freezeEffect = gameEngine.entityManager.getComponent(entity.id, 'freezeEffect');
+        if (freezeEffect && freezeEffect.isActive) {
+          // Player is frozen - ignore all movement input and clear input state
+          player.inputState.up = false;
+          player.inputState.down = false;
+          player.inputState.left = false;
+          player.inputState.right = false;
+          
+          // Visual feedback: add slight shake or different color (can be enhanced later)
+          console.log('❄️ Player movement blocked - frozen by spider web');
+          continue;
+        }
+        
         // Skip if already animating (prevent input during transitions)
         if (isEntityAnimating(position)) {
           // Clear input state to prevent queuing

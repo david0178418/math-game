@@ -11,11 +11,27 @@ import {
 import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG } from '../../game/config';
 import { startShakeAnimation } from './AnimationSystem';
+import { createQueryDefinition } from 'ecspresso';
+import type { Components } from '../Engine';
 
 /**
  * Collision Detection System
- * Handles collisions between entities, particularly player-problem interactions
+ * Handles collisions between entities, particularly player-problem and player-web interactions
  */
+
+// Query for spider web entities
+const spiderWebQuery = createQueryDefinition({
+  with: ['position', 'spiderWeb', 'collider']
+});
+
+type SpiderWebEntity = {
+  id: number;
+  components: {
+    position: Components['position'];
+    spiderWeb: Components['spiderWeb'];
+    collider: Components['collider'];
+  };
+};
 
 // Add the collision system to ECSpresso
 export function addCollisionSystemToEngine(): void {
@@ -24,6 +40,7 @@ export function addCollisionSystemToEngine(): void {
     .addQuery('players', playerWithHealthQuery)
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
     .addQuery('enemies', enemyWithColliderQuery)
+    .addQuery('spiderWebs', spiderWebQuery)
     .setProcess((queries) => {
       const currentTime = performance.now();
       
@@ -35,6 +52,25 @@ export function addCollisionSystemToEngine(): void {
         if (healthComp.invulnerable && currentTime > healthComp.invulnerabilityTime) {
           healthComp.invulnerable = false;
           console.log('Player invulnerability ended');
+        }
+        
+        // Check for spider web collisions (only if not already frozen)
+        const freezeEffect = gameEngine.entityManager.getComponent(player.id, 'freezeEffect');
+        if (!freezeEffect || !freezeEffect.isActive) {
+          for (const spiderWeb of queries.spiderWebs as SpiderWebEntity[]) {
+            const webComp = spiderWeb.components.spiderWeb;
+            
+            // Skip inactive webs
+            if (!webComp.isActive) {
+              continue;
+            }
+            
+            // Check if player is on the same grid position as a spider web
+            if (sameGridPosition(player.components.position, spiderWeb.components.position)) {
+              handlePlayerSpiderWebCollision(player, spiderWeb, currentTime);
+              break; // Only one web can catch the player at a time
+            }
+          }
         }
         
         // Check for math problems that can be consumed
@@ -193,4 +229,30 @@ function handlePlayerEnemyCollision(
       gameEngine.addResource('gameState', 'gameOver');
     }, ANIMATION_CONFIG.DEATH.DURATION);
   }
+}
+
+/**
+ * Handle collision between player and spider web
+ */
+function handlePlayerSpiderWebCollision(
+  player: PlayerEntityWithHealth, 
+  spiderWeb: SpiderWebEntity, 
+  currentTime: number
+): void {
+  const webComp = spiderWeb.components.spiderWeb;
+  
+  console.log(`🕸️ Player caught by spider web! Freezing for ${webComp.freezeTime}ms`);
+  
+  // Mark the web as inactive (it has caught a player)
+  webComp.isActive = false;
+  
+  // Apply freeze effect to player
+  gameEngine.entityManager.addComponent(player.id, 'freezeEffect', {
+    startTime: currentTime,
+    duration: webComp.freezeTime,
+    isActive: true,
+    sourceWebId: spiderWeb.id
+  });
+  
+  console.log(`❄️ Player frozen for ${webComp.freezeTime}ms`);
 } 

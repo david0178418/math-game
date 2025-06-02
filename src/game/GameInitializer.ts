@@ -24,6 +24,7 @@ import { addUISystemToEngine } from '../ecs/systems/UISystem';
 import { addProblemManagementSystemToEngine } from '../ecs/systems/ProblemManagementSystem';
 import { addAISystemToEngine } from '../ecs/systems/AISystem';
 import { addEnemySpawnSystemToEngine } from '../ecs/systems/EnemySpawnSystem';
+import { addSpiderWebSystemToEngine } from '../ecs/systems/SpiderWebSystem';
 import { uiManager } from './UIManager';
 
 /**
@@ -66,6 +67,7 @@ export class GameInitializer {
     addUISystemToEngine();          // Priority 50  - UI updates
     addEnemySpawnSystemToEngine();  // Priority 40  - Enemy spawning
     addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
+    addSpiderWebSystemToEngine();   // Priority 20  - Spider Web system
 
     console.log('Core systems initialized (render system will be added when canvas is ready)');
   }
