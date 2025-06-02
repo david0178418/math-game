@@ -116,6 +116,8 @@ function handlePlayerProblemCollision(
     // Check for game over
     if (playerComp.lives <= 0) {
       console.log('Game Over!');
+      // Disable player controls immediately
+      playerComp.gameOverPending = true;
       // Add 1 second delay before showing game over screen
       setTimeout(() => {
         gameEngine.addResource('gameState', 'gameOver');
@@ -167,6 +169,8 @@ function handlePlayerEnemyCollision(
   // Check for game over
   if (playerComp.lives <= 0) {
     console.log('Game Over!');
+    // Disable player controls immediately
+    playerComp.gameOverPending = true;
     // Add 1 second delay before showing game over screen
     setTimeout(() => {
       gameEngine.addResource('gameState', 'gameOver');

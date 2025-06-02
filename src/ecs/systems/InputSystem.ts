@@ -81,6 +81,17 @@ export function addInputSystemToEngine(): void {
       for (const entity of queries.players) {
         const playerComponent = entity.components.player;
         
+        // Skip input processing if game over is pending
+        if (playerComponent.gameOverPending) {
+          // Clear all input states to prevent any remaining movement
+          playerComponent.inputState.up = false;
+          playerComponent.inputState.down = false;
+          playerComponent.inputState.left = false;
+          playerComponent.inputState.right = false;
+          playerComponent.inputState.eat = false;
+          continue;
+        }
+        
         // Detect key press events (transition from false to true)
         const upPressed = (keyPressed.ArrowUp || keyPressed.KeyW) && !(prevKeyState.ArrowUp || prevKeyState.KeyW);
         const downPressed = (keyPressed.ArrowDown || keyPressed.KeyS) && !(prevKeyState.ArrowDown || prevKeyState.KeyS);

@@ -8671,7 +8671,134 @@ I'll add a 1 second delay before showing the "Game over" screen to make the tran
 
 ---
 
-Perfect! I've added a 1 second delay before transit
+Perfect! I've added a 1 second delay before transitioning to the "Game Over" screen in both places where the game over condition is triggered:
+
+## Changes Made:
+
+### CollisionSystem.ts
+- **Wrong Answer Game Over**: When the player consumes a wrong answer and lives reach 0, there's now a 1 second delay before setting `gameState` to 'gameOver'
+- **Enemy Collision Game Over**: When the player is hit by an enemy and lives reach 0, there's also a 1 second delay before the game over transition
+
+The delay allows for:
+1. The shake animation to complete (400ms for wrong answers, 350ms for enemy damage)
+2. Players to process what happened before the abrupt game over screen
+3. A more natural transition that feels less jarring
+
+The game will still immediately log "Game Over!" to the console for debugging purposes, but the actual UI transition to the game over screen will be delayed by 1 second, providing a smoother user experience.
+
+---
+
+_**User**_
+
+During the 1 second window, disable the player controls.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I need to disable player controls during the 1 second delay before the game over screen appears. Let me first check the InputSystem to see how it currently handles input, then add a flag to disable controls during the game over delay.
+
+---
+
+Read file: src/ecs/systems/InputSystem.ts
+
+---
+
+Now I need to add a flag to disable player controls. I'll add this flag to the player component and modify both the CollisionSystem and InputSystem to handle it.
+
+First, let me add a `gameOverPending` flag to the player component:
+
+---
+
+```diff
+      lives: number; 
+      inputState: { up: boolean; down: boolean; left: boolean; right: boolean; eat: boolean };
++     gameOverPending?: boolean; // Flag to disable controls during game over delay
+    };
+    enemy: { 
+```
+
+```diff
+          score: STARTING_SCORE, 
+          lives: PLAYER_LIVES, 
+-         inputState: { up: false, down: false, left: false, right: false, eat: false } 
++         inputState: { up: false, down: false, left: false, right: false, eat: false },
++         gameOverPending: false
+        },
+        collider: { 
+```
+
+---
+
+Now I'll update the CollisionSystem to set the `gameOverPending` flag when triggering the game over delay:
+
+---
+
+```diff
+      if (playerComp.lives <= 0) {
+        console.log('Game Over!');
++       // Disable player controls immediately
++       playerComp.gameOverPending = true;
+        // Add 1 second delay before showing game over screen
+        setTimeout(() => {
+```
+
+```diff
+    if (playerComp.lives <= 0) {
+      console.log('Game Over!');
++     // Disable player controls immediately
++     playerComp.gameOverPending = true;
+      // Add 1 second delay before showing game over screen
+      setTimeout(() => {
+```
+
+---
+
+Now I'll update the InputSystem to check the `gameOverPending` flag and skip input processing when it's true:
+
+---
+
+```diff
+        for (const entity of queries.players) {
+          const playerComponent = entity.components.player;
++         
++         // Skip input processing if game over is pending
++         if (playerComponent.gameOverPending) {
++           // Clear all input states to prevent any remaining movement
++           playerComponent.inputState.up = false;
++           playerComponent.inputState.down = false;
++           playerComponent.inputState.left = false;
++           playerComponent.inputState.right = false;
++           playerComponent.inputState.eat = false;
++           continue;
++         }
+          
+          // Detect key press events (transition from false to true)
+```
+
+---
+
+Perfect! I've successfully implemented the feature to disable player controls during the 1 second game over delay. Here's what I added:
+
+## Changes Made:
+
+### 1. Player Component (Engine.ts)
+- Added `gameOverPending?: boolean` flag to track when the player has died but the game over screen hasn't appeared yet
+- Initialize this flag to `false` when creating a new player entity
+
+### 2. CollisionSystem.ts
+- Set `gameOverPending = true` immediately when the game over condition is triggered (both for wrong answers and enemy collisions)
+- This happens before the 1 second delay, so controls are disabled instantly upon death
+
+### 3. InputSystem.ts
+- Added a check for the `gameOverPending` flag at the start of input processing
+- When `gameOverPending` is true:
+  - Skip all input detection logic
+  - Clear all input states to prevent any
 
 ---
 
