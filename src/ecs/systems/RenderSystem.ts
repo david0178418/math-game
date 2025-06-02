@@ -144,7 +144,11 @@ export function addRenderSystemToEngine(): void {
         const position = entity.components.position;
         const renderable = entity.components.renderable;
         
-        drawEntity(position, renderable);
+        // Check if entity has health component for invincibility
+        const healthComp = 'health' in entity.components ? entity.components.health : undefined;
+        const isInvulnerable = healthComp?.invulnerable || false;
+        
+        drawEntity(position, renderable, isInvulnerable);
       }
       
       // Draw numbers on math problem tiles (after drawing the entities)
@@ -228,12 +232,19 @@ function drawEntity(
     imageSrc?: string;
     imageWidth?: number;
     imageHeight?: number;
-  }
+  },
+  isInvulnerable: boolean = false
 ): void {
   if (!ctx) return;
   
   const centerX = position.x + CELL_SIZE / 2;
   const centerY = position.y + CELL_SIZE / 2;
+  
+  // Apply reduced opacity for invulnerable entities
+  if (isInvulnerable) {
+    ctx.save();
+    ctx.globalAlpha = 0.5; // 50% opacity during invincibility
+  }
   
   if (renderable.shape === 'image' && renderable.imageSrc) {
     // Draw image
@@ -263,6 +274,7 @@ function drawEntity(
       
       // Apply rotation if specified
       if (position.rotation !== undefined && position.rotation !== 0) {
+        // Additional save for rotation (nested within invincibility save if applicable)
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate((position.rotation * Math.PI) / 180); // Convert degrees to radians
@@ -273,7 +285,7 @@ function drawEntity(
           renderWidth,
           renderHeight
         );
-        ctx.restore();
+        ctx.restore(); // Restore rotation transform
       } else {
         // Draw without rotation
         ctx.drawImage(
@@ -305,6 +317,11 @@ function drawEntity(
       renderable.size,
       renderable.size
     );
+  }
+  
+  // Restore opacity for invulnerable entities
+  if (isInvulnerable) {
+    ctx.restore();
   }
 }
 

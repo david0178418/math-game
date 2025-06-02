@@ -7884,6 +7884,363 @@ Now I need to update the movement system to set rotation targets when movement b
 
 ---
 
+```diff
+  import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
+  import { SYSTEM_PRIORITIES } from '../systemConfigs';
++ import { startRotationAnimation } from './AnimationSystem';
+  
+  // Add the movement system to ECSpresso
+```
+
+```diff
+          // Start animation if position changed
+          if (newPixelX !== position.x || newPixelY !== position.y) {
++           // Calculate rotation based on movement direction
++           let targetRotation = position.rotation || 0; // Default to current rotation or 0 (up)
++           
++           if (player.inputState.up) {
++             targetRotation = 0; // Up
++           } else if (player.inputState.right) {
++             targetRotation = 90; // Right
++           } else if (player.inputState.down) {
++             targetRotation = 180; // Down
++           } else if (player.inputState.left) {
++             targetRotation = 270; // Left
++           }
++           
++           // Handle rotation wrapping (e.g., 350° to 10° should go through 360°, not backwards)
++           const currentRotation = position.rotation || 0;
++           if (Math.abs(targetRotation - currentRotation) > 180) {
++             if (targetRotation > currentRotation) {
++               targetRotation -= 360;
++             } else {
++               targetRotation += 360;
++             }
++           }
++           
++           // Start rotation animation (25% of movement duration)
++           const rotationDuration = 750 * 0.25; // 25% of 750ms movement duration
+            startMovementAnimation(position, newPixelX, newPixelY);
++           startRotationAnimation(position, targetRotation, rotationDuration);
+            
+            // Publish player moved event (with target position)
+```
+
+---
+
+I need to add the `startRotationAnimation` function to the AnimationSystem first. Let me add it:
+
+---
+
+```diff
+    position.animationDuration = duration;
+  }
++ 
++ /**
++  * Start a rotation animation for an entity
++  */
++ export function startRotationAnimation(
++   position: { 
++     rotation?: number;
++     targetRotation?: number;
++     rotationStartTime?: number;
++     rotationDuration?: number;
++     startRotation?: number;
++   },
++   targetRotation: number,
++   duration: number = ANIMATION_CONFIG.MOVEMENT_DURATION * 0.25
++ ): void {
++   // Initialize rotation if not set
++   if (position.rotation === undefined) {
++     position.rotation = 0;
++   }
++   
++   // Store current rotation as start rotation
++   position.startRotation = position.rotation;
++   
++   // Set up rotation animation
++   position.targetRotation = targetRotation;
++   position.rotationStartTime = Date.now();
++   position.rotationDuration = duration;
++ }
+  
+  /**
+```
+
+---
+
+Now I need to update the animation system's process loop to handle rotation animations:
+
+---
+
+```diff
+          const position = entity.components.position;
+          
+-         // Skip entities that aren't animating
+-         if (!position.isAnimating || position.targetX == null || position.targetY == null || !position.animationStartTime) {
+-           continue;
+-         }
+-         
++         // Handle position animation
++         if (position.isAnimating && position.targetX != null && position.targetY != null && position.animationStartTime) {
+            const elapsed = currentTime - position.animationStartTime;
+            const duration = position.animationDuration || ANIMATION_CONFIG.MOVEMENT_DURATION;
+```
+
+```diff
+              position.x = lerp(startPosX, position.targetX, easedProgress);
+              position.y = lerp(startPosY, position.targetY, easedProgress);
++           }
++         }
++         
++         // Handle rotation animation
++         if (position.targetRotation != null && position.rotationStartTime && position.startRotation != null) {
++           const elapsed = currentTime - position.rotationStartTime;
++           const duration = position.rotationDuration || (ANIMATION_CONFIG.MOVEMENT_DURATION * 0.25);
++           
++           if (elapsed >= duration) {
++             // Rotation complete - snap to target rotation
++             position.rotation = position.targetRotation;
++             
++             // Clear rotation animation state
++             position.targetRotation = undefined;
++             position.rotationStartTime = undefined;
++             position.rotationDuration = undefined;
++             position.startRotation = undefined;
++           } else {
++             // Interpolate rotation
++             const progress = elapsed / duration;
++             const easedProgress = easeOutQuad(progress);
++             
++             position.rotation = lerp(position.startRotation, position.targetRotation, easedProgress);
++           }
+          }
+        }
+```
+
+---
+
+Now I need to update the render system to apply rotation when drawing images. Let me enhance the drawEntity function:
+
+---
+
+```diff
+  // Draw an individual entity
+  function drawEntity(
+-   position: { x: number; y: number }, 
++   position: { x: number; y: number; rotation?: number }, 
+    renderable: { 
+      shape: 'circle' | 'rectangle' | 'image'; 
+```
+
+```diff
+        }
+        
++       // Apply rotation if specified
++       if (position.rotation !== undefined && position.rotation !== 0) {
++         ctx.save();
++         ctx.translate(centerX, centerY);
++         ctx.rotate((position.rotation * Math.PI) / 180); // Convert degrees to radians
++         ctx.drawImage(
++           img,
++           -renderWidth / 2,
++           -renderHeight / 2,
++           renderWidth,
++           renderHeight
++         );
++         ctx.restore();
++       } else {
++         // Draw without rotation
+          ctx.drawImage(
+            img,
+```
+
+```diff
+            renderHeight
+          );
++       }
+      } else {
+        // Fallback to circle if image not loaded
+```
+
+---
+
+Now I need to initialize the player's rotation to 0 (up) when created:
+
+---
+
+```diff
+    createPlayer(x: number, y: number): { id: number } {
+      const entity = gameEngine.spawn({
+-       position: { x, y },
++       position: { x, y, rotation: 0 },
+        renderable: { 
+          shape: 'image', 
+```
+
+---
+
+Let me build to check for any compilation errors:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 23 modules transformed.
+dist/index.html                  1.01 kB │ gzip:  0.50 kB
+dist/assets/fly-DJnpwrPM.svg     4.47 kB │ gzip:  1.34 kB
+dist/assets/index-C8bCv55o.css  29.87 kB │ gzip:  6.07 kB
+dist/assets/index-BhFhdsDX.js   55.09 kB │ gzip: 15.52 kB │ map: 185.02 kB
+✓ built in 162ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Perfect! The build is successful. Let me start the development server to test the rotation functionality:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+## Summary
+
+I've successfully implemented directional rotation for the fly sprite! Here's what was added:
+
+### Changes Made:
+
+1. **Enhanced Position Component (`src/ecs/Engine.ts`)**:
+   - Added rotation properties: `rotation`, `targetRotation`, `rotationStartTime`, `rotationDuration`, `startRotation`
+   - Initialized player with `rotation: 0` (facing up by default)
+
+2. **Enhanced Movement System (`src/ecs/systems/MovementSystem.ts`)**:
+   - Added directional rotation logic based on input:
+     - Up: 0° (default orientation)
+     - Right: 90°
+     - Down: 180°
+     - Left: 270°
+   - Implemented smart rotation wrapping (chooses shortest path)
+   - Added `startRotationAnimation()` call with 25% of movement duration (~187ms)
+
+3. **Enhanced Animation System (`src/ecs/systems/AnimationSystem.ts`)**:
+   - Added `startRotationAnimation()` function for rotation animations
+   - Enhanced animation loop to handle both position and rotation separately
+   - Rotation animations complete much faster than movement (25% of 750ms = ~187ms)
+   - Uses same easing function for smooth rotation
+
+4. **Enhanced Render System (`src/ecs/systems/RenderSystem.ts`)**:
+   - Updated `drawEntity()` function signature to accept rotation
+   - Added rotation rendering using Canvas `translate()` and `rotate()`
+   - Converts degrees to radians for Canvas API
+   - Preserves canvas state with `save()`/`restore()`
+
+### How It Works:
+
+1. **Quick Rotation**: When the player moves, rotation starts immediately and completes in ~187ms (25% of the 750ms movement time)
+
+2. **Directional Mapping**:
+   - ⬆️ Up = 0° (fly's default orientation)
+   - ➡️ Right = 90° 
+   - ⬇️ Down = 180°
+   - ⬅️ Left = 270°
+
+3. **Smart Rotation**: The system chooses the shortest rotation path (e.g., 350° to 10° rotates through 360°, not backwards 340°)
+
+4. **Smooth Animation**: Uses the same easing function as movement but completes much faster
+
+5. **Canvas Rotation**: Uses proper Canvas 2D rotation techniques with translation to rotate around the sprite's center
+
+### Features:
+- ✅ **Quick Rotation**: Completes in 25% of movement time as requested
+- ✅ **Direction-Based**: Fly rotates to face movement direction
+- ✅ **Smooth Animation**: Uses eased interpolation
+- ✅ **Smart Pathing**: Takes shortest rotation route
+- ✅ **Proper Rendering**: Rotates around sprite center
+
+The development server is running! You should now see the fly sprite quickly rotate to face the direction of movement, completing its rotation in about 187ms while the movement animation takes the full 750ms.
+
+---
+
+_**User**_
+
+Let's reduce the opacity while the character is in their invincibility time after damage.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I need to implement visual feedback for invincibility by reducing the player's opacity. Let me first check how the invincibility system is currently implemented:
+
+---
+
+<details>
+            <summary>Grep search for "invulnerable" • **6** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L70 | `invulnerable: boolean;` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L253 | `invulnerable: false,` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L282 | `invulnerable: false,` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L32 | `if (healthComp.invulnerable && currentTime > healthComp.invulnerabilityTime) {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L33 | `healthComp.invulnerable = false;` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L57 | `// Check collisions with enemies (only if not invulnerable)` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L58 | `if (!healthComp.invulnerable) {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L133 | `// Check if player is invulnerable` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L134 | `if (healthComp.invulnerable) {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/CollisionSystem.ts` | L153 | `healthComp.invulnerable = true;` |
+| `file:///Users/dgranado/PersonalProjects/math/project-plan.md` | L244 | `.addComponent('Health', { current: 3, max: 3, invulnerable: false });` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-29_13-18-update-app-to-match-new-ecspresso-api.md` | L258 | `invulnerable: false,` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-29_13-18-update-app-to-match-new-ecspresso-api.md` | L298 | `invulnerable: false,` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-29_13-18-update-app-to-match-new-ecspresso-api.md` | L2695 | `healthComp.invulnerable = true;` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L381 | `+       .addComponent('Health', { current: 3, max: 3, invulnerable: false, invulnerabilityTime: 0 });` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L406 | `+       .addComponent('Health', { current: 1, max: 1, invulnerable: false, invulnerabilityTime: 0 });` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L682 | `+     invulnerable: boolean;` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L780 | `-       .addComponent('Health', { current: 3, max: 3, invulnerable: false, invulnerabilityTime: 0 });` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L785 | `+       invulnerable: false,` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L823 | `-       .addComponent('Health', { current: 1, max: 1, invulnerable: false, invulnerabilityTime: 0 });` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L828 | `+       invulnerable: false,` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L3050 | `invulnerable: false,` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L10953 | `+       invulnerable: boolean;` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L11700 | `- You should immediately lose a life and become briefly invulnerable` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L70 | `invulnerable: boolean;` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L253 | `invulnerable: false,` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L282 | `invulnerable: false,` |
+
+</details>
+
+---
+
+Let me check the CollisionSystem to understand how invincibility works:
+
+---
+
+Read file: src/ecs/systems/CollisionSystem.ts
+
+---
+
+Perfect! I can see that the invincibility system is working through the `health` component with `invulnerable` boolean and `invulnerabilityTime`. Now I need to modify the render system to reduce opacity when a player entity has the `invulnerable` flag set to `true`.
+
+Let me update the render system to check for player invincibility and apply reduced opacity:
+
+---
+
 
 
 ---
