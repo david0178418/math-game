@@ -1031,9 +1031,389 @@ Now let me also update the system configuration section to reflect the spawn ord
 
 ---
 
+```diff
+  - **File**: `src/ecs/systemConfigs.ts`
+  - **Priority**: Medium
+- - **Action**: Add type-specific AI parameters
++ - **Action**: Add type-specific AI parameters and spawn tracking
+  - **Changes**: 
++   ```typescript
++   // Enemy Spawn Configuration
++   export const ENEMY_SPAWN_CONFIG = {
++     MAX_ENEMIES: 3,                      // Reduced from 4 to 3
++     BASE_SPAWN_INTERVAL: 3000,           // 3 seconds between spawns
++     MIN_SPAWN_INTERVAL: 1500,            // Minimum spawn interval
++     DIFFICULTY_SCALE_SCORE: 100,         // Score points per difficulty increase
++     SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
++     RESET_ON_ALL_DEFEATED: true,         // Restart spawn cycle
++   } as const;
++   ```
+    - Different move intervals per enemy type
+    - Behavior probability adjustments
+    - Difficulty scaling factors
++   - Spawn order tracking state
+  
+  ### **Phase 8: Testing and Polish**
+```
+
+---
+
+Let me also add a new task for implementing the spawn state tracking:
+
+---
+
+```diff
+    - Reset spawn sequence when all enemies are defeated
+  
++ #### **Task 2.4: Add Spawn State Tracking**
++ - **File**: `src/ecs/systems/EnemySpawnSystem.ts`
++ - **Priority**: High
++ - **Action**: Implement spawn state management for sequential enemy creation
++ - **Changes**:
++   ```typescript
++   // Spawn state tracking
++   let currentSpawnIndex = 0;           // Track which enemy type to spawn next
++   let totalEnemiesSpawned = 0;         // Track total spawned this cycle
++   let spawnCycleComplete = false;      // Track if all 3 enemies have been spawned
++   
++   // Functions to manage spawn state
++   function getNextEnemyType(): 'lizard' | 'spider' | 'frog' | null;
++   function incrementSpawnIndex(): void;
++   function resetSpawnCycle(): void;
++   function shouldResetCycle(currentEnemyCount: number): boolean;
++   ```
++ 
+  ### **Phase 3: Spider Implementation**
+  
+```
+
+---
+
+Finally, let me update the success criteria to reflect the spawn order requirement:
+
+---
+
+```diff
+  
+  - [ ] Three distinct enemy types with unique behaviors
++ - [ ] **Sequential spawn order**: Lizard → Spider → Frog, exactly 3 enemies total
++ - [ ] **Spawn cycle reset**: New sequence starts when all enemies are defeated
+  - [ ] Spider webs freeze player for 2 seconds, disappear after 3 seconds if unused
+  - [ ] Frog tongues extend up to 3 tiles, damage player on contact
+  - [ ] All enemy types maintain existing AI behavior patterns (chase, patrol, etc.)
+  - [ ] No performance degradation
+  - [ ] Maintains TypeScript type safety
+- - [ ] Visual distinction between enemy types
++ - [ ] Visual distinction between enemy types (Lizard: red, Spider: purple, Frog: green)
+  - [ ] Proper game balance and player experience
+  
+```
+
+---
+
+Perfect! I've successfully updated the enemy behavior implementation plan to include the specific spawn order requirements. Here are the key changes I made:
+
+## Major Updates to the Plan:
+
+### **1. Overview Section**
+- Added spawn order information to the enemy type descriptions
+- Added a new "Spawn Order Behavior" section explaining the sequential spawning system
+- Clarified that exactly 3 enemies spawn in sequence, replacing the previous 4 random enemies
+
+### **2. Task 2.3: Enemy Spawn System** 
+- Changed priority from Medium to **High** (critical for the new behavior)
+- Replaced random enemy selection with **sequential spawn order**
+- Added requirements for spawn count tracking and cycle reset logic
+
+### **3. New Task 2.4: Spawn State Tracking**
+- Added a completely new high-priority task for managing spawn state
+- Includes specific implementation details for tracking spawn index, count, and cycle completion
+- Defines required functions for spawn management
+
+### **4. Configuration Updates**
+- **Task 7.1**: Added `ENEMY_SPAWN` configuration with spawn order array and reset behavior
+- **Task 7.2**: Added `ENEMY_SPAWN_CONFIG` with reduced max enemies (3 instead of 4)
+- Added color specifications for each enemy type
+
+### **5. Success Criteria**
+- Added specific checkpoints for sequential spawn order
+- Added spawn cycle reset requirement
+- Added visual distinction requirements with specific colors
+
+## Key Technical Requirements:
+
+The updated plan now ensures:
+- **Deterministic spawning**: Lizard always spawns first, Spider second, Frog third
+- **Cycle management**: After all 3 enemies are defeated, the sequence restarts
+- **State tracking**: System maintains which enemy type to spawn next
+- **No random selection**: Replaces the previous random enemy type selection
+
+This approach will provide a more predictable gameplay experience where players can learn and adapt to the increasing difficulty as each enemy type introduces new mechanics in a specific order.
+
+---
+
+_**User**_
+
+Begin implementing phase 1
+
+---
+
+_**Assistant**_
+
 
 
 ---
+
+I'll begin implementing Phase 1 of the enemy behavior implementation plan. This phase focuses on the core architecture enhancement by extending the component interfaces. Let me start by examining the current Engine.ts file and then make the necessary changes.
+
+---
+
+Read file: src/ecs/Engine.ts
+
+---
+
+Now I'll implement Phase 1 by modifying the Components interface to add all the required component types for the three enemy types. I'll implement all three tasks from Phase 1 in a single edit:
+
+---
+
+```diff
+    };
+    enemy: { 
++     enemyType: 'lizard' | 'spider' | 'frog';
+      behaviorType: 'chase' | 'patrol' | 'random' | 'guard';
+      nextMoveTime: number;
+```
+
+```diff
+      invulnerabilityTime: number;
+    };
++   spiderWeb: {
++     duration: number;        // Time until web disappears (3000ms)
++     freezeTime: number;      // How long to freeze player (2000ms)
++     createdTime: number;     // When web was created
++     isActive: boolean;       // Whether web can freeze players
++   };
++   freezeEffect: {
++     startTime: number;       // When freeze started
++     duration: number;        // How long to freeze (2000ms)
++     isActive: boolean;       // Whether player is currently frozen
++   };
++   frogTongue: {
++     isExtended: boolean;                    // Whether tongue is currently out
++     direction: { x: number; y: number };    // Direction tongue extends
++     maxRange: number;                       // Maximum tiles (3)
++     currentLength: number;                  // Current extension distance
++     startTime: number;                      // When tongue action started
++     phase: 'extending' | 'retracting' | 'idle';
++     segments: Array<{ x: number; y: number }>; // Tongue path for collision
++   };
+  }
+  
+```
+
+---
+
+I need to fix the linter error by updating the `createEnemy` function to include the required `enemyType` field. Let me check the EntityFactory section and update it:
+
+---
+
+Read file: src/ecs/Engine.ts
+
+---
+
+Now I need to fix the `createEnemy` function to include the required `enemyType` field. I'll update it to support the enemy type parameter and default to 'lizard':
+
+---
+
+```diff
+    },
+  
+-   createEnemy(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
++   createEnemy(x: number, y: number, enemyType: 'lizard' | 'spider' | 'frog' = 'lizard', behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+      const entity = gameEngine.spawn({
+        position: { x, y },
+```
+
+```diff
+        },
+        enemy: { 
++         enemyType,
+          behaviorType,
+          nextMoveTime: 0
+```
+
+---
+
+Perfect! Now let me check if there are any other files that call the `createEnemy` function that need to be updated to match the new signature:
+
+---
+
+<details>
+            <summary>Grep search for "createEnemy\(" • **9** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L297 | `createEnemy(x: number, y: number, enemyType: 'lizard' | 'spider' | 'frog' = 'lizard', behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/systems/EnemySpawnSystem.ts` | L69 | `EntityFactory.createEnemy(pixelPos.x, pixelPos.y, randomBehavior);` |
+| `file:///Users/dgranado/PersonalProjects/math/plans/enemy-behavior-implementation-plan.md` | L94 | `- Update function signature: `createEnemy(x, y, enemyType, behaviorType)`` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-29_00-02-eliminating-duplication-in-ecspresso-framework.md` | L144 | `EntityFactory.createEnemy(x, y, type) // auto-applies correct shape/color` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L384 | `+   createEnemy(x: number, y: number, aiType: string = 'random') {` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L792 | `createEnemy(x: number, y: number, aiType: string = 'random') {` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-26_19-53-project-plan-execution-and-guidance.md` | L12456 | `+   EntityFactory.createEnemy(pixelPos.x, pixelPos.y, randomBehavior);` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-06-02_03-17-plan-for-enemy-behavior-implementation.md` | L645 | `+   - Update function signature: `createEnemy(x, y, enemyType, behaviorType)`` |
+| `file:///Users/dgranado/PersonalProjects/math/.specstory/history/2025-05-29_13-18-update-app-to-match-new-ecspresso-api.md` | L267 | `createEnemy(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {` |
+| `file:///Users/dgranado/PersonalProjects/math/plans/enemy-behavior-implementation-plan.md` | L94 | `- Update function signature: `createEnemy(x, y, enemyType, behaviorType)`` |
+| `file:///Users/dgranado/PersonalProjects/math/src/ecs/Engine.ts` | L297 | `createEnemy(x: number, y: number, enemyType: 'lizard' | 'spider' | 'frog' = 'lizard', behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {` |
+
+</details>
+
+---
+
+I need to update the `EnemySpawnSystem.ts` file to fix the call to `createEnemy`. Let me read that file and update it:
+
+---
+
+Read file: src/ecs/systems/EnemySpawnSystem.ts
+
+---
+
+I need to update the `spawnEnemyFromEdge` function to include the enemy type parameter. For now, I'll default to 'lizard' to maintain compatibility while we implement the full spawn order logic in Phase 2:
+
+---
+
+```diff
+    const randomBehavior = behaviorTypes[Math.floor(Math.random() * behaviorTypes.length)];
+    
+-   EntityFactory.createEnemy(pixelPos.x, pixelPos.y, randomBehavior);
++   // For now, default to 'lizard' - will be updated in Phase 2 for sequential spawning
++   EntityFactory.createEnemy(pixelPos.x, pixelPos.y, 'lizard', randomBehavior);
+    
+-   console.log(`Spawned ${randomBehavior} enemy at edge position (${edgePosition.x}, ${edgePosition.y})`);
++   console.log(`Spawned lizard with ${randomBehavior} behavior at edge position (${edgePosition.x}, ${edgePosition.y})`);
+  }
+  
+```
+
+---
+
+Now let me run TypeScript to verify that all the Phase 1 changes are working correctly:
+
+---
+
+```bash
+npx tsc --noEmit
+```
+
+```
+dgranado@MacBook-Pro math % 
+
+```
+
+---
+
+Excellent! TypeScript compilation passed with no errors. Let me now verify that the game still builds and runs correctly:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 23 modules transformed.
+dist/index.html                  1.01 kB │ gzip:  0.51 kB
+dist/assets/fly-DJnpwrPM.svg     4.47 kB │ gzip:  1.34 kB
+dist/assets/index-C1FB4JF5.css  29.90 kB │ gzip:  6.08 kB
+dist/assets/index-aLCOZVLR.js   57.56 kB │ gzip: 16.17 kB │ map: 196.80 kB
+✓ built in 169ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Perfect! The build completed successfully. Now let me create a summary of what was accomplished in Phase 1:
+
+## Phase 1 Implementation Complete! ✅
+
+I have successfully implemented **Phase 1: Core Architecture Enhancement** of the enemy behavior implementation plan. Here's what was accomplished:
+
+### **Task 1.1: Extend Enemy Component Interface** ✅
+- **File**: `src/ecs/Engine.ts`
+- **Changes Made**: 
+  - Added `enemyType: 'lizard' | 'spider' | 'frog'` field to the `enemy` component interface
+  - Updated the `EntityFactory.createEnemy()` function signature to accept `enemyType` parameter
+  - Added default value of `'lizard'` to maintain backward compatibility
+
+### **Task 1.2: Create Spider-Specific Components** ✅
+- **File**: `src/ecs/Engine.ts`
+- **Components Added**:
+  ```typescript
+  spiderWeb: {
+    duration: number;        // Time until web disappears (3000ms)
+    freezeTime: number;      // How long to freeze player (2000ms)
+    createdTime: number;     // When web was created
+    isActive: boolean;       // Whether web can freeze players
+  };
+  freezeEffect: {
+    startTime: number;       // When freeze started
+    duration: number;        // How long to freeze (2000ms)
+    isActive: boolean;       // Whether player is currently frozen
+  };
+  ```
+
+### **Task 1.3: Create Frog-Specific Components** ✅
+- **File**: `src/ecs/Engine.ts`
+- **Component Added**:
+  ```typescript
+  frogTongue: {
+    isExtended: boolean;                    // Whether tongue is currently out
+    direction: { x: number; y: number };    // Direction tongue extends
+    maxRange: number;                       // Maximum tiles (3)
+    currentLength: number;                  // Current extension distance
+    startTime: number;                      // When tongue action started
+    phase: 'extending' | 'retracting' | 'idle';
+    segments: Array<{ x: number; y: number }>; // Tongue path for collision
+  };
+  ```
+
+### **Additional Fixes Applied** ✅
+- **File**: `src/ecs/systems/EnemySpawnSystem.ts`
+- **Changes**: Updated the `createEnemy` call to include the new `enemyType` parameter (temporarily defaulting to 'lizard')
+
+### **Verification Results** ✅
+- ✅ **TypeScript compilation**: All types check correctly with strict settings
+- ✅ **Build process**: Project builds successfully with no errors
+- ✅ **Type safety**: Maintained strict TypeScript typing throughout
+- ✅ **Backward compatibility**: Existing enemy spawning continues to work
+
+### **Foundation Ready for Next Phases** 🎯
+
+Phase 1 has successfully established the foundation for the three enemy types:
+
+1. **Architecture**: Component system ready to support all three enemy types
+2. **Type Safety**: Full TypeScript support for new components  
+3. **Integration**: Existing systems continue to work while new capabilities are available
+4. **Modularity**: Each enemy type has its own dedicated components
+
+The codebase is now ready for **Phase 2: Enemy Type System** where we'll implement the sequential spawn order (Lizard → Spider → Frog) and create the type-specific factory methods.
+
+Would you like me to proceed with Phase 2, or would you like to review the Phase 1 implementation first?
+
+---
+
+_**User**_
+
+Yes. Proceed.
+
+---
+
+_**Assistant**_
 
 
 

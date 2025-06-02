@@ -53,6 +53,7 @@ export interface Components {
     deathScale?: number; // Scale factor for shrinking effect
   };
   enemy: { 
+    enemyType: 'lizard' | 'spider' | 'frog';
     behaviorType: 'chase' | 'patrol' | 'random' | 'guard';
     nextMoveTime: number;
     aiState?: {
@@ -82,6 +83,26 @@ export interface Components {
     max: number; 
     invulnerable: boolean; 
     invulnerabilityTime: number;
+  };
+  spiderWeb: {
+    duration: number;        // Time until web disappears (3000ms)
+    freezeTime: number;      // How long to freeze player (2000ms)
+    createdTime: number;     // When web was created
+    isActive: boolean;       // Whether web can freeze players
+  };
+  freezeEffect: {
+    startTime: number;       // When freeze started
+    duration: number;        // How long to freeze (2000ms)
+    isActive: boolean;       // Whether player is currently frozen
+  };
+  frogTongue: {
+    isExtended: boolean;                    // Whether tongue is currently out
+    direction: { x: number; y: number };    // Direction tongue extends
+    maxRange: number;                       // Maximum tiles (3)
+    currentLength: number;                  // Current extension distance
+    startTime: number;                      // When tongue action started
+    phase: 'extending' | 'retracting' | 'idle';
+    segments: Array<{ x: number; y: number }>; // Tongue path for collision
   };
 }
 
@@ -274,16 +295,33 @@ export const EntityFactory = {
     return entity;
   },
 
-  createEnemy(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+  createEnemy(x: number, y: number, enemyType: 'lizard' | 'spider' | 'frog' = 'lizard', behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+    // Set type-specific visual properties
+    let enemyColor: string;
+    switch (enemyType) {
+      case 'lizard':
+        enemyColor = GAME_CONFIG.COLORS.ENEMY; // Red (existing enemy color)
+        break;
+      case 'spider':
+        enemyColor = 'purple';
+        break;
+      case 'frog':
+        enemyColor = 'green';
+        break;
+      default:
+        enemyColor = GAME_CONFIG.COLORS.ENEMY;
+    }
+
     const entity = gameEngine.spawn({
       position: { x, y },
       renderable: { 
         shape: 'rectangle', 
-        color: GAME_CONFIG.COLORS.ENEMY, 
+        color: enemyColor, 
         size: CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
         layer: GAME_CONFIG.LAYERS.ENTITIES 
       },
       enemy: { 
+        enemyType,
         behaviorType,
         nextMoveTime: 0
       },
@@ -301,6 +339,18 @@ export const EntityFactory = {
     });
 
     return entity;
+  },
+
+  createLizard(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+    return this.createEnemy(x, y, 'lizard', behaviorType);
+  },
+
+  createSpider(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+    return this.createEnemy(x, y, 'spider', behaviorType);
+  },
+
+  createFrog(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+    return this.createEnemy(x, y, 'frog', behaviorType);
   },
 
   createMathProblem(x: number, y: number, value: number, isCorrect: boolean, difficulty: number = 1): { id: number } {
