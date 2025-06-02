@@ -4,9 +4,17 @@
 
 This document outlines the implementation plan for introducing three distinct enemy types in the math game:
 
-1. **Lizard** - Current enemy behavior (baseline)
-2. **Spider** - Moves around and randomly leaves spider webs that freeze the player for 2 seconds
-3. **Frog** - Moves around and randomly shoots tongue up to 3 tiles that damages the player
+1. **Lizard** - Current enemy behavior (baseline) - **Spawns First**
+2. **Spider** - Moves around and randomly leaves spider webs that freeze the player for 2 seconds - **Spawns Second**
+3. **Frog** - Moves around and randomly shoots tongue up to 3 tiles that damages the player - **Spawns Last**
+
+### Spawn Order Behavior
+The game will spawn exactly **3 enemies total** in a specific sequence:
+- **First spawn**: Lizard (existing behavior)
+- **Second spawn**: Spider (web mechanics)
+- **Third spawn**: Frog (tongue mechanics)
+
+This replaces the previous system of spawning 4 generic enemies with random behaviors.
 
 ## Current System Analysis
 
@@ -101,12 +109,32 @@ This document outlines the implementation plan for introducing three distinct en
 
 #### **Task 2.3: Update Enemy Spawn System**
 - **File**: `src/ecs/systems/EnemySpawnSystem.ts`
-- **Priority**: Medium
-- **Action**: Implement random enemy type selection
+- **Priority**: High
+- **Action**: Implement sequential enemy type spawning
 - **Changes**: 
-  - Modify `spawnEnemyFromEdge()` to randomly choose between enemy types
-  - Add configuration for spawn probabilities
-  - Ensure balanced enemy type distribution
+  - Replace random enemy type selection with sequential spawn order
+  - Track spawn count and current enemy type to spawn
+  - First spawn: Lizard, Second spawn: Spider, Third spawn: Frog
+  - Stop spawning after 3 enemies are created
+  - Reset spawn sequence when all enemies are defeated
+
+#### **Task 2.4: Add Spawn State Tracking**
+- **File**: `src/ecs/systems/EnemySpawnSystem.ts`
+- **Priority**: High
+- **Action**: Implement spawn state management for sequential enemy creation
+- **Changes**:
+  ```typescript
+  // Spawn state tracking
+  let currentSpawnIndex = 0;           // Track which enemy type to spawn next
+  let totalEnemiesSpawned = 0;         // Track total spawned this cycle
+  let spawnCycleComplete = false;      // Track if all 3 enemies have been spawned
+  
+  // Functions to manage spawn state
+  function getNextEnemyType(): 'lizard' | 'spider' | 'frog' | null;
+  function incrementSpawnIndex(): void;
+  function resetSpawnCycle(): void;
+  function shouldResetCycle(currentEnemyCount: number): boolean;
+  ```
 
 ### **Phase 3: Spider Implementation**
 
@@ -248,19 +276,29 @@ This document outlines the implementation plan for introducing three distinct en
 #### **Task 7.1: Add Enemy Type Configuration**
 - **File**: `src/game/config.ts`
 - **Priority**: Medium
-- **Action**: Add configuration constants for new enemy types
+- **Action**: Add configuration constants for new enemy types and spawn order
 - **Changes**: 
   ```typescript
+  ENEMY_SPAWN: {
+    MAX_ENEMIES: 3,                    // Total enemies in game
+    SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
+    RESET_ON_ALL_DEFEATED: true,      // Restart spawn cycle when all enemies defeated
+  },
   ENEMY_TYPES: {
+    LIZARD: {
+      COLOR: 'red',                    // Current enemy color
+    },
     SPIDER: {
-      WEB_DURATION: 3000,        // 3 seconds
-      FREEZE_DURATION: 2000,     // 2 seconds
-      WEB_PLACEMENT_CHANCE: 0.15, // 15% chance per move
+      COLOR: 'purple',
+      WEB_DURATION: 3000,              // 3 seconds
+      FREEZE_DURATION: 2000,           // 2 seconds
+      WEB_PLACEMENT_CHANCE: 0.15,      // 15% chance per move
     },
     FROG: {
-      TONGUE_RANGE: 3,           // 3 tiles max
-      TONGUE_SPEED: 500,         // ms per tile
-      SHOOT_CHANCE: 0.2,         // 20% chance per move cycle
+      COLOR: 'green',
+      TONGUE_RANGE: 3,                 // 3 tiles max
+      TONGUE_SPEED: 500,               // ms per tile
+      SHOOT_CHANCE: 0.2,               // 20% chance per move cycle
     },
   }
   ```
@@ -268,11 +306,23 @@ This document outlines the implementation plan for introducing three distinct en
 #### **Task 7.2: Update AI Configuration**
 - **File**: `src/ecs/systemConfigs.ts`
 - **Priority**: Medium
-- **Action**: Add type-specific AI parameters
+- **Action**: Add type-specific AI parameters and spawn tracking
 - **Changes**: 
+  ```typescript
+  // Enemy Spawn Configuration
+  export const ENEMY_SPAWN_CONFIG = {
+    MAX_ENEMIES: 3,                      // Reduced from 4 to 3
+    BASE_SPAWN_INTERVAL: 3000,           // 3 seconds between spawns
+    MIN_SPAWN_INTERVAL: 1500,            // Minimum spawn interval
+    DIFFICULTY_SCALE_SCORE: 100,         // Score points per difficulty increase
+    SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
+    RESET_ON_ALL_DEFEATED: true,         // Restart spawn cycle
+  } as const;
+  ```
   - Different move intervals per enemy type
   - Behavior probability adjustments
   - Difficulty scaling factors
+  - Spawn order tracking state
 
 ### **Phase 8: Testing and Polish**
 
@@ -331,12 +381,14 @@ This document outlines the implementation plan for introducing three distinct en
 ## Success Criteria
 
 - [ ] Three distinct enemy types with unique behaviors
+- [ ] **Sequential spawn order**: Lizard → Spider → Frog, exactly 3 enemies total
+- [ ] **Spawn cycle reset**: New sequence starts when all enemies are defeated
 - [ ] Spider webs freeze player for 2 seconds, disappear after 3 seconds if unused
 - [ ] Frog tongues extend up to 3 tiles, damage player on contact
 - [ ] All enemy types maintain existing AI behavior patterns (chase, patrol, etc.)
 - [ ] No performance degradation
 - [ ] Maintains TypeScript type safety
-- [ ] Visual distinction between enemy types
+- [ ] Visual distinction between enemy types (Lizard: red, Spider: purple, Frog: green)
 - [ ] Proper game balance and player experience
 
 ## Future Enhancements

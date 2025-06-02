@@ -490,3 +490,552 @@ This plan ensures a systematic approach to implementing the three enemy types wh
 
 ---
 
+_**User**_
+
+Write this plan to a directory called "plans". Move all other .md files other than the README to this directory as well.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll help you organize the project documentation by creating a plans directory and moving the relevant files. Let me first check what .md files exist in the project.
+
+---
+
+<details>
+            <summary>Searched codebase "*.md" • **9** results</summary>
+        
+| File |
+|------|
+| `undefined` |
+| `undefined` |
+| `undefined` |
+| `undefined` |
+| `undefined` |
+| `undefined` |
+| `undefined` |
+| `undefined` |
+| `undefined` |
+
+</details>
+
+---
+
+Now let me create the plans directory and move the relevant files:
+
+---
+
+```bash
+mkdir -p plans
+```
+
+```
+dgranado@MacBook-Pro math % 
+
+```
+
+---
+
+```bash
+mv DEPLOYMENT.md project-plan.md plans/
+```
+
+```
+dgranado@MacBook-Pro math % 
+
+```
+
+---
+
+Now let me create the enemy behavior implementation plan as a new markdown file in the plans directory:
+
+---
+
+```diff
+- 
++ # Multiple Enemy Behaviors Implementation Plan
++ 
++ ## Overview
++ 
++ This document outlines the implementation plan for introducing three distinct enemy types in the math game:
++ 
++ 1. **Lizard** - Current enemy behavior (baseline)
++ 2. **Spider** - Moves around and randomly leaves spider webs that freeze the player for 2 seconds
++ 3. **Frog** - Moves around and randomly shoots tongue up to 3 tiles that damages the player
++ 
++ ## Current System Analysis
++ 
++ ### Architecture
++ - **ECS-based**: Entity-Component-System using ECSpresso framework
++ - **Grid-based Movement**: Discrete grid with smooth animations (6x5 grid, 106px cells)
++ - **Current AI System**: Single enemy type with 4 behavior patterns (chase, patrol, random, guard)
++ - **Current Components**: `enemy`, `position`, `renderable`, `collider`, `health`
++ 
++ ### Existing Enemy Implementation
++ - Movement controlled by `AISystem.ts` with grid-based pathfinding
++ - Smooth animations handled by `AnimationSystem.ts`
++ - Collision detection in `CollisionSystem.ts`
++ - Dynamic spawning from grid edges via `EnemySpawnSystem.ts`
++ 
++ ## Task List
++ 
++ ### **Phase 1: Core Architecture Enhancement**
++ 
++ #### **Task 1.1: Extend Enemy Component Interface**
++ - **File**: `src/ecs/Engine.ts`
++ - **Priority**: High
++ - **Action**: Modify the `enemy` component to include `enemyType` field
++ - **Changes**: 
++   ```typescript
++   enemy: { 
++     enemyType: 'lizard' | 'spider' | 'frog';
++     behaviorType: 'chase' | 'patrol' | 'random' | 'guard';
++     nextMoveTime: number;
++     // ... existing fields (aiState, waypoints, etc.)
++   };
++   ```
++ - **Impact**: Foundation for all type-specific behaviors
++ 
++ #### **Task 1.2: Create Spider-Specific Components**
++ - **File**: `src/ecs/Engine.ts`  
++ - **Priority**: High
++ - **Action**: Add new components for spider web mechanics
++ - **Changes**:
++   ```typescript
++   spiderWeb: {
++     duration: number;        // Time until web disappears (3000ms)
++     freezeTime: number;      // How long to freeze player (2000ms)
++     createdTime: number;     // When web was created
++     isActive: boolean;       // Whether web can freeze players
++   };
++   freezeEffect: {
++     startTime: number;       // When freeze started
++     duration: number;        // How long to freeze (2000ms)
++     isActive: boolean;       // Whether player is currently frozen
++   };
++   ```
++ 
++ #### **Task 1.3: Create Frog-Specific Components**
++ - **File**: `src/ecs/Engine.ts`
++ - **Priority**: High
++ - **Action**: Add components for frog tongue mechanics
++ - **Changes**:
++   ```typescript
++   frogTongue: {
++     isExtended: boolean;                    // Whether tongue is currently out
++     direction: { x: number; y: number };    // Direction tongue extends
++     maxRange: number;                       // Maximum tiles (3)
++     currentLength: number;                  // Current extension distance
++     startTime: number;                      // When tongue action started
++     phase: 'extending' | 'retracting' | 'idle';
++     segments: Array<{ x: number; y: number }>; // Tongue path for collision
++   };
++   ```
++ 
++ ### **Phase 2: Enemy Type System**
++ 
++ #### **Task 2.1: Update Entity Factory**
++ - **File**: `src/ecs/Engine.ts`
++ - **Priority**: High
++ - **Action**: Modify `createEnemy` function to accept enemy type
++ - **Changes**: 
++   - Update function signature: `createEnemy(x, y, enemyType, behaviorType)`
++   - Add type-specific component initialization
++   - Set appropriate visual properties per type
++ 
++ #### **Task 2.2: Create Type-Specific Enemy Factories**
++ - **File**: `src/ecs/Engine.ts`
++ - **Priority**: Medium
++ - **Action**: Add specialized creation methods for better type safety
++ - **Changes**: 
++   ```typescript
++   createLizard(x: number, y: number, behaviorType): { id: number };
++   createSpider(x: number, y: number, behaviorType): { id: number };
++   createFrog(x: number, y: number, behaviorType): { id: number };
++   ```
++ 
++ #### **Task 2.3: Update Enemy Spawn System**
++ - **File**: `src/ecs/systems/EnemySpawnSystem.ts`
++ - **Priority**: Medium
++ - **Action**: Implement random enemy type selection
++ - **Changes**: 
++   - Modify `spawnEnemyFromEdge()` to randomly choose between enemy types
++   - Add configuration for spawn probabilities
++   - Ensure balanced enemy type distribution
++ 
++ ### **Phase 3: Spider Implementation**
++ 
++ #### **Task 3.1: Create Spider Web System**
++ - **File**: `src/ecs/systems/SpiderWebSystem.ts` (new file)
++ - **Priority**: Medium
++ - **Action**: Create new system to manage spider web lifecycle
++ - **Features**:
++   - Query for entities with `spiderWeb` component
++   - Handle 3-second countdown timer
++   - Automatic web cleanup after timeout
++   - Web cleanup when player is freed from freeze
++ 
++ #### **Task 3.2: Implement Player Freeze System**
++ - **File**: `src/ecs/systems/MovementSystem.ts`
++ - **Priority**: Medium
++ - **Action**: Add freeze effect checks to player movement
++ - **Changes**: 
++   - Check for `freezeEffect` component before processing player input
++   - Ignore all movement input while frozen
++   - Visual feedback for frozen state
++ 
++ #### **Task 3.3: Create Web-Player Collision Detection**
++ - **File**: `src/ecs/systems/CollisionSystem.ts`
++ - **Priority**: Medium
++ - **Action**: Add collision handling between player and spider webs
++ - **Changes**: 
++   - Query for player entities and spider web entities
++   - Apply freeze effect when player enters web tile
++   - Remove web when player is caught
++ 
++ #### **Task 3.4: Update AI System for Spider Behavior**
++ - **File**: `src/ecs/systems/AISystem.ts`
++ - **Priority**: Medium
++ - **Action**: Add spider-specific movement logic
++ - **Changes**: 
++   - Add web placement probability during movement (configurable %)
++   - Ensure spiders don't place webs too frequently
++   - Web placement only on empty tiles
++ 
++ ### **Phase 4: Frog Implementation**
++ 
++ #### **Task 4.1: Create Frog Tongue System**
++ - **File**: `src/ecs/systems/FrogTongueSystem.ts` (new file)
++ - **Priority**: Medium
++ - **Action**: Create system to manage tongue extension/retraction
++ - **Features**:
++   - Query for entities with `frogTongue` component
++   - Handle tongue extension up to 3 tiles or map boundary
++   - Smooth tongue animation phases (extending → retracting → idle)
++   - Random tongue direction selection
++ 
++ #### **Task 4.2: Implement Tongue Damage System**
++ - **File**: `src/ecs/systems/CollisionSystem.ts`
++ - **Priority**: Medium
++ - **Action**: Add collision detection between player and frog tongues
++ - **Changes**: 
++   - Check collision between player and tongue segments
++   - Apply damage when player touches extended tongue
++   - Integrate with existing health/damage system
++ 
++ #### **Task 4.3: Update AI System for Frog Behavior**
++ - **File**: `src/ecs/systems/AISystem.ts`
++ - **Priority**: Medium
++ - **Action**: Add frog-specific behavior logic
++ - **Changes**: 
++   - Add tongue shooting probability during idle moments
++   - Implement pause mechanic (frog stops moving while tongue is out)
++   - Random direction selection for tongue shots
++ 
++ ### **Phase 5: Visual and Audio Enhancements**
++ 
++ #### **Task 5.1: Update Render System for Enemy Types**
++ - **File**: `src/ecs/systems/RenderSystem.ts`
++ - **Priority**: Low
++ - **Action**: Add different visual representations for each enemy type
++ - **Changes**: 
++   - Color coding: Lizard (red), Spider (purple), Frog (green)
++   - Future: Sprite support for distinct enemy appearances
++   - Size variations if desired
++ 
++ #### **Task 5.2: Add Spider Web Rendering**
++ - **File**: `src/ecs/systems/RenderSystem.ts`
++ - **Priority**: Low
++ - **Action**: Implement spider web visual representation
++ - **Changes**: 
++   - Web sprite/pattern rendering on affected tiles
++   - Opacity/fade effects for web timeout countdown
++   - Visual distinction between active and expired webs
++ 
++ #### **Task 5.3: Add Frog Tongue Rendering**
++ - **File**: `src/ecs/systems/RenderSystem.ts`
++ - **Priority**: Low
++ - **Action**: Implement tongue extension visualization
++ - **Changes**: 
++   - Line or segmented sprite rendering for extended tongues
++   - Animation during extension/retraction phases
++   - Visual feedback for tongue reach and direction
++ 
++ ### **Phase 6: System Integration**
++ 
++ #### **Task 6.1: Update System Priorities**
++ - **File**: `src/ecs/systemConfigs.ts`
++ - **Priority**: High
++ - **Action**: Add priority configurations for new systems
++ - **Changes**: 
++   - Ensure spider web system runs before collision detection
++   - Ensure frog tongue system runs before collision detection
++   - Maintain proper system execution order
++ 
++ #### **Task 6.2: Register New Systems**
++ - **File**: `src/game/GameInitializer.ts`
++ - **Priority**: High
++ - **Action**: Add new systems to game initialization
++ - **Changes**: 
++   - Import and register `SpiderWebSystem`
++   - Import and register `FrogTongueSystem`
++   - Ensure systems are added in correct order
++ 
++ #### **Task 6.3: Update Queries**
++ - **File**: `src/ecs/queries.ts`
++ - **Priority**: High
++ - **Action**: Add query definitions for new components
++ - **Changes**: 
++   ```typescript
++   export const spiderWebQuery = createQueryDefinition({
++     with: ['position', 'spiderWeb']
++   });
++   export const frogTongueQuery = createQueryDefinition({
++     with: ['position', 'frogTongue']
++   });
++   export const frozenPlayerQuery = createQueryDefinition({
++     with: ['position', 'player', 'freezeEffect']
++   });
++   ```
++ 
++ ### **Phase 7: Configuration and Balancing**
++ 
++ #### **Task 7.1: Add Enemy Type Configuration**
++ - **File**: `src/game/config.ts`
++ - **Priority**: Medium
++ - **Action**: Add configuration constants for new enemy types
++ - **Changes**: 
++   ```typescript
++   ENEMY_TYPES: {
++     SPIDER: {
++       WEB_DURATION: 3000,        // 3 seconds
++       FREEZE_DURATION: 2000,     // 2 seconds
++       WEB_PLACEMENT_CHANCE: 0.15, // 15% chance per move
++     },
++     FROG: {
++       TONGUE_RANGE: 3,           // 3 tiles max
++       TONGUE_SPEED: 500,         // ms per tile
++       SHOOT_CHANCE: 0.2,         // 20% chance per move cycle
++     },
++   }
++   ```
++ 
++ #### **Task 7.2: Update AI Configuration**
++ - **File**: `src/ecs/systemConfigs.ts`
++ - **Priority**: Medium
++ - **Action**: Add type-specific AI parameters
++ - **Changes**: 
++   - Different move intervals per enemy type
++   - Behavior probability adjustments
++   - Difficulty scaling factors
++ 
++ ### **Phase 8: Testing and Polish**
++ 
++ #### **Task 8.1: Update Type Definitions**
++ - **File**: `src/ecs/queries.ts`
++ - **Priority**: Low
++ - **Action**: Add TypeScript types for new entity combinations
++ - **Changes**: 
++   ```typescript
++   export type SpiderWebEntity = QueryResultEntity<Components, typeof spiderWebQuery>;
++   export type FrogTongueEntity = QueryResultEntity<Components, typeof frogTongueQuery>;
++   export type FrozenPlayerEntity = QueryResultEntity<Components, typeof frozenPlayerQuery>;
++   ```
++ 
++ #### **Task 8.2: Error Handling and Edge Cases**
++ - **Files**: All new systems
++ - **Priority**: High
++ - **Action**: Add robust error handling for edge cases
++ - **Changes**: 
++   - Handle boundary conditions for tongue extension
++   - Prevent web placement on occupied tiles
++   - Handle player freeze state edge cases
++   - Ensure proper cleanup on entity destruction
++ 
++ ## Implementation Priority
++ 
++ 1. **Critical**: Core architecture (Phase 1-2) - Foundation for all enemy types
++ 2. **High**: System integration (Phase 6) - Required for everything to work together
++ 3. **Medium**: Spider implementation (Phase 3) - Simpler of the two new types
++ 4. **Medium**: Frog implementation (Phase 4) - More complex tongue mechanics  
++ 5. **Low**: Visual enhancements (Phase 5) - Can start with simple color changes
++ 6. **Medium**: Configuration and testing (Phase 7-8) - Polish and balance
++ 
++ ## Key Technical Considerations
++ 
++ ### Type Safety
++ - All new components and systems must maintain strict TypeScript typing
++ - Use proper type guards and component queries
++ - Avoid any type casting unless absolutely necessary
++ 
++ ### Performance
++ - New systems should not impact game performance significantly
++ - Efficient collision detection for webs and tongues
++ - Proper cleanup of temporary entities (webs, tongue segments)
++ 
++ ### Modularity
++ - Each enemy type's special behavior isolated in its own system
++ - Clear separation of concerns between movement, special abilities, and rendering
++ - Reusable components where possible
++ 
++ ### Existing Code Compatibility
++ - Minimal changes to existing lizard behavior to avoid regressions
++ - Backward compatible enemy spawning
++ - Preserve existing AI behavior patterns
++ 
++ ## Success Criteria
++ 
++ - [ ] Three distinct enemy types with unique behaviors
++ - [ ] Spider webs freeze player for 2 seconds, disappear after 3 seconds if unused
++ - [ ] Frog tongues extend up to 3 tiles, damage player on contact
++ - [ ] All enemy types maintain existing AI behavior patterns (chase, patrol, etc.)
++ - [ ] No performance degradation
++ - [ ] Maintains TypeScript type safety
++ - [ ] Visual distinction between enemy types
++ - [ ] Proper game balance and player experience
++ 
++ ## Future Enhancements
++ 
++ - Sprite-based enemy graphics instead of colored rectangles
++ - Sound effects for web placement and tongue attacks
++ - Particle effects for special abilities
++ - Additional enemy types with different mechanics
++ - Enemy type-specific AI behavior patterns 
+```
+
+---
+
+Perfect! I've successfully:
+
+1. **Created the `plans` directory** to organize project documentation
+2. **Moved existing markdown files** (`DEPLOYMENT.md` and `project-plan.md`) to the plans directory  
+3. **Created a comprehensive implementation plan** for the multiple enemy behaviors feature in `plans/enemy-behavior-implementation-plan.md`
+
+The new plan document includes:
+
+- **Overview** of the three enemy types (Lizard, Spider, Frog)
+- **Current system analysis** of the ECS architecture 
+- **Detailed task list** organized into 8 phases with 22+ specific tasks
+- **Priority levels** for each task to guide implementation order
+- **Technical considerations** for type safety, performance, and modularity
+- **Success criteria** to measure completion
+- **Future enhancement ideas**
+
+The plan maintains strict TypeScript typing requirements and avoids casting to `any` as requested. It also preserves the existing test files and doesn't suggest editing them.
+
+Your project documentation is now well-organized in the `plans/` directory, making it easy to track progress and reference implementation details as you work through the enemy behavior features.
+
+---
+
+_**User**_
+
+Update the plan to include the spawn order.  The spawn behavior will be similar. But instead of spawning 4 of the generic enemies.  But now, there will only be these 3.  The lizard will spawn first. The spider will spawn second. And the frog will spawn last.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll update the implementation plan to include the specific spawn order behavior you've outlined. Let me modify the plan to reflect that there will be exactly 3 enemy types spawning in a specific sequence.
+
+---
+
+```diff
+  This document outlines the implementation plan for introducing three distinct enemy types in the math game:
+  
+- 1. **Lizard** - Current enemy behavior (baseline)
+- 2. **Spider** - Moves around and randomly leaves spider webs that freeze the player for 2 seconds
+- 3. **Frog** - Moves around and randomly shoots tongue up to 3 tiles that damages the player
++ 1. **Lizard** - Current enemy behavior (baseline) - **Spawns First**
++ 2. **Spider** - Moves around and randomly leaves spider webs that freeze the player for 2 seconds - **Spawns Second**
++ 3. **Frog** - Moves around and randomly shoots tongue up to 3 tiles that damages the player - **Spawns Last**
++ 
++ ### Spawn Order Behavior
++ The game will spawn exactly **3 enemies total** in a specific sequence:
++ - **First spawn**: Lizard (existing behavior)
++ - **Second spawn**: Spider (web mechanics)
++ - **Third spawn**: Frog (tongue mechanics)
++ 
++ This replaces the previous system of spawning 4 generic enemies with random behaviors.
+  
+  ## Current System Analysis
+```
+
+```diff
+  #### **Task 2.3: Update Enemy Spawn System**
+  - **File**: `src/ecs/systems/EnemySpawnSystem.ts`
+- - **Priority**: Medium
+- - **Action**: Implement random enemy type selection
++ - **Priority**: High
++ - **Action**: Implement sequential enemy type spawning
+  - **Changes**: 
+-   - Modify `spawnEnemyFromEdge()` to randomly choose between enemy types
+-   - Add configuration for spawn probabilities
+-   - Ensure balanced enemy type distribution
++   - Replace random enemy type selection with sequential spawn order
++   - Track spawn count and current enemy type to spawn
++   - First spawn: Lizard, Second spawn: Spider, Third spawn: Frog
++   - Stop spawning after 3 enemies are created
++   - Reset spawn sequence when all enemies are defeated
+  
+  ### **Phase 3: Spider Implementation**
+```
+
+```diff
+  - **File**: `src/game/config.ts`
+  - **Priority**: Medium
+- - **Action**: Add configuration constants for new enemy types
++ - **Action**: Add configuration constants for new enemy types and spawn order
+  - **Changes**: 
+    ```typescript
++   ENEMY_SPAWN: {
++     MAX_ENEMIES: 3,                    // Total enemies in game
++     SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
++     RESET_ON_ALL_DEFEATED: true,      // Restart spawn cycle when all enemies defeated
++   },
+    ENEMY_TYPES: {
++     LIZARD: {
++       COLOR: 'red',                    // Current enemy color
++     },
+      SPIDER: {
+-       WEB_DURATION: 3000,        // 3 seconds
+-       FREEZE_DURATION: 2000,     // 2 seconds
+-       WEB_PLACEMENT_CHANCE: 0.15, // 15% chance per move
++       COLOR: 'purple',
++       WEB_DURATION: 3000,              // 3 seconds
++       FREEZE_DURATION: 2000,           // 2 seconds
++       WEB_PLACEMENT_CHANCE: 0.15,      // 15% chance per move
+      },
+      FROG: {
+-       TONGUE_RANGE: 3,           // 3 tiles max
+-       TONGUE_SPEED: 500,         // ms per tile
+-       SHOOT_CHANCE: 0.2,         // 20% chance per move cycle
++       COLOR: 'green',
++       TONGUE_RANGE: 3,                 // 3 tiles max
++       TONGUE_SPEED: 500,               // ms per tile
++       SHOOT_CHANCE: 0.2,               // 20% chance per move cycle
+      },
+    }
+```
+
+---
+
+Now let me also update the system configuration section to reflect the spawn order changes:
+
+---
+
+
+
+---
+
+
+
+---
+
