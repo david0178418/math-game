@@ -8861,6 +8861,299 @@ Now I'll update the player entity factory to initialize these new properties:
 
 ---
 
+Now I'll update the CollisionSystem to start the death animation when the player dies:
+
+---
+
+```diff
+        // Disable player controls immediately
+        playerComp.gameOverPending = true;
++       // Start death animation
++       playerComp.deathAnimationActive = true;
++       playerComp.deathAnimationStartTime = Date.now();
++       playerComp.deathAnimationDuration = 1000; // 1 second to match delay
+        // Add 1 second delay before showing game over screen
+        setTimeout(() => {
+```
+
+```diff
+      // Disable player controls immediately
+      playerComp.gameOverPending = true;
++     // Start death animation
++     playerComp.deathAnimationActive = true;
++     playerComp.deathAnimationStartTime = Date.now();
++     playerComp.deathAnimationDuration = 1000; // 1 second to match delay
+      // Add 1 second delay before showing game over screen
+      setTimeout(() => {
+```
+
+---
+
+Now I need to add death animation handling to the AnimationSystem. I'll need to create a query that includes the player component:
+
+---
+
+Read file: src/ecs/queries.ts
+
+---
+
+Perfect! I can use the existing `playerQuery` which includes both position and player components. Now I'll update the AnimationSystem to handle death animations:
+
+---
+
+```diff
+  import { gameEngine } from '../Engine';
+- import { positionEntityQuery } from '../queries';
++ import { positionEntityQuery, playerQuery } from '../queries';
+  import { SYSTEM_PRIORITIES } from '../systemConfigs';
+  import { lerp } from '../gameUtils';
+```
+
+---
+
+```diff
+      .setPriority(SYSTEM_PRIORITIES.ANIMATION) // Run after movement but before rendering
+      .addQuery('animatedEntities', positionEntityQuery)
++     .addQuery('players', playerQuery)
+      .setProcess((queries) => {
+        const currentTime = Date.now();
+        
++       // Handle death animations for players
++       for (const player of queries.players) {
++         const playerComp = player.components.player;
++         const position = player.components.position;
++         
++         if (playerComp.deathAnimationActive && playerComp.deathAnimationStartTime && playerComp.deathAnimationDuration) {
++           const elapsed = currentTime - playerComp.deathAnimationStartTime;
++           
++           if (elapsed >= playerComp.deathAnimationDuration) {
++             // Death animation complete
++             playerComp.deathAnimationActive = false;
++             playerComp.deathAnimationStartTime = undefined;
++             playerComp.deathAnimationDuration = undefined;
++             playerComp.deathScale = 0; // Fully shrunk
++           } else {
++             // Calculate death animation progress
++             const progress = elapsed / playerComp.deathAnimationDuration;
++             
++             // Shrink effect: scale from 1.0 to 0.0
++             playerComp.deathScale = 1.0 - progress;
++             
++             // Spinning effect: rotate continuously (3 full rotations during the animation)
++             const spinSpeed = 3 * 360; // 3 full rotations in degrees
++             const currentRotation = progress * spinSpeed;
++             position.rotation = (position.rotation || 0) + (currentRotation - ((progress - 0.016) * spinSpeed)); // Increment from last frame
++           }
++         }
++       }
++       
++       // Handle regular position and rotation animations
+        for (const entity of queries.animatedEntities) {
+          const position = entity.components.position;
+```
+
+---
+
+I need to fix the spinning logic to be simpler and more reliable. Let me update it:
+
+---
+
+```diff
+              // Spinning effect: rotate continuously (3 full rotations during the animation)
+              const spinSpeed = 3 * 360; // 3 full rotations in degrees
+-             const currentRotation = progress * spinSpeed;
+-             position.rotation = (position.rotation || 0) + (currentRotation - ((progress - 0.016) * spinSpeed)); // Increment from last frame
++             position.rotation = (progress * spinSpeed) % 360;
+            }
+          }
+```
+
+---
+
+Now I need to update the RenderSystem to apply the death scale when rendering the player. I need to check if an entity has a player component and use the death scale:
+
+---
+
+```diff
+          const isInvulnerable = healthComp?.invulnerable || false;
+          
+-         drawEntity(position, renderable, isInvulnerable);
++         // Check if entity has player component for death scaling
++         const playerComp = 'player' in entity.components ? entity.components.player : undefined;
++         const deathScale = playerComp?.deathScale ?? 1.0;
++         
++         drawEntity(position, renderable, isInvulnerable, deathScale);
+        }
+        
+```
+
+```diff
+      imageHeight?: number;
+    },
+-   isInvulnerable: boolean = false
++   isInvulnerable: boolean = false,
++   deathScale: number = 1.0
+  ): void {
+    if (!ctx) return;
+```
+
+---
+
+Now I need to update the `drawEntity` function to apply the death scale:
+
+---
+
+```diff
+          }
+        }
++       
++       // Apply death scale
++       renderWidth *= deathScale;
++       renderHeight *= deathScale;
+        
+        // Apply rotation if specified
+```
+
+---
+
+I also need to apply the death scale to the fallback shapes (circle and rectangle):
+
+---
+
+```diff
+        ctx.fillStyle = renderable.color;
+        ctx.beginPath();
+-       ctx.arc(centerX, centerY, renderable.size / 2, 0, Math.PI * 2);
++       ctx.arc(centerX, centerY, (renderable.size / 2) * deathScale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (renderable.shape === 'circle') {
+      ctx.fillStyle = renderable.color;
+      ctx.beginPath();
+-     ctx.arc(centerX, centerY, renderable.size / 2, 0, Math.PI * 2);
++     ctx.arc(centerX, centerY, (renderable.size / 2) * deathScale, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (renderable.shape === 'rectangle') {
+      ctx.fillStyle = renderable.color;
+-     const halfSize = renderable.size / 2;
++     const halfSize = (renderable.size / 2) * deathScale;
+      ctx.fillRect(
+        centerX - halfSize,
+        centerY - halfSize,
+-       renderable.size,
+-       renderable.size
++       renderable.size * deathScale,
++       renderable.size * deathScale
+      );
+    }
+```
+
+---
+
+Perfect! I've implemented a death animation that spins and shrinks the player graphic during the 1 second delay before the game over screen appears. Here's what I added:
+
+## Changes Made:
+
+### 1. Player Component (Engine.ts)
+- Added death animation properties:
+  - `deathAnimationActive`: Flag to track if death animation is playing
+  - `deathAnimationStartTime`: When the death animation started
+  - `deathAnimationDuration`: How long the animation lasts (1000ms)
+  - `deathScale`: Scale factor for shrinking effect (starts at 1.0)
+
+### 2. CollisionSystem.ts
+- When player dies, now also:
+  - Sets `deathAnimationActive = true`
+  - Records `deathAnimationStartTime = Date.now()`
+  - Sets `deathAnimationDuration = 1000` (matches the game over delay)
+
+### 3. AnimationSystem.ts
+- Added player query to handle death animations
+- Added death animation logic that:
+  - **Shrinking**: Scales from 1.0 to 0.0 linearly over 1 second
+  - **Spinning**: Rotates 3 full rotations (1080°) over the 1 second duration
+  - Cleans up animation state when complete
+
+### 4. RenderSystem.ts
+- Modified `drawEntity()` to accept a `deathScale` parameter
+- Applied death scale to all render shapes:
+  - **Images**: Scales render width/height by death scale
+  - **Circles**: Scales radius by death scale  
+  - **Rectangles**: Scales size by death scale
+- Extracts death scale from player component when rendering entities
+
+## Result:
+When the player dies:
+1. Controls are immediately disabled
+2. Player graphic starts spinning (3 full rotations) and shrinking simultaneously
+3. After 1 second, the player is fully shrunk and the game over screen appears
+4. The death animation provides smooth visual feedback during the transition
+
+The animation combines with the existing shake effect, so players will see the character shake briefly from damage, then spin and shrink during the delay period.
+
+---
+
+_**User**_
+
+Take this opportunity to implement any reorganizations, cleanups, refactors, etc you see fit.  If there's nothing worth reorganizing, you may do nothing.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Looking at the codebase, I see several opportunities for improvement. The AnimationSystem has grown quite complex with different animation types, and there are magic numbers scattered around. Let me refactor this to be more organized and maintainable.
+
+First, I'll create a centralized animation configuration:
+
+---
+
+```diff
+    PAUSE: ['Escape'],
+  } as const;
++ 
++ export const ANIMATION_CONFIG = {
++   // Movement animation
++   MOVEMENT_DURATION: 750, // milliseconds for grid movement
++   
++   // Rotation animation
++   ROTATION_DURATION_RATIO: 0.25, // Rotation duration as fraction of movement duration
++   
++   // Shake animation
++   SHAKE: {
++     WRONG_ANSWER: {
++       INTENSITY: 12,
++       DURATION: 400
++     },
++     DAMAGE: {
++       INTENSITY: 10,
++       DURATION: 350
++     }
++   },
++   
++   // Death animation
++   DEATH: {
++     DURATION: 1000, // 1 second delay before game over
++     SPIN_ROTATIONS: 3, // Number of full rotations during death
++     SCALE_START: 1.0,
++     SCALE_END: 0.0
++   }
++ } as const; 
+```
+
+---
+
+Now I'll refactor the AnimationSystem to use the centralized config and organize the different animation types better:
+
+---
+
+
+
+---
+
 
 
 ---

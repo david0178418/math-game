@@ -91,4 +91,32 @@ export const INPUT_KEYS = {
   RIGHT: ['ArrowRight', 'KeyD'],
   EAT: ['Space', 'Enter'],
   PAUSE: ['Escape'],
+} as const;
+
+export const ANIMATION_CONFIG = {
+  // Movement animation
+  MOVEMENT_DURATION: 750, // milliseconds for grid movement
+  
+  // Rotation animation
+  ROTATION_DURATION_RATIO: 0.25, // Rotation duration as fraction of movement duration
+  
+  // Shake animation
+  SHAKE: {
+    WRONG_ANSWER: {
+      INTENSITY: 12,
+      DURATION: 400
+    },
+    DAMAGE: {
+      INTENSITY: 10,
+      DURATION: 350
+    }
+  },
+  
+  // Death animation
+  DEATH: {
+    DURATION: 1000, // 1 second delay before game over
+    SPIN_ROTATIONS: 3, // Number of full rotations during death
+    SCALE_START: 1.0,
+    SCALE_END: 0.0
+  }
 } as const; 

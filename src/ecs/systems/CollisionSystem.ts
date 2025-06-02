@@ -9,6 +9,7 @@ import {
   type EnemyEntityWithCollider
 } from '../queries';
 import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
+import { ANIMATION_CONFIG } from '../../game/config';
 import { startShakeAnimation } from './AnimationSystem';
 
 /**
@@ -111,7 +112,11 @@ function handlePlayerProblemCollision(
     console.log(`Wrong! -1 life. Lives remaining: ${playerComp.lives}`);
     
     // Shake the player for wrong answer
-    startShakeAnimation(player.components.position, 12, 400); // Higher intensity, longer duration for wrong answer
+    startShakeAnimation(
+      player.components.position, 
+      ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.INTENSITY, 
+      ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.DURATION
+    );
     
     // Check for game over
     if (playerComp.lives <= 0) {
@@ -121,11 +126,11 @@ function handlePlayerProblemCollision(
       // Start death animation
       playerComp.deathAnimationActive = true;
       playerComp.deathAnimationStartTime = Date.now();
-      playerComp.deathAnimationDuration = 1000; // 1 second to match delay
-      // Add 1 second delay before showing game over screen
+      playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
+      // Add delay before showing game over screen
       setTimeout(() => {
         gameEngine.addResource('gameState', 'gameOver');
-      }, 1000);
+      }, ANIMATION_CONFIG.DEATH.DURATION);
     }
   }
   
@@ -164,7 +169,11 @@ function handlePlayerEnemyCollision(
   console.log(`Lives remaining: ${playerComp.lives}`);
   
   // Shake the player for damage taken
-  startShakeAnimation(player.components.position, 10, 350); // Medium intensity shake for damage
+  startShakeAnimation(
+    player.components.position, 
+    ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY, 
+    ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
+  );
   
   // Set invulnerability period using centralized config
   healthComp.invulnerable = true;
@@ -178,10 +187,10 @@ function handlePlayerEnemyCollision(
     // Start death animation
     playerComp.deathAnimationActive = true;
     playerComp.deathAnimationStartTime = Date.now();
-    playerComp.deathAnimationDuration = 1000; // 1 second to match delay
-    // Add 1 second delay before showing game over screen
+    playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
+    // Add delay before showing game over screen
     setTimeout(() => {
       gameEngine.addResource('gameState', 'gameOver');
-    }, 1000);
+    }, ANIMATION_CONFIG.DEATH.DURATION);
   }
 } 

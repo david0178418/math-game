@@ -226,6 +226,36 @@ function drawPlayerHighlight(players: PlayerEntity[], mathProblems: MathProblemE
   }
 }
 
+// Calculate image render dimensions while maintaining aspect ratio
+function calculateImageDimensions(
+  img: HTMLImageElement,
+  requestedWidth?: number,
+  requestedHeight?: number
+): { width: number; height: number } {
+  const aspectRatio = img.width / img.height;
+  let renderWidth = requestedWidth || CELL_SIZE * 0.8;
+  let renderHeight = requestedHeight || CELL_SIZE * 0.8;
+  
+  // Adjust to maintain aspect ratio and fit in cell
+  if (aspectRatio > 1) {
+    // Wider than tall
+    renderHeight = renderWidth / aspectRatio;
+    if (renderHeight > CELL_SIZE * 0.8) {
+      renderHeight = CELL_SIZE * 0.8;
+      renderWidth = renderHeight * aspectRatio;
+    }
+  } else {
+    // Taller than wide or square
+    renderWidth = renderHeight * aspectRatio;
+    if (renderWidth > CELL_SIZE * 0.8) {
+      renderWidth = CELL_SIZE * 0.8;
+      renderHeight = renderWidth / aspectRatio;
+    }
+  }
+  
+  return { width: renderWidth, height: renderHeight };
+}
+
 // Draw an individual entity
 function drawEntity(
   position: { x: number; y: number; rotation?: number; shakeOffsetX?: number; shakeOffsetY?: number }, 
@@ -258,31 +288,11 @@ function drawEntity(
     // Draw image
     const img = imageCache.get(renderable.imageSrc);
     if (img && img.complete) {
-      // Calculate size to fit in grid while maintaining aspect ratio
-      const aspectRatio = img.width / img.height;
-      let renderWidth = renderable.imageWidth || CELL_SIZE * 0.8;
-      let renderHeight = renderable.imageHeight || CELL_SIZE * 0.8;
-      
-      // Adjust to maintain aspect ratio and fit in cell
-      if (aspectRatio > 1) {
-        // Wider than tall
-        renderHeight = renderWidth / aspectRatio;
-        if (renderHeight > CELL_SIZE * 0.8) {
-          renderHeight = CELL_SIZE * 0.8;
-          renderWidth = renderHeight * aspectRatio;
-        }
-      } else {
-        // Taller than wide or square
-        renderWidth = renderHeight * aspectRatio;
-        if (renderWidth > CELL_SIZE * 0.8) {
-          renderWidth = CELL_SIZE * 0.8;
-          renderHeight = renderWidth / aspectRatio;
-        }
-      }
+      const { width, height } = calculateImageDimensions(img, renderable.imageWidth, renderable.imageHeight);
       
       // Apply death scale
-      renderWidth *= deathScale;
-      renderHeight *= deathScale;
+      const scaledWidth = width * deathScale;
+      const scaledHeight = height * deathScale;
       
       // Apply rotation if specified
       if (position.rotation !== undefined && position.rotation !== 0) {
@@ -292,20 +302,20 @@ function drawEntity(
         ctx.rotate((position.rotation * Math.PI) / 180); // Convert degrees to radians
         ctx.drawImage(
           img,
-          -renderWidth / 2,
-          -renderHeight / 2,
-          renderWidth,
-          renderHeight
+          -scaledWidth / 2,
+          -scaledHeight / 2,
+          scaledWidth,
+          scaledHeight
         );
         ctx.restore(); // Restore rotation transform
       } else {
         // Draw without rotation
         ctx.drawImage(
           img,
-          centerX - renderWidth / 2,
-          centerY - renderHeight / 2,
-          renderWidth,
-          renderHeight
+          centerX - scaledWidth / 2,
+          centerY - scaledHeight / 2,
+          scaledWidth,
+          scaledHeight
         );
       }
     } else {

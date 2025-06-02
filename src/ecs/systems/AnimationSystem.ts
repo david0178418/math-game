@@ -1,17 +1,16 @@
 import { gameEngine } from '../Engine';
 import { positionEntityQuery, playerQuery } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
+import { ANIMATION_CONFIG } from '../../game/config';
 import { lerp } from '../gameUtils';
 
 /**
  * Animation System
- * Handles smooth transitions between grid positions for all entities
+ * Handles all entity animations: movement, rotation, shake, and death effects
  */
 
-// Animation configuration
-export const ANIMATION_CONFIG = {
-  MOVEMENT_DURATION: 750, // milliseconds for grid movement
-} as const;
+// Re-export animation config for external use
+export { ANIMATION_CONFIG };
 
 // Add the animation system to ECSpresso
 export function addAnimationSystemToEngine(): void {
@@ -24,131 +23,167 @@ export function addAnimationSystemToEngine(): void {
       
       // Handle death animations for players
       for (const player of queries.players) {
-        const playerComp = player.components.player;
-        const position = player.components.position;
-        
-        if (playerComp.deathAnimationActive && playerComp.deathAnimationStartTime && playerComp.deathAnimationDuration) {
-          const elapsed = currentTime - playerComp.deathAnimationStartTime;
-          
-          if (elapsed >= playerComp.deathAnimationDuration) {
-            // Death animation complete
-            playerComp.deathAnimationActive = false;
-            playerComp.deathAnimationStartTime = undefined;
-            playerComp.deathAnimationDuration = undefined;
-            playerComp.deathScale = 0; // Fully shrunk
-          } else {
-            // Calculate death animation progress
-            const progress = elapsed / playerComp.deathAnimationDuration;
-            
-            // Shrink effect: scale from 1.0 to 0.0
-            playerComp.deathScale = 1.0 - progress;
-            
-            // Spinning effect: rotate continuously (3 full rotations during the animation)
-            const spinSpeed = 3 * 360; // 3 full rotations in degrees
-            position.rotation = (progress * spinSpeed) % 360;
-          }
-        }
+        processDeathAnimation(player, currentTime);
       }
       
       // Handle regular position and rotation animations
       for (const entity of queries.animatedEntities) {
         const position = entity.components.position;
         
-        // Handle position animation
-        if (position.isAnimating && position.targetX != null && position.targetY != null && position.animationStartTime) {
-          const elapsed = currentTime - position.animationStartTime;
-          const duration = position.animationDuration || ANIMATION_CONFIG.MOVEMENT_DURATION;
-          
-          if (elapsed >= duration) {
-            // Animation complete - snap to target position
-            position.x = position.targetX;
-            position.y = position.targetY;
-            
-            // Clear animation state
-            position.isAnimating = false;
-            position.targetX = undefined;
-            position.targetY = undefined;
-            position.animationStartTime = undefined;
-            position.animationDuration = undefined;
-            // Clear start position cache
-            delete position.animationStartX;
-            delete position.animationStartY;
-            
-            // Publish animation complete event
-            gameEngine.eventBus.publish('animationComplete', {
-              entityId: entity.id,
-              x: position.x,
-              y: position.y
-            });
-          } else {
-            // Interpolate position
-            const progress = elapsed / duration;
-            const easedProgress = easeOutQuad(progress);
-            
-            // Store start position on first frame if not already stored
-            if (!('animationStartX' in position)) {
-              position.animationStartX = position.x;
-              position.animationStartY = position.y;
-            }
-            
-            // Use stored start positions for interpolation
-            const startPosX = position.animationStartX;
-            const startPosY = position.animationStartY;
-
-            if (startPosX == null || startPosY == null) return;
-            
-            position.x = lerp(startPosX, position.targetX, easedProgress);
-            position.y = lerp(startPosY, position.targetY, easedProgress);
-          }
-        }
-        
-        // Handle rotation animation
-        if (position.targetRotation != null && position.rotationStartTime && position.startRotation != null) {
-          const elapsed = currentTime - position.rotationStartTime;
-          const duration = position.rotationDuration || (ANIMATION_CONFIG.MOVEMENT_DURATION * 0.25);
-          
-          if (elapsed >= duration) {
-            // Rotation complete - snap to target rotation
-            position.rotation = position.targetRotation;
-            
-            // Clear rotation animation state
-            position.targetRotation = undefined;
-            position.rotationStartTime = undefined;
-            position.rotationDuration = undefined;
-            position.startRotation = undefined;
-          } else {
-            // Interpolate rotation
-            const progress = elapsed / duration;
-            const easedProgress = easeOutQuad(progress);
-            
-            position.rotation = lerp(position.startRotation, position.targetRotation, easedProgress);
-          }
-        }
-        
-        // Handle shake animation
-        if (position.shakeStartTime != null && position.shakeIntensity != null && position.shakeDuration != null) {
-          const elapsed = currentTime - position.shakeStartTime;
-          
-          if (elapsed >= position.shakeDuration) {
-            // Shake complete - clear shake state
-            position.shakeIntensity = undefined;
-            position.shakeDuration = undefined;
-            position.shakeStartTime = undefined;
-            position.shakeOffsetX = 0;
-            position.shakeOffsetY = 0;
-          } else {
-            // Calculate shake offset with diminishing intensity
-            const progress = elapsed / position.shakeDuration;
-            const remainingIntensity = position.shakeIntensity * (1 - progress); // Diminish over time
-            
-            // Generate random shake offset
-            position.shakeOffsetX = (Math.random() - 0.5) * remainingIntensity * 2;
-            position.shakeOffsetY = (Math.random() - 0.5) * remainingIntensity * 2;
-          }
-        }
+        processMovementAnimation(position, currentTime);
+        processRotationAnimation(position, currentTime);
+        processShakeAnimation(position, currentTime);
       }
     })
     .build();
+}
+
+/**
+ * Process death animation for a player entity
+ */
+function processDeathAnimation(
+  player: { components: { player: any; position: any } },
+  currentTime: number
+): void {
+  const playerComp = player.components.player;
+  const position = player.components.position;
+  
+  if (!playerComp.deathAnimationActive || !playerComp.deathAnimationStartTime || !playerComp.deathAnimationDuration) {
+    return;
+  }
+  
+  const elapsed = currentTime - playerComp.deathAnimationStartTime;
+  
+  if (elapsed >= playerComp.deathAnimationDuration) {
+    // Death animation complete
+    playerComp.deathAnimationActive = false;
+    playerComp.deathAnimationStartTime = undefined;
+    playerComp.deathAnimationDuration = undefined;
+    playerComp.deathScale = ANIMATION_CONFIG.DEATH.SCALE_END;
+  } else {
+    // Calculate death animation progress
+    const progress = elapsed / playerComp.deathAnimationDuration;
+    
+    // Shrink effect: scale from start to end
+    playerComp.deathScale = lerp(
+      ANIMATION_CONFIG.DEATH.SCALE_START,
+      ANIMATION_CONFIG.DEATH.SCALE_END,
+      progress
+    );
+    
+    // Spinning effect: continuous rotation
+    const totalRotation = ANIMATION_CONFIG.DEATH.SPIN_ROTATIONS * 360;
+    position.rotation = (progress * totalRotation) % 360;
+  }
+}
+
+/**
+ * Process movement animation for an entity
+ */
+function processMovementAnimation(position: any, currentTime: number): void {
+  if (!position.isAnimating || position.targetX == null || position.targetY == null || !position.animationStartTime) {
+    return;
+  }
+  
+  const elapsed = currentTime - position.animationStartTime;
+  const duration = position.animationDuration || ANIMATION_CONFIG.MOVEMENT_DURATION;
+  
+  if (elapsed >= duration) {
+    // Animation complete - snap to target position
+    position.x = position.targetX;
+    position.y = position.targetY;
+    
+    // Clear animation state
+    position.isAnimating = false;
+    position.targetX = undefined;
+    position.targetY = undefined;
+    position.animationStartTime = undefined;
+    position.animationDuration = undefined;
+    delete position.animationStartX;
+    delete position.animationStartY;
+    
+    // Publish animation complete event
+    gameEngine.eventBus.publish('animationComplete', {
+      entityId: 0, // We don't have entity ID here, but keeping for compatibility
+      x: position.x,
+      y: position.y
+    });
+  } else {
+    // Interpolate position
+    const progress = elapsed / duration;
+    const easedProgress = easeOutQuad(progress);
+    
+    // Store start position on first frame if not already stored
+    if (!('animationStartX' in position)) {
+      position.animationStartX = position.x;
+      position.animationStartY = position.y;
+    }
+    
+    const startPosX = position.animationStartX;
+    const startPosY = position.animationStartY;
+
+    if (startPosX == null || startPosY == null) return;
+    
+    position.x = lerp(startPosX, position.targetX, easedProgress);
+    position.y = lerp(startPosY, position.targetY, easedProgress);
+  }
+}
+
+/**
+ * Process rotation animation for an entity
+ */
+function processRotationAnimation(position: any, currentTime: number): void {
+  if (position.targetRotation == null || !position.rotationStartTime || position.startRotation == null) {
+    return;
+  }
+  
+  const elapsed = currentTime - position.rotationStartTime;
+  const duration = position.rotationDuration || (ANIMATION_CONFIG.MOVEMENT_DURATION * ANIMATION_CONFIG.ROTATION_DURATION_RATIO);
+  
+  if (elapsed >= duration) {
+    // Rotation complete - snap to target rotation
+    position.rotation = position.targetRotation;
+    
+    // Clear rotation animation state
+    position.targetRotation = undefined;
+    position.rotationStartTime = undefined;
+    position.rotationDuration = undefined;
+    position.startRotation = undefined;
+  } else {
+    // Interpolate rotation
+    const progress = elapsed / duration;
+    const easedProgress = easeOutQuad(progress);
+    
+    position.rotation = lerp(position.startRotation, position.targetRotation, easedProgress);
+  }
+}
+
+/**
+ * Process shake animation for an entity
+ */
+function processShakeAnimation(position: any, currentTime: number): void {
+  if (position.shakeStartTime == null || position.shakeIntensity == null || position.shakeDuration == null) {
+    return;
+  }
+  
+  const elapsed = currentTime - position.shakeStartTime;
+  
+  if (elapsed >= position.shakeDuration) {
+    // Shake complete - clear shake state
+    position.shakeIntensity = undefined;
+    position.shakeDuration = undefined;
+    position.shakeStartTime = undefined;
+    position.shakeOffsetX = 0;
+    position.shakeOffsetY = 0;
+  } else {
+    // Calculate shake offset with diminishing intensity
+    const progress = elapsed / position.shakeDuration;
+    const remainingIntensity = position.shakeIntensity * (1 - progress);
+    
+    // Generate random shake offset
+    position.shakeOffsetX = (Math.random() - 0.5) * remainingIntensity * 2;
+    position.shakeOffsetY = (Math.random() - 0.5) * remainingIntensity * 2;
+  }
 }
 
 /**
@@ -170,11 +205,8 @@ export function startMovementAnimation(
   targetY: number,
   duration: number = ANIMATION_CONFIG.MOVEMENT_DURATION
 ): void {
-  // Store current position as start position
   position.animationStartX = position.x;
   position.animationStartY = position.y;
-  
-  // Set up animation
   position.targetX = targetX;
   position.targetY = targetY;
   position.isAnimating = true;
@@ -194,17 +226,13 @@ export function startRotationAnimation(
     startRotation?: number;
   },
   targetRotation: number,
-  duration: number = ANIMATION_CONFIG.MOVEMENT_DURATION * 0.25
+  duration: number = ANIMATION_CONFIG.MOVEMENT_DURATION * ANIMATION_CONFIG.ROTATION_DURATION_RATIO
 ): void {
-  // Initialize rotation if not set
   if (position.rotation === undefined) {
     position.rotation = 0;
   }
   
-  // Store current rotation as start rotation
   position.startRotation = position.rotation;
-  
-  // Set up rotation animation
   position.targetRotation = targetRotation;
   position.rotationStartTime = Date.now();
   position.rotationDuration = duration;
@@ -224,7 +252,6 @@ export function startShakeAnimation(
   intensity: number = 8,
   duration: number = 300
 ): void {
-  // Set up shake animation
   position.shakeIntensity = intensity;
   position.shakeDuration = duration;
   position.shakeStartTime = Date.now();
