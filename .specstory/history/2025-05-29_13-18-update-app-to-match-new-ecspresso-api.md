@@ -8422,3 +8422,256 @@ _**Assistant**_
 
 ---
 
+I need to implement a shake effect for the character when wrong answers are eaten or damage is taken. Let me add shake properties to the position component and create a shake system.
+
+First, let me update the position component to include shake properties:
+
+---
+
+```diff
+      rotationDuration?: number;
+      startRotation?: number;
++     // Shake properties for damage/error feedback
++     shakeIntensity?: number;
++     shakeDuration?: number;
++     shakeStartTime?: number;
++     shakeOffsetX?: number;
++     shakeOffsetY?: number;
+    };
+    renderable: { 
+```
+
+---
+
+Now I need to add shake functionality to the AnimationSystem:
+
+---
+
+```diff
+    position.rotationDuration = duration;
+  }
++ 
++ /**
++  * Start a shake animation for an entity
++  */
++ export function startShakeAnimation(
++   position: { 
++     shakeIntensity?: number;
++     shakeDuration?: number;
++     shakeStartTime?: number;
++     shakeOffsetX?: number;
++     shakeOffsetY?: number;
++   },
++   intensity: number = 8,
++   duration: number = 300
++ ): void {
++   // Set up shake animation
++   position.shakeIntensity = intensity;
++   position.shakeDuration = duration;
++   position.shakeStartTime = Date.now();
++   position.shakeOffsetX = 0;
++   position.shakeOffsetY = 0;
++ }
+  
+  /**
+```
+
+---
+
+Now I need to update the animation loop to handle shake effects:
+
+---
+
+```diff
+            }
+          }
++         
++         // Handle shake animation
++         if (position.shakeStartTime != null && position.shakeIntensity != null && position.shakeDuration != null) {
++           const elapsed = currentTime - position.shakeStartTime;
++           
++           if (elapsed >= position.shakeDuration) {
++             // Shake complete - clear shake state
++             position.shakeIntensity = undefined;
++             position.shakeDuration = undefined;
++             position.shakeStartTime = undefined;
++             position.shakeOffsetX = 0;
++             position.shakeOffsetY = 0;
++           } else {
++             // Calculate shake offset with diminishing intensity
++             const progress = elapsed / position.shakeDuration;
++             const remainingIntensity = position.shakeIntensity * (1 - progress); // Diminish over time
++             
++             // Generate random shake offset
++             position.shakeOffsetX = (Math.random() - 0.5) * remainingIntensity * 2;
++             position.shakeOffsetY = (Math.random() - 0.5) * remainingIntensity * 2;
++           }
++         }
+        }
+      })
+```
+
+---
+
+Now I need to update the render system to apply the shake offset when drawing entities:
+
+---
+
+```diff
+  // Draw an individual entity
+  function drawEntity(
+-   position: { x: number; y: number; rotation?: number }, 
++   position: { x: number; y: number; rotation?: number; shakeOffsetX?: number; shakeOffsetY?: number }, 
+    renderable: { 
+      shape: 'circle' | 'rectangle' | 'image'; 
+```
+
+```diff
+    if (!ctx) return;
+    
+-   const centerX = position.x + CELL_SIZE / 2;
+-   const centerY = position.y + CELL_SIZE / 2;
++   // Apply shake offset to position
++   const shakeX = position.shakeOffsetX || 0;
++   const shakeY = position.shakeOffsetY || 0;
++   const centerX = position.x + CELL_SIZE / 2 + shakeX;
++   const centerY = position.y + CELL_SIZE / 2 + shakeY;
+    
+    // Apply reduced opacity for invulnerable entities
+```
+
+---
+
+Now I need to trigger the shake effect in the CollisionSystem when wrong answers are eaten or damage is taken. Let me update the CollisionSystem:
+
+---
+
+```diff
+  } from '../queries';
+  import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
++ import { startShakeAnimation } from './AnimationSystem';
+  
+  /**
+```
+
+---
+
+Now I need to add shake effects to the collision handlers:
+
+---
+
+```diff
+      
+      console.log(`Wrong! -1 life. Lives remaining: ${playerComp.lives}`);
++     
++     // Shake the player for wrong answer
++     startShakeAnimation(player.components.position, 12, 400); // Higher intensity, longer duration for wrong answer
+      
+      // Check for game over
+```
+
+---
+
+```diff
+    
+    console.log(`Lives remaining: ${playerComp.lives}`);
++   
++   // Shake the player for damage taken
++   startShakeAnimation(player.components.position, 10, 350); // Medium intensity shake for damage
+    
+    // Set invulnerability period using centralized config
+```
+
+---
+
+
+
+---
+
+Let me test the shake implementation by running the game:
+
+---
+
+```bash
+npm run dev
+```
+
+---
+
+Perfect! I've successfully implemented a shake effect for the character that will trigger when:
+
+1. **Wrong answers are eaten**: The player will shake with high intensity (12) for 400ms
+2. **Damage is taken from enemies**: The player will shake with medium intensity (10) for 350ms
+
+Here's what I implemented:
+
+## Changes Made:
+
+### 1. Position Component (Engine.ts)
+Added shake properties to the position component:
+- `shakeIntensity`: Controls how violent the shake is
+- `shakeDuration`: How long the shake lasts
+- `shakeStartTime`: When the shake started
+- `shakeOffsetX`/`shakeOffsetY`: Current shake displacement
+
+### 2. Animation System (AnimationSystem.ts)
+- Added `startShakeAnimation()` function to initiate shake effects
+- Updated the animation loop to calculate random shake offsets that diminish over time
+- Shake intensity decreases linearly as the animation progresses
+
+### 3. Render System (RenderSystem.ts)
+- Modified `drawEntity()` to apply shake offsets to entity positions
+- The shake effect moves the visual position without affecting the actual grid position
+
+### 4. Collision System (CollisionSystem.ts)
+- Added shake effects for wrong answer consumption (intensity 12, duration 400ms)
+- Added shake effects for enemy damage (intensity 10, duration 350ms)
+
+The shake effect uses random displacement that diminishes over time, creating a satisfying feedback when the player makes mistakes or takes damage. The visual shake doesn't interfere with gameplay mechanics since it only affects rendering position, not the actual game position.
+
+---
+
+_**User**_
+
+Before showing the "Game over" screen, include a 1 second delay to prevent a jarring transition from the game.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll add a 1 second delay before showing the "Game over" screen to make the transition smoother. Let me modify the CollisionSystem to use a timeout instead of immediately setting the game state.
+
+---
+
+```diff
+      if (playerComp.lives <= 0) {
+        console.log('Game Over!');
++       // Add 1 second delay before showing game over screen
++       setTimeout(() => {
+          gameEngine.addResource('gameState', 'gameOver');
++       }, 1000);
+      }
+    }
+```
+
+```diff
+    if (playerComp.lives <= 0) {
+      console.log('Game Over!');
++     // Add 1 second delay before showing game over screen
++     setTimeout(() => {
+        gameEngine.addResource('gameState', 'gameOver');
++     }, 1000);
+    }
+  } 
+```
+
+---
+
+Perfect! I've added a 1 second delay before transit
+
+---
+
