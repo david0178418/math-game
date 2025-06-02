@@ -9,6 +9,7 @@ import {
   type EnemyEntityWithCollider
 } from '../queries';
 import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
+import { startShakeAnimation } from './AnimationSystem';
 
 /**
  * Collision Detection System
@@ -109,6 +110,9 @@ function handlePlayerProblemCollision(
     
     console.log(`Wrong! -1 life. Lives remaining: ${playerComp.lives}`);
     
+    // Shake the player for wrong answer
+    startShakeAnimation(player.components.position, 12, 400); // Higher intensity, longer duration for wrong answer
+    
     // Check for game over
     if (playerComp.lives <= 0) {
       console.log('Game Over!');
@@ -149,6 +153,9 @@ function handlePlayerEnemyCollision(
   healthComp.current -= 1;
   
   console.log(`Lives remaining: ${playerComp.lives}`);
+  
+  // Shake the player for damage taken
+  startShakeAnimation(player.components.position, 10, 350); // Medium intensity shake for damage
   
   // Set invulnerability period using centralized config
   healthComp.invulnerable = true;

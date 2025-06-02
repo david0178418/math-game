@@ -24,6 +24,12 @@ export interface Components {
     rotationStartTime?: number;
     rotationDuration?: number;
     startRotation?: number;
+    // Shake properties for damage/error feedback
+    shakeIntensity?: number;
+    shakeDuration?: number;
+    shakeStartTime?: number;
+    shakeOffsetX?: number;
+    shakeOffsetY?: number;
   };
   renderable: { 
     shape: 'circle' | 'rectangle' | 'image'; 

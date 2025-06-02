@@ -94,6 +94,28 @@ export function addAnimationSystemToEngine(): void {
             position.rotation = lerp(position.startRotation, position.targetRotation, easedProgress);
           }
         }
+        
+        // Handle shake animation
+        if (position.shakeStartTime != null && position.shakeIntensity != null && position.shakeDuration != null) {
+          const elapsed = currentTime - position.shakeStartTime;
+          
+          if (elapsed >= position.shakeDuration) {
+            // Shake complete - clear shake state
+            position.shakeIntensity = undefined;
+            position.shakeDuration = undefined;
+            position.shakeStartTime = undefined;
+            position.shakeOffsetX = 0;
+            position.shakeOffsetY = 0;
+          } else {
+            // Calculate shake offset with diminishing intensity
+            const progress = elapsed / position.shakeDuration;
+            const remainingIntensity = position.shakeIntensity * (1 - progress); // Diminish over time
+            
+            // Generate random shake offset
+            position.shakeOffsetX = (Math.random() - 0.5) * remainingIntensity * 2;
+            position.shakeOffsetY = (Math.random() - 0.5) * remainingIntensity * 2;
+          }
+        }
       }
     })
     .build();
@@ -156,6 +178,28 @@ export function startRotationAnimation(
   position.targetRotation = targetRotation;
   position.rotationStartTime = Date.now();
   position.rotationDuration = duration;
+}
+
+/**
+ * Start a shake animation for an entity
+ */
+export function startShakeAnimation(
+  position: { 
+    shakeIntensity?: number;
+    shakeDuration?: number;
+    shakeStartTime?: number;
+    shakeOffsetX?: number;
+    shakeOffsetY?: number;
+  },
+  intensity: number = 8,
+  duration: number = 300
+): void {
+  // Set up shake animation
+  position.shakeIntensity = intensity;
+  position.shakeDuration = duration;
+  position.shakeStartTime = Date.now();
+  position.shakeOffsetX = 0;
+  position.shakeOffsetY = 0;
 }
 
 /**

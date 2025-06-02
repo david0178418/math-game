@@ -224,7 +224,7 @@ function drawPlayerHighlight(players: PlayerEntity[], mathProblems: MathProblemE
 
 // Draw an individual entity
 function drawEntity(
-  position: { x: number; y: number; rotation?: number }, 
+  position: { x: number; y: number; rotation?: number; shakeOffsetX?: number; shakeOffsetY?: number }, 
   renderable: { 
     shape: 'circle' | 'rectangle' | 'image'; 
     color: string; 
@@ -237,8 +237,11 @@ function drawEntity(
 ): void {
   if (!ctx) return;
   
-  const centerX = position.x + CELL_SIZE / 2;
-  const centerY = position.y + CELL_SIZE / 2;
+  // Apply shake offset to position
+  const shakeX = position.shakeOffsetX || 0;
+  const shakeY = position.shakeOffsetY || 0;
+  const centerX = position.x + CELL_SIZE / 2 + shakeX;
+  const centerY = position.y + CELL_SIZE / 2 + shakeY;
   
   // Apply reduced opacity for invulnerable entities
   if (isInvulnerable) {
