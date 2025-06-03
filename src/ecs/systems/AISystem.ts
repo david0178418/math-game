@@ -10,6 +10,7 @@ import {
 import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
 import { createSpiderWeb } from './SpiderWebSystem';
+import { initializeFrogTongue } from './FrogTongueSystem';
 
 /**
  * AI System
@@ -84,6 +85,20 @@ function processEnemyAI(
 ): void {
   const enemyPos = enemy.components.position;
   const enemyData = enemy.components.enemy;
+  
+  // Frog-specific behavior: Don't move if tongue is extended
+  if (enemyData.enemyType === 'frog') {
+    const frogTongue = gameEngine.entityManager.getComponent(enemy.id, 'frogTongue');
+    
+    // Initialize frog tongue if it doesn't exist
+    if (!frogTongue) {
+      initializeFrogTongue(enemy.id);
+    } else if (frogTongue.isExtended) {
+      // Frog can't move while tongue is out
+      console.log(`🐸 Frog ${enemy.id} cannot move - tongue is extended`);
+      return;
+    }
+  }
   
   // Check if it's time for this enemy to move
   if (currentTime < enemyData.nextMoveTime) {

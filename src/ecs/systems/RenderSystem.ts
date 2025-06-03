@@ -9,6 +9,8 @@ import {
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import flyImage from '../../assets/images/fly.svg';
+import { createQueryDefinition } from 'ecspresso';
+import type { Components } from '../Engine';
 
 // Canvas context and configuration
 let canvas: HTMLCanvasElement | null = null;
@@ -106,6 +108,20 @@ function resizeCanvas(): void {
   }
 }
 
+// Query for frog entities with tongues
+const frogTongueQuery = createQueryDefinition({
+  with: ['position', 'enemy', 'frogTongue']
+});
+
+type FrogTongueEntity = {
+  id: number;
+  components: {
+    position: Components['position'];
+    enemy: Components['enemy'];
+    frogTongue: Components['frogTongue'];
+  };
+};
+
 // Add the render system to ECSpresso
 export function addRenderSystemToEngine(): void {
   gameEngine.addSystem('renderSystem')
@@ -113,6 +129,7 @@ export function addRenderSystemToEngine(): void {
     .addQuery('renderableEntities', renderableEntityQuery)
     .addQuery('players', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)
+    .addQuery('frogTongues', frogTongueQuery)
     .setOnInitialize((_ecs) => {
       console.log('🎨 Render system initialized');
       // Could set up additional rendering resources here
@@ -154,6 +171,9 @@ export function addRenderSystemToEngine(): void {
         
         drawEntity(position, renderable, isInvulnerable, deathScale);
       }
+      
+      // Draw frog tongues (after entities but before UI text)
+      drawFrogTongues(queries.frogTongues as FrogTongueEntity[]);
       
       // Draw numbers on math problem tiles (after drawing the entities)
       drawMathProblemNumbers(queries.mathProblems);
@@ -377,6 +397,57 @@ function drawMathProblemNumbers(mathProblems: MathProblemEntity[]): void {
   }
   
   ctx.restore();
+}
+
+// Draw frog tongues
+function drawFrogTongues(frogs: FrogTongueEntity[]): void {
+  if (!ctx) return;
+  
+  for (const frog of frogs) {
+    const tongue = frog.components.frogTongue;
+    const frogPos = frog.components.position;
+    
+    // Only draw if tongue is extended and has segments
+    if (!tongue.isExtended || tongue.segments.length === 0) {
+      continue;
+    }
+    
+    // Get frog center position
+    const frogCenterX = frogPos.x + CELL_SIZE / 2;
+    const frogCenterY = frogPos.y + CELL_SIZE / 2;
+    
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 20, 147, 0.8)'; // Deep pink tongue color
+    ctx.lineWidth = 8; // Thick tongue line
+    ctx.lineCap = 'round';
+    
+    // Draw tongue as a line from frog to the end of its segments
+    ctx.beginPath();
+    ctx.moveTo(frogCenterX, frogCenterY);
+    
+    // Draw line through all segments
+    for (const segment of tongue.segments) {
+      const segmentCenterX = segment.x * CELL_SIZE + CELL_SIZE / 2;
+      const segmentCenterY = segment.y * CELL_SIZE + CELL_SIZE / 2;
+      ctx.lineTo(segmentCenterX, segmentCenterY);
+    }
+    
+    ctx.stroke();
+    
+    // Draw tongue tip (small circle at the end)
+    if (tongue.segments.length > 0) {
+      const lastSegment = tongue.segments[tongue.segments.length - 1];
+      const tipX = lastSegment.x * CELL_SIZE + CELL_SIZE / 2;
+      const tipY = lastSegment.y * CELL_SIZE + CELL_SIZE / 2;
+      
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(255, 20, 147, 1.0)'; // Solid pink tip
+      ctx.arc(tipX, tipY, 6, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    
+    ctx.restore();
+  }
 }
 
 // Get canvas element (for external use)

@@ -25,6 +25,7 @@ import { addProblemManagementSystemToEngine } from '../ecs/systems/ProblemManage
 import { addAISystemToEngine } from '../ecs/systems/AISystem';
 import { addEnemySpawnSystemToEngine } from '../ecs/systems/EnemySpawnSystem';
 import { addSpiderWebSystemToEngine } from '../ecs/systems/SpiderWebSystem';
+import { addFrogTongueSystemToEngine } from '../ecs/systems/FrogTongueSystem';
 import { uiManager } from './UIManager';
 
 /**
@@ -67,6 +68,7 @@ export class GameInitializer {
     addUISystemToEngine();          // Priority 50  - UI updates
     addEnemySpawnSystemToEngine();  // Priority 40  - Enemy spawning
     addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
+    addFrogTongueSystemToEngine();  // Priority 22  - Frog Tongue system
     addSpiderWebSystemToEngine();   // Priority 20  - Spider Web system
 
     console.log('Core systems initialized (render system will be added when canvas is ready)');

@@ -102,7 +102,7 @@ export interface Components {
     maxRange: number;                       // Maximum tiles (3)
     currentLength: number;                  // Current extension distance
     startTime: number;                      // When tongue action started
-    phase: 'extending' | 'retracting' | 'idle';
+    phase: 'extending' | 'holding' | 'retracting' | 'idle';
     segments: Array<{ x: number; y: number }>; // Tongue path for collision
   };
 }
@@ -112,6 +112,7 @@ export interface Events {
   playerMoved: { x: number; y: number };
   problemSolved: { value: number; correct: boolean };
   enemyCollision: { playerId: number; enemyId: number };
+  tongueCollision: { playerId: number; tongueId: number };
   scoreChanged: { newScore: number; oldScore: number };
   livesChanged: { newLives: number; oldLives: number };
   enemyKilled: { x: number; y: number };

@@ -9,7 +9,7 @@ import {
   type EnemyEntityWithCollider
 } from '../queries';
 import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
-import { ANIMATION_CONFIG } from '../../game/config';
+import { ANIMATION_CONFIG, CELL_SIZE } from '../../game/config';
 import { startShakeAnimation } from './AnimationSystem';
 import { createQueryDefinition } from 'ecspresso';
 import type { Components } from '../Engine';
@@ -24,12 +24,26 @@ const spiderWebQuery = createQueryDefinition({
   with: ['position', 'spiderWeb', 'collider']
 });
 
+// Query for frog entities with tongues
+const frogTongueQuery = createQueryDefinition({
+  with: ['position', 'enemy', 'frogTongue']
+});
+
 type SpiderWebEntity = {
   id: number;
   components: {
     position: Components['position'];
     spiderWeb: Components['spiderWeb'];
     collider: Components['collider'];
+  };
+};
+
+type FrogTongueEntity = {
+  id: number;
+  components: {
+    position: Components['position'];
+    enemy: Components['enemy'];
+    frogTongue: Components['frogTongue'];
   };
 };
 
@@ -41,6 +55,7 @@ export function addCollisionSystemToEngine(): void {
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
     .addQuery('enemies', enemyWithColliderQuery)
     .addQuery('spiderWebs', spiderWebQuery)
+    .addQuery('frogTongues', frogTongueQuery)
     .setProcess((queries) => {
       const currentTime = performance.now();
       
@@ -52,6 +67,21 @@ export function addCollisionSystemToEngine(): void {
         if (healthComp.invulnerable && currentTime > healthComp.invulnerabilityTime) {
           healthComp.invulnerable = false;
           console.log('Player invulnerability ended');
+        }
+        
+        // Check for frog tongue collisions (only if not invulnerable)
+        if (!healthComp.invulnerable) {
+          for (const frog of queries.frogTongues as FrogTongueEntity[]) {
+            const tongue = frog.components.frogTongue;
+            
+            // Only check collision if tongue is extended
+            if (tongue.isExtended && tongue.segments.length > 0) {
+              if (checkPlayerTongueCollision(player, frog)) {
+                handlePlayerTongueCollision(player, frog);
+                break; // Only one tongue can hit the player at a time
+              }
+            }
+          }
         }
         
         // Check for spider web collisions (only if not already frozen)
@@ -255,4 +285,78 @@ function handlePlayerSpiderWebCollision(
   });
   
   console.log(`❄️ Player frozen for ${webComp.freezeTime}ms`);
+}
+
+/**
+ * Handle collision between player and frog tongue
+ */
+function handlePlayerTongueCollision(
+  player: PlayerEntityWithHealth, 
+  frog: FrogTongueEntity
+): void {
+  console.log('Player hit by frog tongue!');
+  
+  // Publish tongue collision event
+  gameEngine.eventBus.publish('tongueCollision', {
+    playerId: player.id,
+    tongueId: frog.id
+  });
+  
+  // Lose a life
+  const playerComp = player.components.player;
+  playerComp.lives -= 1;
+  
+  console.log(`Lives remaining: ${playerComp.lives}`);
+  
+  // Shake the player for damage taken
+  startShakeAnimation(
+    player.components.position, 
+    ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY, 
+    ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
+  );
+  
+  // Set invulnerability period using centralized config
+  const healthComp = player.components.health;
+  healthComp.invulnerable = true;
+  healthComp.invulnerabilityTime = performance.now() + COLLISION_CONFIG.INVULNERABILITY_DURATION;
+  
+  // Check for game over
+  if (playerComp.lives <= 0) {
+    console.log('Game Over!');
+    // Disable player controls immediately
+    playerComp.gameOverPending = true;
+    // Start death animation
+    playerComp.deathAnimationActive = true;
+    playerComp.deathAnimationStartTime = Date.now();
+    playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
+    // Add delay before showing game over screen
+    setTimeout(() => {
+      gameEngine.addResource('gameState', 'gameOver');
+    }, ANIMATION_CONFIG.DEATH.DURATION);
+  }
+}
+
+/**
+ * Check if player collides with any frog tongue segments
+ */
+function checkPlayerTongueCollision(
+  player: PlayerEntityWithHealth, 
+  frog: FrogTongueEntity
+): boolean {
+  const playerPos = player.components.position;
+  const tongue = frog.components.frogTongue;
+  
+  // Convert player position to grid coordinates
+  const playerGridX = Math.round(playerPos.x / CELL_SIZE);
+  const playerGridY = Math.round(playerPos.y / CELL_SIZE);
+  
+  // Check if player is on any tongue segment
+  for (const segment of tongue.segments) {
+    if (segment.x === playerGridX && segment.y === playerGridY) {
+      console.log(`🐸 Player hit by tongue segment at grid (${segment.x}, ${segment.y})`);
+      return true;
+    }
+  }
+  
+  return false;
 } 
