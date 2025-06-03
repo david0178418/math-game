@@ -42,7 +42,7 @@ const FROG_CONFIG = {
 // Add queries to the system for obstacle detection
 export function addFrogTongueSystemToEngine(): void {
   gameEngine.addSystem('frogTongueSystem')
-    .setPriority(SYSTEM_PRIORITIES.AI - 2) // Run before AI system but after spider web system
+    .setPriority(SYSTEM_PRIORITIES.FROG_TONGUE)
     .addQuery('frogs', frogQuery)
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)

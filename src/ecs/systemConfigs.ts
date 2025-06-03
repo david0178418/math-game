@@ -10,10 +10,12 @@ export const COLLISION_CONFIG = {
 
 // Enemy Spawn System Configuration
 export const ENEMY_SPAWN_CONFIG = {
-  MAX_ENEMIES: 4,               // Maximum enemies on board
-  BASE_SPAWN_INTERVAL: 10_000,    // Base spawn interval in milliseconds (8 seconds)
-  MIN_SPAWN_INTERVAL: 3_000,     // Minimum spawn interval (3 seconds)
+  MAX_ENEMIES: 3,               // Maximum enemies on board (reduced from 4 to 3)
+  BASE_SPAWN_INTERVAL: 3_000,   // Base spawn interval in milliseconds (3 seconds)
+  MIN_SPAWN_INTERVAL: 1_500,    // Minimum spawn interval (1.5 seconds)
   DIFFICULTY_SCALE_SCORE: 100,  // Score points per difficulty increase
+  SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
+  RESET_ON_ALL_DEFEATED: true,  // Restart spawn cycle when all enemies defeated
 } as const;
 
 // Problem Management System Configuration
@@ -45,6 +47,8 @@ export const SYSTEM_PRIORITIES = {
   UI: 50,                       // UI updates
   ENEMY_SPAWN: 40,              // Enemy spawning
   PROBLEM_MANAGEMENT: 30,       // Problem lifecycle
+  FROG_TONGUE: 22,              // Frog Tongue system (before spider web, after problem management)
+  SPIDER_WEB: 20,               // Spider Web system (before render, after frog tongue)
   RENDER: 10,                   // Rendering (should be last)
 } as const;
 

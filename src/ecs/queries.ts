@@ -39,6 +39,23 @@ export const positionEntityQuery = createQueryDefinition({
   with: ['position']
 });
 
+// New enemy type queries for Phase 6
+export const spiderWebQuery = createQueryDefinition({
+  with: ['position', 'spiderWeb']
+});
+
+export const spiderWebWithRenderableQuery = createQueryDefinition({
+  with: ['position', 'spiderWeb', 'renderable', 'collider']
+});
+
+export const frogTongueQuery = createQueryDefinition({
+  with: ['position', 'enemy', 'frogTongue']
+});
+
+export const frozenPlayerQuery = createQueryDefinition({
+  with: ['position', 'player', 'freezeEffect']
+});
+
 /**
  * Centralized Entity Types
  * Type-safe entity types derived from query definitions
@@ -52,6 +69,12 @@ export type EnemyEntity = QueryResultEntity<Components, typeof enemyQuery>;
 export type EnemyEntityWithCollider = QueryResultEntity<Components, typeof enemyWithColliderQuery>;
 export type RenderableEntity = QueryResultEntity<Components, typeof renderableEntityQuery>;
 export type PositionEntity = QueryResultEntity<Components, typeof positionEntityQuery>;
+
+// New entity types for Phase 6
+export type SpiderWebEntity = QueryResultEntity<Components, typeof spiderWebQuery>;
+export type SpiderWebEntityWithRenderable = QueryResultEntity<Components, typeof spiderWebWithRenderableQuery>;
+export type FrogTongueEntity = QueryResultEntity<Components, typeof frogTongueQuery>;
+export type FrozenPlayerEntity = QueryResultEntity<Components, typeof frozenPlayerQuery>;
 
 /**
  * Query Utilities

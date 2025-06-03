@@ -248,41 +248,48 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Sparkling ice particles that rotate around the frozen player
   - Progressive fade effects as freeze effect expires
 
-### **Phase 6: System Integration**
+### **Phase 6: System Integration** ✅ **COMPLETE**
 
 #### **Task 6.1: Update System Priorities** ✅
 - **File**: `src/ecs/systemConfigs.ts`
-- **Priority**: High
-- **Action**: Add priority configurations for new systems
+- **Status**: Implemented
 - **Changes**: 
-  - Ensure spider web system runs before collision detection
-  - Ensure frog tongue system runs before collision detection
-  - Maintain proper system execution order
+  - Added `FROG_TONGUE: 22` and `SPIDER_WEB: 20` to SYSTEM_PRIORITIES
+  - Updated ENEMY_SPAWN_CONFIG to reflect new 3-enemy sequential system
+  - Added spawn order configuration and reset behavior settings
+  - Proper system execution order maintained
 
 #### **Task 6.2: Register New Systems** ✅
 - **File**: `src/game/GameInitializer.ts`
-- **Priority**: High
-- **Action**: Add new systems to game initialization
+- **Status**: Implemented
 - **Changes**: 
-  - Import and register `SpiderWebSystem`
-  - Import and register `FrogTongueSystem`
-  - Ensure systems are added in correct order
+  - SpiderWebSystem and FrogTongueSystem properly imported and registered
+  - Correct priority-based execution order maintained
+  - Systems added in correct sequence with proper priority values
 
 #### **Task 6.3: Update Queries** ✅
 - **File**: `src/ecs/queries.ts`
-- **Priority**: High
-- **Action**: Add query definitions for new components
+- **Status**: Implemented
 - **Changes**: 
   ```typescript
   export const spiderWebQuery = createQueryDefinition({
     with: ['position', 'spiderWeb']
   });
+  export const spiderWebWithRenderableQuery = createQueryDefinition({
+    with: ['position', 'spiderWeb', 'renderable', 'collider']
+  });
   export const frogTongueQuery = createQueryDefinition({
-    with: ['position', 'frogTongue']
+    with: ['position', 'enemy', 'frogTongue']
   });
   export const frozenPlayerQuery = createQueryDefinition({
     with: ['position', 'player', 'freezeEffect']
   });
+  
+  // Corresponding TypeScript entity types
+  export type SpiderWebEntity = QueryResultEntity<Components, typeof spiderWebQuery>;
+  export type SpiderWebEntityWithRenderable = QueryResultEntity<Components, typeof spiderWebWithRenderableQuery>;
+  export type FrogTongueEntity = QueryResultEntity<Components, typeof frogTongueQuery>;
+  export type FrozenPlayerEntity = QueryResultEntity<Components, typeof frozenPlayerQuery>;
   ```
 
 ### **Phase 7: Configuration and Balancing**

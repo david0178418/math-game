@@ -38,7 +38,7 @@ type FrozenPlayerEntity = {
 // Add the spider web system to ECSpresso
 export function addSpiderWebSystemToEngine(): void {
   gameEngine.addSystem('spiderWebSystem')
-    .setPriority(SYSTEM_PRIORITIES.AI - 1) // Run before AI system
+    .setPriority(SYSTEM_PRIORITIES.SPIDER_WEB) // Use centralized priority configuration
     .addQuery('spiderWebs', spiderWebQuery)
     .addQuery('frozenPlayers', frozenPlayerQuery)
     .setProcess((queries) => {
