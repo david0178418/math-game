@@ -113,12 +113,40 @@ const frogTongueQuery = createQueryDefinition({
   with: ['position', 'enemy', 'frogTongue']
 });
 
+// Query for spider web entities for enhanced rendering
+const spiderWebQuery = createQueryDefinition({
+  with: ['position', 'spiderWeb', 'renderable']
+});
+
+// Query for frozen players for visual feedback
+const frozenPlayerQuery = createQueryDefinition({
+  with: ['position', 'player', 'freezeEffect']
+});
+
 type FrogTongueEntity = {
   id: number;
   components: {
     position: Components['position'];
     enemy: Components['enemy'];
     frogTongue: Components['frogTongue'];
+  };
+};
+
+type SpiderWebEntity = {
+  id: number;
+  components: {
+    position: Components['position'];
+    spiderWeb: Components['spiderWeb'];
+    renderable: Components['renderable'];
+  };
+};
+
+type FrozenPlayerEntity = {
+  id: number;
+  components: {
+    position: Components['position'];
+    player: Components['player'];
+    freezeEffect: Components['freezeEffect'];
   };
 };
 
@@ -130,6 +158,8 @@ export function addRenderSystemToEngine(): void {
     .addQuery('players', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)
     .addQuery('frogTongues', frogTongueQuery)
+    .addQuery('spiderWebs', spiderWebQuery)
+    .addQuery('frozenPlayers', frozenPlayerQuery)
     .setOnInitialize((_ecs) => {
       console.log('🎨 Render system initialized');
       // Could set up additional rendering resources here
@@ -151,6 +181,9 @@ export function addRenderSystemToEngine(): void {
       // Check if player is on a math problem and draw highlight
       drawPlayerHighlight(queries.players, queries.mathProblems);
       
+      // Draw enhanced spider webs with fade effects
+      drawEnhancedSpiderWebs(queries.spiderWebs as SpiderWebEntity[]);
+      
       // Sort entities by layer (lower layer numbers render first)
       const sortedEntities = [...queries.renderableEntities].sort((a, b) => 
         a.components.renderable.layer - b.components.renderable.layer
@@ -169,11 +202,14 @@ export function addRenderSystemToEngine(): void {
         const playerComp = 'player' in entity.components ? entity.components.player : undefined;
         const deathScale = playerComp?.deathScale ?? 1.0;
         
-        drawEntity(position, renderable, isInvulnerable, deathScale);
+        drawEntity(position, renderable, isInvulnerable, deathScale, entity.id);
       }
       
-      // Draw frog tongues (after entities but before UI text)
-      drawFrogTongues(queries.frogTongues as FrogTongueEntity[]);
+      // Draw enhanced frog tongues (after entities but before UI text)
+      drawEnhancedFrogTongues(queries.frogTongues as FrogTongueEntity[]);
+      
+      // Draw frozen player visual effects
+      drawFrozenPlayerEffects(queries.frozenPlayers as FrozenPlayerEntity[]);
       
       // Draw numbers on math problem tiles (after drawing the entities)
       drawMathProblemNumbers(queries.mathProblems);
@@ -288,7 +324,8 @@ function drawEntity(
     imageHeight?: number;
   },
   isInvulnerable: boolean = false,
-  deathScale: number = 1.0
+  deathScale: number = 1.0,
+  entityId?: number // Add entity ID to determine enemy type
 ): void {
   if (!ctx) return;
   
@@ -302,6 +339,15 @@ function drawEntity(
   if (isInvulnerable) {
     ctx.save();
     ctx.globalAlpha = 0.5; // 50% opacity during invincibility
+  }
+  
+  // Check if this is an enemy entity and get enemy type for special rendering
+  let enemyType: 'lizard' | 'spider' | 'frog' | null = null;
+  if (entityId) {
+    const enemyComponent = gameEngine.entityManager.getComponent(entityId, 'enemy');
+    if (enemyComponent) {
+      enemyType = enemyComponent.enemyType;
+    }
   }
   
   if (renderable.shape === 'image' && renderable.imageSrc) {
@@ -351,20 +397,176 @@ function drawEntity(
     ctx.arc(centerX, centerY, (renderable.size / 2) * deathScale, 0, Math.PI * 2);
     ctx.fill();
   } else if (renderable.shape === 'rectangle') {
-    ctx.fillStyle = renderable.color;
-    const halfSize = (renderable.size / 2) * deathScale;
-    ctx.fillRect(
-      centerX - halfSize,
-      centerY - halfSize,
-      renderable.size * deathScale,
-      renderable.size * deathScale
-    );
+    // Enhanced enemy rendering with distinctive shapes
+    if (enemyType) {
+      drawEnhancedEnemy(centerX, centerY, renderable, enemyType, deathScale);
+    } else {
+      // Default rectangle rendering for non-enemies
+      ctx.fillStyle = renderable.color;
+      const halfSize = (renderable.size / 2) * deathScale;
+      ctx.fillRect(
+        centerX - halfSize,
+        centerY - halfSize,
+        renderable.size * deathScale,
+        renderable.size * deathScale
+      );
+    }
   }
   
   // Restore opacity for invulnerable entities
   if (isInvulnerable) {
     ctx.restore();
   }
+}
+
+/**
+ * Draw enhanced enemy with type-specific visual patterns
+ */
+function drawEnhancedEnemy(
+  centerX: number, 
+  centerY: number, 
+  renderable: { color: string; size: number }, 
+  enemyType: 'lizard' | 'spider' | 'frog',
+  deathScale: number
+): void {
+  if (!ctx) return;
+  
+  const size = renderable.size * deathScale;
+  const halfSize = size / 2;
+  const currentTime = performance.now();
+  
+  ctx.save();
+  
+  switch (enemyType) {
+    case 'lizard':
+      // Lizard: Diamond shape with scales pattern
+      ctx.fillStyle = renderable.color;
+      
+      // Draw diamond body
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY - halfSize);
+      ctx.lineTo(centerX + halfSize, centerY);
+      ctx.lineTo(centerX, centerY + halfSize);
+      ctx.lineTo(centerX - halfSize, centerY);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Add scales pattern
+      ctx.strokeStyle = 'rgba(139, 0, 0, 0.6)'; // Dark red scales
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        const scaleRadius = (halfSize * 0.3) + (i * halfSize * 0.2);
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, scaleRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+      }
+      
+      // Add eyes
+      ctx.fillStyle = 'yellow';
+      ctx.beginPath();
+      ctx.arc(centerX - halfSize * 0.3, centerY - halfSize * 0.3, 3, 0, 2 * Math.PI);
+      ctx.arc(centerX + halfSize * 0.3, centerY - halfSize * 0.3, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+      
+    case 'spider':
+      // Spider: Oval body with 8 legs
+      ctx.fillStyle = renderable.color;
+      
+      // Draw spider body (oval)
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, halfSize * 0.6, halfSize * 0.8, 0, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Draw spider legs
+      ctx.strokeStyle = renderable.color;
+      ctx.lineWidth = 3;
+      
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI) / 4;
+        const legLength = halfSize * 1.2;
+        const legBend = halfSize * 0.7;
+        
+        // Joint position
+        const jointX = centerX + Math.cos(angle) * legBend;
+        const jointY = centerY + Math.sin(angle) * legBend;
+        
+        // Leg end position
+        const legEndX = centerX + Math.cos(angle) * legLength;
+        const legEndY = centerY + Math.sin(angle) * legLength;
+        
+        // Draw leg from body to joint to end
+        ctx.beginPath();
+        ctx.moveTo(centerX + Math.cos(angle) * halfSize * 0.6, centerY + Math.sin(angle) * halfSize * 0.6);
+        ctx.lineTo(jointX, jointY);
+        ctx.lineTo(legEndX, legEndY);
+        ctx.stroke();
+      }
+      
+      // Add spider pattern on body
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, halfSize * 0.3, halfSize * 0.5, 0, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+      
+    case 'frog':
+      // Frog: Rounded rectangle with eyes on top
+      ctx.fillStyle = renderable.color;
+      
+      // Draw frog body (rounded rectangle)
+      const cornerRadius = halfSize * 0.3;
+      ctx.beginPath();
+      ctx.roundRect(
+        centerX - halfSize,
+        centerY - halfSize,
+        size,
+        size,
+        cornerRadius
+      );
+      ctx.fill();
+      
+      // Add frog belly
+      ctx.fillStyle = 'rgba(144, 238, 144, 0.7)'; // Light green belly
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY + halfSize * 0.2, halfSize * 0.6, halfSize * 0.4, 0, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Draw bulging eyes on top
+      const eyeRadius = halfSize * 0.25;
+      const eyeOffsetY = -halfSize * 0.7;
+      
+      // Eye backgrounds
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.beginPath();
+      ctx.arc(centerX - halfSize * 0.3, centerY + eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      ctx.arc(centerX + halfSize * 0.3, centerY + eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Eye pupils
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.arc(centerX - halfSize * 0.3, centerY + eyeOffsetY, eyeRadius * 0.6, 0, 2 * Math.PI);
+      ctx.arc(centerX + halfSize * 0.3, centerY + eyeOffsetY, eyeRadius * 0.6, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Eye highlights
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(centerX - halfSize * 0.3 + 2, centerY + eyeOffsetY - 2, eyeRadius * 0.3, 0, 2 * Math.PI);
+      ctx.arc(centerX + halfSize * 0.3 + 2, centerY + eyeOffsetY - 2, eyeRadius * 0.3, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Add subtle throat movement animation
+      const throatPulse = 0.9 + 0.1 * Math.sin(currentTime * 0.005);
+      ctx.fillStyle = `rgba(144, 238, 144, ${0.4 * throatPulse})`;
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY + halfSize * 0.5, halfSize * 0.4, halfSize * 0.2 * throatPulse, 0, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+  }
+  
+  ctx.restore();
 }
 
 // Draw numbers on math problem tiles
@@ -400,8 +602,97 @@ function drawMathProblemNumbers(mathProblems: MathProblemEntity[]): void {
 }
 
 // Draw frog tongues
+// @ts-ignore - Legacy function kept for reference
 function drawFrogTongues(frogs: FrogTongueEntity[]): void {
+  // This function is now empty as per the instructions
+}
+
+/**
+ * Draw enhanced spider webs with fade effects and better visuals
+ */
+function drawEnhancedSpiderWebs(spiderWebs: SpiderWebEntity[]): void {
   if (!ctx) return;
+  
+  const currentTime = performance.now();
+  
+  for (const webEntity of spiderWebs) {
+    const web = webEntity.components.spiderWeb;
+    const pos = webEntity.components.position;
+    
+    // Skip inactive webs
+    if (!web.isActive) continue;
+    
+    // Calculate fade effect based on remaining lifetime
+    const timeElapsed = currentTime - web.createdTime;
+    const timeRemaining = web.duration - timeElapsed;
+    const fadeProgress = Math.max(0, timeRemaining / web.duration);
+    
+    // Base opacity that fades over time
+    const baseOpacity = 0.6 * fadeProgress;
+    
+    ctx.save();
+    
+    // Draw web background with fade
+    ctx.fillStyle = `rgba(128, 0, 128, ${baseOpacity * 0.3})`;
+    ctx.fillRect(pos.x + 5, pos.y + 5, CELL_SIZE - 10, CELL_SIZE - 10);
+    
+    // Draw web pattern
+    const centerX = pos.x + CELL_SIZE / 2;
+    const centerY = pos.y + CELL_SIZE / 2;
+    const webSize = CELL_SIZE * 0.4;
+    
+    ctx.strokeStyle = `rgba(160, 32, 160, ${baseOpacity})`;
+    ctx.lineWidth = 2;
+    
+    // Draw radial web strands
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4;
+      const x1 = centerX + Math.cos(angle) * 8;
+      const y1 = centerY + Math.sin(angle) * 8;
+      const x2 = centerX + Math.cos(angle) * webSize;
+      const y2 = centerY + Math.sin(angle) * webSize;
+      
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+    }
+    
+    // Draw concentric circles
+    for (let radius = 8; radius <= webSize; radius += 12) {
+      ctx.moveTo(centerX + radius, centerY);
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    }
+    
+    ctx.stroke();
+    
+    // Add sparkle effect for active webs
+    if (fadeProgress > 0.5) {
+      const sparkleOpacity = (fadeProgress - 0.5) * 2;
+      ctx.fillStyle = `rgba(200, 100, 200, ${sparkleOpacity * 0.8})`;
+      
+      // Draw small sparkles around the web
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3 + (currentTime * 0.001);
+        const sparkleX = centerX + Math.cos(angle) * webSize * 0.8;
+        const sparkleY = centerY + Math.sin(angle) * webSize * 0.8;
+        
+        ctx.beginPath();
+        ctx.arc(sparkleX, sparkleY, 2, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+    
+    ctx.restore();
+  }
+}
+
+/**
+ * Draw enhanced frog tongues with improved animation and visual feedback
+ */
+function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
+  if (!ctx) return;
+  
+  const currentTime = performance.now();
   
   for (const frog of frogs) {
     const tongue = frog.components.frogTongue;
@@ -417,15 +708,54 @@ function drawFrogTongues(frogs: FrogTongueEntity[]): void {
     const frogCenterY = frogPos.y + CELL_SIZE / 2;
     
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 20, 147, 0.8)'; // Deep pink tongue color
-    ctx.lineWidth = 8; // Thick tongue line
+    
+    // Calculate animation effects based on tongue phase
+    let baseOpacity = 1.0;
+    let lineWidth = 8;
+    let tongueColor = 'rgba(255, 20, 147, 1.0)';
+    
+    switch (tongue.phase) {
+      case 'extending':
+        // Pulsing effect during extension
+        const extendPulse = 0.8 + 0.2 * Math.sin(currentTime * 0.01);
+        baseOpacity = extendPulse;
+        lineWidth *= extendPulse;
+        break;
+      case 'holding':
+        // Steady glow during hold
+        tongueColor = 'rgba(255, 50, 150, 1.0)';
+        lineWidth = 10;
+        break;
+      case 'retracting':
+        // Fading effect during retraction
+        const retractFade = Math.max(0.3, tongue.currentLength / (tongue.maxRange * CELL_SIZE));
+        baseOpacity = retractFade;
+        break;
+    }
+    
+    // Draw tongue shadow for depth
+    ctx.strokeStyle = `rgba(120, 10, 80, ${baseOpacity * 0.3})`;
+    ctx.lineWidth = lineWidth + 2;
     ctx.lineCap = 'round';
     
-    // Draw tongue as a line from frog to the end of its segments
+    ctx.beginPath();
+    ctx.moveTo(frogCenterX + 2, frogCenterY + 2);
+    
+    for (const segment of tongue.segments) {
+      const segmentCenterX = segment.x * CELL_SIZE + CELL_SIZE / 2 + 2;
+      const segmentCenterY = segment.y * CELL_SIZE + CELL_SIZE / 2 + 2;
+      ctx.lineTo(segmentCenterX, segmentCenterY);
+    }
+    
+    ctx.stroke();
+    
+    // Draw main tongue
+    ctx.strokeStyle = tongueColor.replace('1.0)', `${baseOpacity})`);
+    ctx.lineWidth = lineWidth;
+    
     ctx.beginPath();
     ctx.moveTo(frogCenterX, frogCenterY);
     
-    // Draw line through all segments
     for (const segment of tongue.segments) {
       const segmentCenterX = segment.x * CELL_SIZE + CELL_SIZE / 2;
       const segmentCenterY = segment.y * CELL_SIZE + CELL_SIZE / 2;
@@ -434,15 +764,129 @@ function drawFrogTongues(frogs: FrogTongueEntity[]): void {
     
     ctx.stroke();
     
-    // Draw tongue tip (small circle at the end)
+    // Draw enhanced tongue tip with glow effect
     if (tongue.segments.length > 0) {
       const lastSegment = tongue.segments[tongue.segments.length - 1];
       const tipX = lastSegment.x * CELL_SIZE + CELL_SIZE / 2;
       const tipY = lastSegment.y * CELL_SIZE + CELL_SIZE / 2;
       
+      // Glow effect
+      const glowRadius = 12;
+      const gradient = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, glowRadius);
+      gradient.addColorStop(0, `rgba(255, 20, 147, ${baseOpacity * 0.8})`);
+      gradient.addColorStop(0.5, `rgba(255, 20, 147, ${baseOpacity * 0.3})`);
+      gradient.addColorStop(1, `rgba(255, 20, 147, 0)`);
+      
+      ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.fillStyle = 'rgba(255, 20, 147, 1.0)'; // Solid pink tip
+      ctx.arc(tipX, tipY, glowRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Tongue tip
+      ctx.fillStyle = `rgba(255, 20, 147, ${baseOpacity})`;
+      ctx.beginPath();
       ctx.arc(tipX, tipY, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Highlight on tip
+      ctx.fillStyle = `rgba(255, 150, 200, ${baseOpacity * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(tipX - 2, tipY - 2, 3, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    
+    ctx.restore();
+  }
+}
+
+/**
+ * Draw visual effects for frozen players
+ */
+function drawFrozenPlayerEffects(frozenPlayers: FrozenPlayerEntity[]): void {
+  if (!ctx) return;
+  
+  const currentTime = performance.now();
+  
+  for (const playerEntity of frozenPlayers) {
+    const pos = playerEntity.components.position;
+    const freezeEffect = playerEntity.components.freezeEffect;
+    
+    // Skip inactive freeze effects
+    if (!freezeEffect.isActive) continue;
+    
+    // Calculate freeze effect intensity based on remaining time
+    const timeElapsed = currentTime - freezeEffect.startTime;
+    const timeRemaining = freezeEffect.duration - timeElapsed;
+    const freezeProgress = Math.max(0, timeRemaining / freezeEffect.duration);
+    
+    ctx.save();
+    
+    // Ice crystal overlay
+    const centerX = pos.x + CELL_SIZE / 2;
+    const centerY = pos.y + CELL_SIZE / 2;
+    
+    // Draw ice effect background
+    const iceOpacity = 0.4 * freezeProgress;
+    ctx.fillStyle = `rgba(173, 216, 230, ${iceOpacity})`;
+    ctx.fillRect(pos.x, pos.y, CELL_SIZE, CELL_SIZE);
+    
+    // Draw ice crystals
+    ctx.strokeStyle = `rgba(135, 206, 250, ${freezeProgress})`;
+    ctx.lineWidth = 2;
+    
+    // Draw 6 ice crystal spikes
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3;
+      const crystalLength = 20 * freezeProgress;
+      
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + Math.cos(angle) * crystalLength,
+        centerY + Math.sin(angle) * crystalLength
+      );
+      ctx.stroke();
+      
+      // Draw smaller side spikes
+      const sideLength = crystalLength * 0.4;
+      const sideAngle1 = angle + Math.PI / 6;
+      const sideAngle2 = angle - Math.PI / 6;
+      
+      ctx.beginPath();
+      ctx.moveTo(
+        centerX + Math.cos(angle) * crystalLength * 0.7,
+        centerY + Math.sin(angle) * crystalLength * 0.7
+      );
+      ctx.lineTo(
+        centerX + Math.cos(angle) * crystalLength * 0.7 + Math.cos(sideAngle1) * sideLength,
+        centerY + Math.sin(angle) * crystalLength * 0.7 + Math.sin(sideAngle1) * sideLength
+      );
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(
+        centerX + Math.cos(angle) * crystalLength * 0.7,
+        centerY + Math.sin(angle) * crystalLength * 0.7
+      );
+      ctx.lineTo(
+        centerX + Math.cos(angle) * crystalLength * 0.7 + Math.cos(sideAngle2) * sideLength,
+        centerY + Math.sin(angle) * crystalLength * 0.7 + Math.sin(sideAngle2) * sideLength
+      );
+      ctx.stroke();
+    }
+    
+    // Add sparkling ice particles
+    const sparkleCount = Math.floor(8 * freezeProgress);
+    ctx.fillStyle = `rgba(255, 255, 255, ${freezeProgress * 0.8})`;
+    
+    for (let i = 0; i < sparkleCount; i++) {
+      const sparkleAngle = (i * 2 * Math.PI) / sparkleCount + currentTime * 0.002;
+      const sparkleRadius = 25 + 10 * Math.sin(currentTime * 0.003 + i);
+      const sparkleX = centerX + Math.cos(sparkleAngle) * sparkleRadius;
+      const sparkleY = centerY + Math.sin(sparkleAngle) * sparkleRadius;
+      
+      ctx.beginPath();
+      ctx.arc(sparkleX, sparkleY, 1.5, 0, 2 * Math.PI);
       ctx.fill();
     }
     

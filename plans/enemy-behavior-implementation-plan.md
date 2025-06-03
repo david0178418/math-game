@@ -32,9 +32,9 @@ This replaces the previous system of spawning 4 generic enemies with random beha
 
 ## Task List
 
-### **Phase 1: Core Architecture Enhancement**
+### **Phase 1: Core Architecture Enhancement** ✅ **COMPLETE**
 
-#### **Task 1.1: Extend Enemy Component Interface**
+#### **Task 1.1: Extend Enemy Component Interface** ✅
 - **File**: `src/ecs/Engine.ts`
 - **Priority**: High
 - **Action**: Modify the `enemy` component to include `enemyType` field
@@ -49,26 +49,27 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   ```
 - **Impact**: Foundation for all type-specific behaviors
 
-#### **Task 1.2: Create Spider-Specific Components**
+#### **Task 1.2: Create Spider-Specific Components** ✅
 - **File**: `src/ecs/Engine.ts`  
 - **Priority**: High
 - **Action**: Add new components for spider web mechanics
 - **Changes**:
   ```typescript
   spiderWeb: {
-    duration: number;        // Time until web disappears (3000ms)
-    freezeTime: number;      // How long to freeze player (2000ms)
-    createdTime: number;     // When web was created
-    isActive: boolean;       // Whether web can freeze players
+    duration: number;        // Time until web disappears (8000ms)
+    freezeTime: number;      // Time player is frozen when caught (2000ms)
+    createdTime: number;     // When the web was created (timestamp)
+    isActive: boolean;       // Whether the web is still active
   };
   freezeEffect: {
     startTime: number;       // When freeze started
     duration: number;        // How long to freeze (2000ms)
     isActive: boolean;       // Whether player is currently frozen
+    sourceWebId?: number;    // ID of the spider web that caused this freeze
   };
   ```
 
-#### **Task 1.3: Create Frog-Specific Components**
+#### **Task 1.3: Create Frog-Specific Components** ✅
 - **File**: `src/ecs/Engine.ts`
 - **Priority**: High
 - **Action**: Add components for frog tongue mechanics
@@ -80,14 +81,14 @@ This replaces the previous system of spawning 4 generic enemies with random beha
     maxRange: number;                       // Maximum tiles (3)
     currentLength: number;                  // Current extension distance
     startTime: number;                      // When tongue action started
-    phase: 'extending' | 'retracting' | 'idle';
+    phase: 'extending' | 'holding' | 'retracting' | 'idle';
     segments: Array<{ x: number; y: number }>; // Tongue path for collision
   };
   ```
 
-### **Phase 2: Enemy Type System**
+### **Phase 2: Enemy Type System** ✅ **COMPLETE**
 
-#### **Task 2.1: Update Entity Factory**
+#### **Task 2.1: Update Entity Factory** ✅
 - **File**: `src/ecs/Engine.ts`
 - **Priority**: High
 - **Action**: Modify `createEnemy` function to accept enemy type
@@ -96,7 +97,7 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Add type-specific component initialization
   - Set appropriate visual properties per type
 
-#### **Task 2.2: Create Type-Specific Enemy Factories**
+#### **Task 2.2: Create Type-Specific Enemy Factories** ✅
 - **File**: `src/ecs/Engine.ts`
 - **Priority**: Medium
 - **Action**: Add specialized creation methods for better type safety
@@ -107,7 +108,7 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   createFrog(x: number, y: number, behaviorType): { id: number };
   ```
 
-#### **Task 2.3: Update Enemy Spawn System**
+#### **Task 2.3: Update Enemy Spawn System** ✅
 - **File**: `src/ecs/systems/EnemySpawnSystem.ts`
 - **Priority**: High
 - **Action**: Implement sequential enemy type spawning
@@ -118,7 +119,7 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Stop spawning after 3 enemies are created
   - Reset spawn sequence when all enemies are defeated
 
-#### **Task 2.4: Add Spawn State Tracking**
+#### **Task 2.4: Add Spawn State Tracking** ✅
 - **File**: `src/ecs/systems/EnemySpawnSystem.ts`
 - **Priority**: High
 - **Action**: Implement spawn state management for sequential enemy creation
@@ -136,19 +137,19 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   function shouldResetCycle(currentEnemyCount: number): boolean;
   ```
 
-### **Phase 3: Spider Implementation**
+### **Phase 3: Spider Implementation** ✅ **COMPLETE**
 
-#### **Task 3.1: Create Spider Web System**
-- **File**: `src/ecs/systems/SpiderWebSystem.ts` (new file)
+#### **Task 3.1: Create Spider Web System** ✅
+- **File**: `src/ecs/systems/SpiderWebSystem.ts`
 - **Priority**: Medium
 - **Action**: Create new system to manage spider web lifecycle
 - **Features**:
   - Query for entities with `spiderWeb` component
-  - Handle 3-second countdown timer
+  - Handle 8-second countdown timer
   - Automatic web cleanup after timeout
   - Web cleanup when player is freed from freeze
 
-#### **Task 3.2: Implement Player Freeze System**
+#### **Task 3.2: Implement Player Freeze System** ✅
 - **File**: `src/ecs/systems/MovementSystem.ts`
 - **Priority**: Medium
 - **Action**: Add freeze effect checks to player movement
@@ -157,7 +158,7 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Ignore all movement input while frozen
   - Visual feedback for frozen state
 
-#### **Task 3.3: Create Web-Player Collision Detection**
+#### **Task 3.3: Create Web-Player Collision Detection** ✅
 - **File**: `src/ecs/systems/CollisionSystem.ts`
 - **Priority**: Medium
 - **Action**: Add collision handling between player and spider webs
@@ -166,28 +167,28 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Apply freeze effect when player enters web tile
   - Remove web when player is caught
 
-#### **Task 3.4: Update AI System for Spider Behavior**
+#### **Task 3.4: Update AI System for Spider Behavior** ✅
 - **File**: `src/ecs/systems/AISystem.ts`
 - **Priority**: Medium
 - **Action**: Add spider-specific movement logic
 - **Changes**: 
-  - Add web placement probability during movement (configurable %)
+  - Add web placement probability during movement (20% chance)
   - Ensure spiders don't place webs too frequently
   - Web placement only on empty tiles
 
-### **Phase 4: Frog Implementation**
+### **Phase 4: Frog Implementation** ✅ **COMPLETE**
 
-#### **Task 4.1: Create Frog Tongue System**
-- **File**: `src/ecs/systems/FrogTongueSystem.ts` (new file)
+#### **Task 4.1: Create Frog Tongue System** ✅
+- **File**: `src/ecs/systems/FrogTongueSystem.ts`
 - **Priority**: Medium
 - **Action**: Create system to manage tongue extension/retraction
 - **Features**:
   - Query for entities with `frogTongue` component
   - Handle tongue extension up to 3 tiles or map boundary
-  - Smooth tongue animation phases (extending → retracting → idle)
+  - Smooth tongue animation phases (extending → holding → retracting → idle)
   - Random tongue direction selection
 
-#### **Task 4.2: Implement Tongue Damage System**
+#### **Task 4.2: Implement Tongue Damage System** ✅
 - **File**: `src/ecs/systems/CollisionSystem.ts`
 - **Priority**: Medium
 - **Action**: Add collision detection between player and frog tongues
@@ -196,7 +197,7 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Apply damage when player touches extended tongue
   - Integrate with existing health/damage system
 
-#### **Task 4.3: Update AI System for Frog Behavior**
+#### **Task 4.3: Update AI System for Frog Behavior** ✅
 - **File**: `src/ecs/systems/AISystem.ts`
 - **Priority**: Medium
 - **Action**: Add frog-specific behavior logic
@@ -205,38 +206,51 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Implement pause mechanic (frog stops moving while tongue is out)
   - Random direction selection for tongue shots
 
-### **Phase 5: Visual and Audio Enhancements**
+### **Phase 5: Visual and Audio Enhancements** ✅ **COMPLETE**
 
-#### **Task 5.1: Update Render System for Enemy Types**
+#### **Task 5.1: Update Render System for Enemy Types** ✅
 - **File**: `src/ecs/systems/RenderSystem.ts`
 - **Priority**: Low
 - **Action**: Add different visual representations for each enemy type
 - **Changes**: 
-  - Color coding: Lizard (red), Spider (purple), Frog (green)
-  - Future: Sprite support for distinct enemy appearances
-  - Size variations if desired
+  - **Lizard**: Diamond shape with scale patterns and yellow eyes
+  - **Spider**: Oval body with 8 articulated legs extending from the center
+  - **Frog**: Rounded rectangle with bulging eyes and animated throat movement
+  - Enhanced enemy visual distinctions with type-specific shapes and animations
 
-#### **Task 5.2: Add Spider Web Rendering**
+#### **Task 5.2: Add Spider Web Rendering** ✅
 - **File**: `src/ecs/systems/RenderSystem.ts`
 - **Priority**: Low
 - **Action**: Implement spider web visual representation
 - **Changes**: 
-  - Web sprite/pattern rendering on affected tiles
-  - Opacity/fade effects for web timeout countdown
-  - Visual distinction between active and expired webs
+  - Enhanced web pattern with radial strands and concentric circles
+  - Fade effects based on remaining web lifetime
+  - Sparkle animations for active webs
+  - Semi-transparent purple background with opacity fade
 
-#### **Task 5.3: Add Frog Tongue Rendering**
+#### **Task 5.3: Add Frog Tongue Rendering** ✅
 - **File**: `src/ecs/systems/RenderSystem.ts`
 - **Priority**: Low
 - **Action**: Implement tongue extension visualization
 - **Changes**: 
-  - Line or segmented sprite rendering for extended tongues
-  - Animation during extension/retraction phases
-  - Visual feedback for tongue reach and direction
+  - Enhanced tongue rendering with shadows and depth
+  - Phase-based animations (pulsing during extension, glow during hold, fade during retraction)
+  - Glowing tongue tip with highlight effects
+  - Smooth visual feedback for tongue reach and direction
+
+#### **Task 5.4: Add Frozen Player Visual Effects** ✅
+- **File**: `src/ecs/systems/RenderSystem.ts`
+- **Priority**: Low
+- **Action**: Implement frozen player visual effects
+- **Changes**: 
+  - Ice crystal overlay with 6-pointed star pattern
+  - Light blue background fade based on remaining freeze time
+  - Sparkling ice particles that rotate around the frozen player
+  - Progressive fade effects as freeze effect expires
 
 ### **Phase 6: System Integration**
 
-#### **Task 6.1: Update System Priorities**
+#### **Task 6.1: Update System Priorities** ✅
 - **File**: `src/ecs/systemConfigs.ts`
 - **Priority**: High
 - **Action**: Add priority configurations for new systems
@@ -245,7 +259,7 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Ensure frog tongue system runs before collision detection
   - Maintain proper system execution order
 
-#### **Task 6.2: Register New Systems**
+#### **Task 6.2: Register New Systems** ✅
 - **File**: `src/game/GameInitializer.ts`
 - **Priority**: High
 - **Action**: Add new systems to game initialization
@@ -254,7 +268,7 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   - Import and register `FrogTongueSystem`
   - Ensure systems are added in correct order
 
-#### **Task 6.3: Update Queries**
+#### **Task 6.3: Update Queries** ✅
 - **File**: `src/ecs/queries.ts`
 - **Priority**: High
 - **Action**: Add query definitions for new components
