@@ -1,6 +1,6 @@
 import { gameEngine } from '../Engine';
 import { pixelToGrid, gridToPixel } from './MovementSystem';
-import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, GAME_CONFIG } from '../../game/config';
 import { 
   enemyQuery, 
   playerQuery,
@@ -16,6 +16,9 @@ import { initializeFrogTongue } from './FrogTongueSystem';
  * AI System
  * Handles AI behavior for enemy entities using grid-based movement like Number Munchers
  */
+
+// Use centralized enemy type configurations
+const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
 
 // Define obstacle query locally since it's specific to AI system
 const obstacleQuery = {
@@ -122,7 +125,7 @@ function processEnemyAI(
   // Determine next move based on behavior type
   let nextGridX = Math.round(enemyPos.x / CELL_SIZE);
   let nextGridY = Math.round(enemyPos.y / CELL_SIZE);
-  let moveInterval: number = calculateMoveInterval(enemyData.behaviorType, player);
+  let moveInterval: number = calculateMoveInterval(enemyData.behaviorType, player, enemyData.enemyType);
   
   switch (enemyData.behaviorType) {
     case 'chase': {
@@ -170,8 +173,8 @@ function processEnemyAI(
     
     console.log(`🕷️ Spider moved from (${enemyPos.x}, ${enemyPos.y}) to (${newPixelPos.x}, ${newPixelPos.y})`);
     
-    // 20% chance to place a web when moving
-    if (Math.random() < 0.2) {
+    // Use configured chance to place a web when moving
+    if (Math.random() < SPIDER_CONFIG.WEB_PLACEMENT_CHANCE) {
       const oldGridPos = pixelToGrid(enemyPos.x, enemyPos.y);
       
       console.log(`🕷️ Attempting to place web at grid (${oldGridPos.x}, ${oldGridPos.y})`);
@@ -196,13 +199,16 @@ function processEnemyAI(
 /**
  * Calculate move interval based on behavior type and player score (difficulty)
  */
-function calculateMoveInterval(behaviorType: AIBehaviorType, player: PlayerEntity): number {
+function calculateMoveInterval(behaviorType: AIBehaviorType, player: PlayerEntity, enemyType?: 'lizard' | 'spider' | 'frog'): number {
   const score = player?.components?.player?.score || 0;
-  const difficultyLevel = Math.floor(score / AI_CONFIG.DIFFICULTY_SCALE_SCORE);
   
-  // Calculate base interval with difficulty scaling
-  const baseInterval = AI_CONFIG.BASE_MOVE_INTERVAL - (difficultyLevel * 100);
-  const difficultyAdjustedInterval = Math.max(baseInterval, AI_CONFIG.MIN_MOVE_INTERVAL);
+  // Scale difficulty based on score
+  const difficultyLevel = Math.floor(score / AI_CONFIG.DIFFICULTY_SCALE_SCORE);
+  const reductionFactor = Math.min(difficultyLevel * 0.1, 0.7); // Max 70% reduction
+  
+  // Calculate difficulty-adjusted interval
+  const intervalRange = AI_CONFIG.BASE_MOVE_INTERVAL - AI_CONFIG.MIN_MOVE_INTERVAL;
+  const difficultyAdjustedInterval = AI_CONFIG.BASE_MOVE_INTERVAL - (intervalRange * reductionFactor);
   
   // Apply behavior-specific multipliers
   let multiplier: number;
@@ -221,6 +227,12 @@ function calculateMoveInterval(behaviorType: AIBehaviorType, player: PlayerEntit
       break;
     default:
       multiplier = AI_CONFIG.RANDOM_SPEED_MULTIPLIER;
+  }
+  
+  // Apply enemy type-specific speed multipliers
+  if (enemyType) {
+    const typeMultiplier = AI_CONFIG.ENEMY_SPEED_MULTIPLIERS[enemyType.toUpperCase() as keyof typeof AI_CONFIG.ENEMY_SPEED_MULTIPLIERS] || 1.0;
+    multiplier *= typeMultiplier;
   }
   
   return Math.round(difficultyAdjustedInterval * multiplier);

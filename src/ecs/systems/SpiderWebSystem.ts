@@ -2,11 +2,15 @@ import { gameEngine } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { createQueryDefinition } from 'ecspresso';
 import type { Components } from '../Engine';
+import { GAME_CONFIG } from '../../game/config';
 
 /**
  * Spider Web System
  * Manages spider web lifecycle including countdown timers and cleanup
  */
+
+// Use centralized spider configuration
+const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
 
 // Query for spider web entities
 const spiderWebQuery = createQueryDefinition({
@@ -123,8 +127,8 @@ export function createSpiderWeb(gridX: number, gridY: number): void {
   gameEngine.spawn({
     position: { x: pixelX, y: pixelY },
     spiderWeb: {
-      duration: 8000,        // 8 seconds until web disappears
-      freezeTime: 2000,      // 2 seconds freeze duration when caught
+      duration: SPIDER_CONFIG.WEB_DURATION,        // 8 seconds until web disappears
+      freezeTime: SPIDER_CONFIG.FREEZE_DURATION,   // 2 seconds freeze duration when caught
       createdTime: currentTime,
       isActive: true
     },

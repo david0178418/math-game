@@ -298,17 +298,17 @@ export const EntityFactory = {
   },
 
   createEnemy(x: number, y: number, enemyType: 'lizard' | 'spider' | 'frog' = 'lizard', behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
-    // Set type-specific visual properties
+    // Determine enemy color based on type
     let enemyColor: string;
     switch (enemyType) {
       case 'lizard':
-        enemyColor = GAME_CONFIG.COLORS.ENEMY; // Red (existing enemy color)
+        enemyColor = GAME_CONFIG.ENEMY_TYPES.LIZARD.COLOR;
         break;
       case 'spider':
-        enemyColor = 'purple';
+        enemyColor = GAME_CONFIG.ENEMY_TYPES.SPIDER.COLOR;
         break;
       case 'frog':
-        enemyColor = 'green';
+        enemyColor = GAME_CONFIG.ENEMY_TYPES.FROG.COLOR;
         break;
       default:
         enemyColor = GAME_CONFIG.COLORS.ENEMY;

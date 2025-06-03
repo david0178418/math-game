@@ -2,7 +2,7 @@ import { gameEngine } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { createQueryDefinition } from 'ecspresso';
 import type { Components } from '../Engine';
-import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, GAME_CONFIG } from '../../game/config';
 import { pixelToGrid } from './MovementSystem';
 import { 
   enemyQuery, 
@@ -30,14 +30,8 @@ type FrogEntity = {
   };
 };
 
-// Configuration
-const FROG_CONFIG = {
-  TONGUE_EXTENSION_SPEED: 424,  // pixels per second (106 pixels / 0.25 seconds = 424)
-  TONGUE_ATTACK_PROBABILITY: 0.1, // 10% chance per second to attack
-  TONGUE_COOLDOWN: 2000,        // 2 seconds between attacks
-  TONGUE_HOLD_DURATION: 1000,   // 1 second hold when fully extended
-  MAX_TONGUE_RANGE: 3           // 3 tiles maximum
-};
+// Use centralized frog configuration
+const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.FROG;
 
 // Add queries to the system for obstacle detection
 export function addFrogTongueSystemToEngine(): void {
@@ -114,7 +108,7 @@ function processIdlePhase(frog: FrogEntity, currentTime: number): void {
  */
 function processExtendingPhase(frog: FrogEntity, currentTime: number, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
-  const extensionSpeed = FROG_CONFIG.TONGUE_EXTENSION_SPEED * deltaTime;
+  const extensionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime;
   
   // Calculate how far the tongue should extend
   const targetExtension = Math.min(tongue.currentLength + extensionSpeed, tongue.maxRange * CELL_SIZE);
@@ -163,7 +157,7 @@ function processHoldingPhase(frog: FrogEntity, currentTime: number): void {
  */
 function processRetractingPhase(frog: FrogEntity, currentTime: number, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
-  const retractionSpeed = FROG_CONFIG.TONGUE_EXTENSION_SPEED * deltaTime; // Same speed as extension
+  const retractionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime; // Same speed as extension
   
   // Retract the tongue
   const previousLength = tongue.currentLength;
@@ -294,7 +288,7 @@ export function initializeFrogTongue(frogId: number): void {
   gameEngine.entityManager.addComponent(frogId, 'frogTongue', {
     isExtended: false,
     direction: { x: 0, y: 0 },
-    maxRange: FROG_CONFIG.MAX_TONGUE_RANGE,
+    maxRange: FROG_CONFIG.TONGUE_RANGE,
     currentLength: 0,
     startTime: currentTime,
     phase: 'idle',

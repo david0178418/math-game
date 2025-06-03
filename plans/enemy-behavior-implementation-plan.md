@@ -292,58 +292,67 @@ This replaces the previous system of spawning 4 generic enemies with random beha
   export type FrozenPlayerEntity = QueryResultEntity<Components, typeof frozenPlayerQuery>;
   ```
 
-### **Phase 7: Configuration and Balancing**
+### **Phase 7: Configuration and Balancing** ✅ **COMPLETE**
 
-#### **Task 7.1: Add Enemy Type Configuration**
+#### **Task 7.1: Add Enemy Type Configuration** ✅
 - **File**: `src/game/config.ts`
-- **Priority**: Medium
-- **Action**: Add configuration constants for new enemy types and spawn order
+- **Status**: Implemented
 - **Changes**: 
   ```typescript
   ENEMY_SPAWN: {
     MAX_ENEMIES: 3,                    // Total enemies in game
     SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
     RESET_ON_ALL_DEFEATED: true,      // Restart spawn cycle when all enemies defeated
+    BASE_SPAWN_INTERVAL: 3000,        // 3 seconds between spawns
+    MIN_SPAWN_INTERVAL: 1500,         // Minimum spawn interval with difficulty scaling
   },
   ENEMY_TYPES: {
     LIZARD: {
-      COLOR: 'red',                    // Current enemy color
+      COLOR: 'red',                    // Diamond-shaped lizard
+      MOVE_SPEED_MULTIPLIER: 1.0,      // Normal movement speed
+      AI_BEHAVIORS: ['chase', 'patrol', 'random', 'guard'] as const,
     },
     SPIDER: {
-      COLOR: 'purple',
-      WEB_DURATION: 3000,              // 3 seconds
-      FREEZE_DURATION: 2000,           // 2 seconds
-      WEB_PLACEMENT_CHANCE: 0.15,      // 15% chance per move
+      COLOR: 'purple',                 // 8-legged spider
+      MOVE_SPEED_MULTIPLIER: 0.9,      // Slightly slower than lizard
+      WEB_DURATION: 8000,              // 8 seconds until web disappears
+      FREEZE_DURATION: 2000,           // 2 seconds freeze when caught
+      WEB_PLACEMENT_CHANCE: 0.20,      // 20% chance per move to place web
+      WEB_COOLDOWN: 1000,              // 1 second cooldown between web placements
+      AI_BEHAVIORS: ['random', 'patrol'] as const,
     },
     FROG: {
-      COLOR: 'green',
-      TONGUE_RANGE: 3,                 // 3 tiles max
-      TONGUE_SPEED: 500,               // ms per tile
-      SHOOT_CHANCE: 0.2,               // 20% chance per move cycle
+      COLOR: 'green',                  // Bulging-eyed frog
+      MOVE_SPEED_MULTIPLIER: 1.1,      // Slightly faster when not attacking
+      TONGUE_RANGE: 3,                 // 3 tiles maximum range
+      TONGUE_SPEED: 424,               // Pixels per second (106px/0.25s = 424px/s)
+      TONGUE_ATTACK_PROBABILITY: 0.10, // 10% chance per second to attack
+      TONGUE_COOLDOWN: 2000,           // 2 seconds between attacks
+      TONGUE_HOLD_DURATION: 1000,     // 1 second hold when fully extended
+      AI_BEHAVIORS: ['chase', 'random'] as const,
     },
   }
   ```
 
-#### **Task 7.2: Update AI Configuration**
+#### **Task 7.2: Update System Configurations** ✅
 - **File**: `src/ecs/systemConfigs.ts`
-- **Priority**: Medium
-- **Action**: Add type-specific AI parameters and spawn tracking
+- **Status**: Implemented
 - **Changes**: 
-  ```typescript
-  // Enemy Spawn Configuration
-  export const ENEMY_SPAWN_CONFIG = {
-    MAX_ENEMIES: 3,                      // Reduced from 4 to 3
-    BASE_SPAWN_INTERVAL: 3000,           // 3 seconds between spawns
-    MIN_SPAWN_INTERVAL: 1500,            // Minimum spawn interval
-    DIFFICULTY_SCALE_SCORE: 100,         // Score points per difficulty increase
-    SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
-    RESET_ON_ALL_DEFEATED: true,         // Restart spawn cycle
-  } as const;
-  ```
-  - Different move intervals per enemy type
-  - Behavior probability adjustments
-  - Difficulty scaling factors
-  - Spawn order tracking state
+  - Updated `ENEMY_SPAWN_CONFIG` to reference centralized `GAME_CONFIG.ENEMY_SPAWN`
+  - Added `ENEMY_SPEED_MULTIPLIERS` to `AI_CONFIG` for type-specific movement speeds
+  - Eliminated configuration duplication between files
+  - Systems now use single source of truth for all enemy configurations
+
+#### **Task 7.3: Update System Implementations** ✅
+- **Files**: `FrogTongueSystem.ts`, `SpiderWebSystem.ts`, `AISystem.ts`, `Engine.ts`
+- **Status**: Implemented
+- **Changes**: 
+  - **FrogTongueSystem**: Updated to use `GAME_CONFIG.ENEMY_TYPES.FROG` configuration
+  - **SpiderWebSystem**: Updated to use `GAME_CONFIG.ENEMY_TYPES.SPIDER` configuration
+  - **AISystem**: Updated to use centralized web placement probability and enemy speed multipliers
+  - **Engine**: Updated enemy color assignments to use centralized `ENEMY_TYPES` configuration
+  - **Enhanced AI**: Movement intervals now factor in enemy type-specific speed multipliers
+  - All hardcoded values replaced with centralized configuration references
 
 ### **Phase 8: Testing and Polish**
 

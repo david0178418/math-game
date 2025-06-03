@@ -55,6 +55,43 @@ export const GAME_CONFIG = {
     PLAYER: 3,          // Player (rendered above enemies)
     UI: 10,
   },
+  
+  // Enemy spawn system configuration
+  ENEMY_SPAWN: {
+    MAX_ENEMIES: 3,                    // Total enemies in game
+    SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
+    RESET_ON_ALL_DEFEATED: true,      // Restart spawn cycle when all enemies defeated
+    BASE_SPAWN_INTERVAL: 3000,        // 3 seconds between spawns
+    MIN_SPAWN_INTERVAL: 1500,         // Minimum spawn interval with difficulty scaling
+  },
+  
+  // Enemy type-specific configurations
+  ENEMY_TYPES: {
+    LIZARD: {
+      COLOR: 'red',                    // Diamond-shaped lizard
+      MOVE_SPEED_MULTIPLIER: 1.0,      // Normal movement speed
+      AI_BEHAVIORS: ['chase', 'patrol', 'random', 'guard'] as const,
+    },
+    SPIDER: {
+      COLOR: 'purple',                 // 8-legged spider
+      MOVE_SPEED_MULTIPLIER: 0.9,      // Slightly slower than lizard
+      WEB_DURATION: 8000,              // 8 seconds until web disappears
+      FREEZE_DURATION: 2000,           // 2 seconds freeze when caught
+      WEB_PLACEMENT_CHANCE: 0.20,      // 20% chance per move to place web
+      WEB_COOLDOWN: 1000,              // 1 second cooldown between web placements
+      AI_BEHAVIORS: ['random', 'patrol'] as const,
+    },
+    FROG: {
+      COLOR: 'green',                  // Bulging-eyed frog
+      MOVE_SPEED_MULTIPLIER: 1.1,      // Slightly faster when not attacking
+      TONGUE_RANGE: 3,                 // 3 tiles maximum range
+      TONGUE_SPEED: 424,               // Pixels per second (106px/0.25s = 424px/s)
+      TONGUE_ATTACK_PROBABILITY: 0.10, // 10% chance per second to attack
+      TONGUE_COOLDOWN: 2000,           // 2 seconds between attacks
+      TONGUE_HOLD_DURATION: 1000,     // 1 second hold when fully extended
+      AI_BEHAVIORS: ['chase', 'random'] as const,
+    },
+  },
 } as const;
 
 // Legacy compatibility - maintain old naming for existing code

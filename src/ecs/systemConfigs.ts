@@ -1,3 +1,5 @@
+import { GAME_CONFIG } from '../game/config';
+
 /**
  * System Configuration Constants
  * Centralized configuration for all ECS systems
@@ -10,12 +12,12 @@ export const COLLISION_CONFIG = {
 
 // Enemy Spawn System Configuration
 export const ENEMY_SPAWN_CONFIG = {
-  MAX_ENEMIES: 3,               // Maximum enemies on board (reduced from 4 to 3)
-  BASE_SPAWN_INTERVAL: 3_000,   // Base spawn interval in milliseconds (3 seconds)
-  MIN_SPAWN_INTERVAL: 1_500,    // Minimum spawn interval (1.5 seconds)
+  MAX_ENEMIES: GAME_CONFIG.ENEMY_SPAWN.MAX_ENEMIES,
+  BASE_SPAWN_INTERVAL: GAME_CONFIG.ENEMY_SPAWN.BASE_SPAWN_INTERVAL,
+  MIN_SPAWN_INTERVAL: GAME_CONFIG.ENEMY_SPAWN.MIN_SPAWN_INTERVAL,
   DIFFICULTY_SCALE_SCORE: 100,  // Score points per difficulty increase
-  SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
-  RESET_ON_ALL_DEFEATED: true,  // Restart spawn cycle when all enemies defeated
+  SPAWN_ORDER: GAME_CONFIG.ENEMY_SPAWN.SPAWN_ORDER,
+  RESET_ON_ALL_DEFEATED: GAME_CONFIG.ENEMY_SPAWN.RESET_ON_ALL_DEFEATED,
 } as const;
 
 // Problem Management System Configuration
@@ -35,6 +37,13 @@ export const AI_CONFIG = {
   RANDOM_SPEED_MULTIPLIER: 1.0,   // Random normal speed
   GUARD_SPEED_MULTIPLIER: 1.5,    // Guard moves slowest
   DIFFICULTY_SCALE_SCORE: 100,    // Score points per difficulty increase
+  
+  // Enemy type-specific speed multipliers
+  ENEMY_SPEED_MULTIPLIERS: {
+    LIZARD: GAME_CONFIG.ENEMY_TYPES.LIZARD.MOVE_SPEED_MULTIPLIER,
+    SPIDER: GAME_CONFIG.ENEMY_TYPES.SPIDER.MOVE_SPEED_MULTIPLIER,
+    FROG: GAME_CONFIG.ENEMY_TYPES.FROG.MOVE_SPEED_MULTIPLIER,
+  },
 } as const;
 
 // System Priorities (for consistent ordering)
