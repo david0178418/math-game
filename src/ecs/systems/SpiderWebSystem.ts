@@ -65,14 +65,24 @@ export function addSpiderWebSystemToEngine(): void {
 function processSpiderWebLifecycle(spiderWebs: SpiderWebEntity[], currentTime: number): void {
   for (const webEntity of spiderWebs) {
     const web = webEntity.components.spiderWeb;
+    
+    // Validate timing data (meaningful validation)
+    if (web.duration <= 0) {
+      console.warn(`🕸️ WARNING: Invalid duration ${web.duration} for web ${webEntity.id}, using default`);
+      web.duration = SPIDER_CONFIG.WEB_DURATION;
+    }
+    
     const timeSinceCreated = currentTime - web.createdTime;
     
-    // Check if web has expired (8 seconds without catching a player)
+    // Check if web has expired
     if (timeSinceCreated >= web.duration && web.isActive) {
       console.log(`🕸️ Spider web expired after ${web.duration}ms without catching a player`);
       
-      // Remove the spider web entity
-      gameEngine.entityManager.removeEntity(webEntity.id);
+      try {
+        gameEngine.entityManager.removeEntity(webEntity.id);
+      } catch (error) {
+        console.error(`🕸️ ERROR: Failed to remove expired web entity ${webEntity.id}:`, error);
+      }
     }
   }
 }
@@ -83,6 +93,13 @@ function processSpiderWebLifecycle(spiderWebs: SpiderWebEntity[], currentTime: n
 function processFreezeEffects(frozenPlayers: FrozenPlayerEntity[], currentTime: number): void {
   for (const playerEntity of frozenPlayers) {
     const freezeEffect = playerEntity.components.freezeEffect;
+    
+    // Validate timing data (meaningful validation)
+    if (freezeEffect.duration <= 0) {
+      console.warn(`🧊 WARNING: Invalid duration ${freezeEffect.duration} for freeze effect ${playerEntity.id}, using default`);
+      freezeEffect.duration = SPIDER_CONFIG.FREEZE_DURATION;
+    }
+    
     const timeFrozen = currentTime - freezeEffect.startTime;
     
     // Check if freeze effect has expired
@@ -94,8 +111,11 @@ function processFreezeEffects(frozenPlayers: FrozenPlayerEntity[], currentTime: 
         cleanupSpecificWeb(freezeEffect.sourceWebId);
       }
       
-      // Remove freeze effect component
-      gameEngine.entityManager.removeComponent(playerEntity.id, 'freezeEffect');
+      try {
+        gameEngine.entityManager.removeComponent(playerEntity.id, 'freezeEffect');
+      } catch (error) {
+        console.error(`🧊 ERROR: Failed to remove freeze effect from player ${playerEntity.id}:`, error);
+      }
     }
   }
 }
@@ -104,11 +124,17 @@ function processFreezeEffects(frozenPlayers: FrozenPlayerEntity[], currentTime: 
  * Clean up the specific spider web that caught a player
  */
 function cleanupSpecificWeb(webId: number): void {
-  // Check if the web still exists before trying to remove it
-  const webComponent = gameEngine.entityManager.getComponent(webId, 'spiderWeb');
-  if (webComponent) {
-    console.log(`🕸️ Cleaning up spider web #${webId} that caught the player`);
-    gameEngine.entityManager.removeEntity(webId);
+  try {
+    // Check if the web still exists before trying to remove it
+    const webComponent = gameEngine.entityManager.getComponent(webId, 'spiderWeb');
+    if (webComponent) {
+      console.log(`🕸️ Cleaning up spider web #${webId} that caught the player`);
+      gameEngine.entityManager.removeEntity(webId);
+    } else {
+      console.log(`🕸️ Spider web #${webId} already removed or doesn't exist`);
+    }
+  } catch (error) {
+    console.error(`🕸️ ERROR: Failed to cleanup spider web ${webId}:`, error);
   }
 }
 
@@ -116,34 +142,43 @@ function cleanupSpecificWeb(webId: number): void {
  * Create a spider web at the specified grid position
  */
 export function createSpiderWeb(gridX: number, gridY: number): void {
-  const currentTime = performance.now();
+  // Validate meaningful bounds
+  const GRID_WIDTH = 6;
+  const GRID_HEIGHT = 5;
+  if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
+    console.error(`🕸️ ERROR: Grid coordinates (${gridX}, ${gridY}) outside bounds (0,0) to (${GRID_WIDTH-1},${GRID_HEIGHT-1})`);
+    return;
+  }
   
-  // Convert grid to pixel coordinates
-  const CELL_SIZE = 106; // Import from config if needed
+  const currentTime = performance.now();
+  const CELL_SIZE = 106;
   const pixelX = gridX * CELL_SIZE;
   const pixelY = gridY * CELL_SIZE;
   
-  // Create spider web entity
-  gameEngine.spawn({
-    position: { x: pixelX, y: pixelY },
-    spiderWeb: {
-      duration: SPIDER_CONFIG.WEB_DURATION,        // 8 seconds until web disappears
-      freezeTime: SPIDER_CONFIG.FREEZE_DURATION,   // 2 seconds freeze duration when caught
-      createdTime: currentTime,
-      isActive: true
-    },
-    renderable: {
-      shape: 'rectangle',
-      color: 'rgba(128, 0, 128, 0.3)', // Semi-transparent purple
-      size: CELL_SIZE * 0.8, // Slightly smaller than cell
-      layer: 1 // Between background and entities
-    },
-    collider: {
-      width: CELL_SIZE,
-      height: CELL_SIZE,
-      group: 'spiderWeb'
-    }
-  });
-  
-  console.log(`🕸️ Created spider web at grid (${gridX}, ${gridY})`);
+  try {
+    const webEntity = gameEngine.spawn({
+      position: { x: pixelX, y: pixelY },
+      spiderWeb: {
+        duration: SPIDER_CONFIG.WEB_DURATION,
+        freezeTime: SPIDER_CONFIG.FREEZE_DURATION,
+        createdTime: currentTime,
+        isActive: true
+      },
+      renderable: {
+        shape: 'rectangle',
+        color: 'rgba(128, 0, 128, 0.3)',
+        size: CELL_SIZE * 0.8,
+        layer: 1
+      },
+      collider: {
+        width: CELL_SIZE,
+        height: CELL_SIZE,
+        group: 'spiderWeb'
+      }
+    });
+    
+    console.log(`🕸️ Created spider web at grid (${gridX}, ${gridY}) with entity ID ${webEntity.id}`);
+  } catch (error) {
+    console.error(`🕸️ ERROR: Failed to create spider web at grid (${gridX}, ${gridY}):`, error);
+  }
 } 

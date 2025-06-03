@@ -28,7 +28,7 @@ const SPAWN_ORDER: Array<'lizard' | 'spider' | 'frog'> = ['lizard', 'spider', 'f
  */
 function getNextEnemyType(): 'lizard' | 'spider' | 'frog' | null {
   if (spawnCycleComplete || currentSpawnIndex >= SPAWN_ORDER.length) {
-    return null; // No more enemies to spawn this cycle
+    return null;
   }
   return SPAWN_ORDER[currentSpawnIndex];
 }

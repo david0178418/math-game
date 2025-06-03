@@ -271,20 +271,31 @@ function handlePlayerSpiderWebCollision(
 ): void {
   const webComp = spiderWeb.components.spiderWeb;
   
-  console.log(`🕸️ Player caught by spider web! Freezing for ${webComp.freezeTime}ms`);
+  // Validate meaningful game state
+  if (!webComp.isActive) {
+    console.warn(`🕸️ WARNING: Attempting to handle collision with inactive web ${spiderWeb.id}`);
+    return;
+  }
   
-  // Mark the web as inactive (it has caught a player)
-  webComp.isActive = false;
+  if (webComp.freezeTime <= 0) {
+    console.warn(`🕸️ WARNING: Invalid freeze time ${webComp.freezeTime} for web ${spiderWeb.id}, using default`);
+    webComp.freezeTime = 2000;
+  }
   
-  // Apply freeze effect to player
-  gameEngine.entityManager.addComponent(player.id, 'freezeEffect', {
-    startTime: currentTime,
-    duration: webComp.freezeTime,
-    isActive: true,
-    sourceWebId: spiderWeb.id
-  });
+  console.log(`🕸️ Player caught in spider web! Freezing for ${webComp.freezeTime}ms`);
   
-  console.log(`❄️ Player frozen for ${webComp.freezeTime}ms`);
+  try {
+    gameEngine.entityManager.addComponent(player.id, 'freezeEffect', {
+      startTime: currentTime,
+      duration: webComp.freezeTime,
+      isActive: true,
+      sourceWebId: spiderWeb.id
+    });
+    
+    webComp.isActive = false;
+  } catch (error) {
+    console.error(`🕸️ ERROR: Failed to apply freeze effect to player ${player.id}:`, error);
+  }
 }
 
 /**
@@ -294,50 +305,73 @@ function handlePlayerTongueCollision(
   player: PlayerEntityWithHealth, 
   frog: FrogTongueEntity
 ): void {
-  console.log('Player hit by frog tongue!');
-  
-  // Publish tongue collision event
-  gameEngine.eventBus.publish('tongueCollision', {
-    playerId: player.id,
-    tongueId: frog.id
-  });
-  
-  // Lose a life
   const playerComp = player.components.player;
-  playerComp.lives -= 1;
-  
-  console.log(`Lives remaining: ${playerComp.lives}`);
-  
-  // Shake the player for damage taken
-  startShakeAnimation(
-    player.components.position, 
-    ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY, 
-    ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
-  );
-  
-  // Set invulnerability period using centralized config
   const healthComp = player.components.health;
-  healthComp.invulnerable = true;
-  healthComp.invulnerabilityTime = performance.now() + COLLISION_CONFIG.INVULNERABILITY_DURATION;
+  const tongueComp = frog.components.frogTongue;
   
-  // Check for game over
+  // Validate meaningful game state
+  if (!tongueComp.isExtended) {
+    console.warn(`🐸 WARNING: Collision detected with retracted tongue from frog ${frog.id}`);
+    return;
+  }
+  
+  if (tongueComp.segments.length === 0) {
+    console.warn(`🐸 WARNING: Collision detected with tongue that has no segments from frog ${frog.id}`);
+    return;
+  }
+  
+  if (healthComp.invulnerable) {
+    console.log(`🐸 Player hit by frog tongue but is invulnerable`);
+    return;
+  }
+  
   if (playerComp.lives <= 0) {
-    console.log('Game Over!');
-    // Disable player controls immediately
-    playerComp.gameOverPending = true;
-    // Start death animation
-    playerComp.deathAnimationActive = true;
-    playerComp.deathAnimationStartTime = Date.now();
-    playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
-    // Add delay before showing game over screen
-    setTimeout(() => {
-      gameEngine.addResource('gameState', 'gameOver');
-    }, ANIMATION_CONFIG.DEATH.DURATION);
+    console.warn(`🐸 WARNING: Attempted to damage player who already has 0 lives`);
+    return;
+  }
+  
+  console.log(`🐸 Player hit by frog tongue! Taking damage.`);
+  
+  try {
+    playerComp.lives -= 1;
+    console.log(`💔 Player loses 1 life. Lives remaining: ${playerComp.lives}`);
+    
+    healthComp.invulnerable = true;
+    healthComp.invulnerabilityTime = performance.now() + COLLISION_CONFIG.INVULNERABILITY_DURATION;
+    
+    startShakeAnimation(
+      player.components.position, 
+      ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY, 
+      ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
+    );
+    
+    gameEngine.eventBus.publish('tongueCollision', {
+      playerId: player.id,
+      tongueId: frog.id
+    });
+    
+    if (playerComp.lives <= 0) {
+      console.log('💀 Game Over due to frog tongue attack!');
+      playerComp.gameOverPending = true;
+      playerComp.deathAnimationActive = true;
+      playerComp.deathAnimationStartTime = Date.now();
+      playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
+      
+      setTimeout(() => {
+        try {
+          gameEngine.addResource('gameState', 'gameOver');
+        } catch (error) {
+          console.error(`🐸 ERROR: Failed to set game over state:`, error);
+        }
+      }, ANIMATION_CONFIG.DEATH.DURATION);
+    }
+  } catch (error) {
+    console.error(`🐸 ERROR: Failed to handle tongue collision for player ${player.id}:`, error);
   }
 }
 
 /**
- * Check if player collides with any frog tongue segments
+ * Check if player is colliding with frog tongue
  */
 function checkPlayerTongueCollision(
   player: PlayerEntityWithHealth, 
@@ -346,17 +380,24 @@ function checkPlayerTongueCollision(
   const playerPos = player.components.position;
   const tongue = frog.components.frogTongue;
   
-  // Convert player position to grid coordinates
-  const playerGridX = Math.round(playerPos.x / CELL_SIZE);
-  const playerGridY = Math.round(playerPos.y / CELL_SIZE);
-  
-  // Check if player is on any tongue segment
-  for (const segment of tongue.segments) {
-    if (segment.x === playerGridX && segment.y === playerGridY) {
-      console.log(`🐸 Player hit by tongue segment at grid (${segment.x}, ${segment.y})`);
-      return true;
-    }
+  if (!tongue.isExtended || tongue.segments.length === 0) {
+    return false;
   }
   
-  return false;
+  try {
+    const playerGridX = Math.round(playerPos.x / CELL_SIZE);
+    const playerGridY = Math.round(playerPos.y / CELL_SIZE);
+    
+    for (const segment of tongue.segments) {
+      if (playerGridX === segment.x && playerGridY === segment.y) {
+        console.log(`🐸 Collision detected: Player at (${playerGridX}, ${playerGridY}) hit tongue segment`);
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`🐸 ERROR: Exception in tongue collision detection:`, error);
+    return false;
+  }
 } 

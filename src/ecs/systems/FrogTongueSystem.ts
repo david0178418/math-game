@@ -68,6 +68,26 @@ let currentPlayers: PlayerEntity[] = [];
 function processFrogTongue(frog: FrogEntity, currentTime: number, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
   
+  // Validate tongue phase (meaningful game state validation)
+  const validPhases = ['idle', 'extending', 'holding', 'retracting'];
+  if (!validPhases.includes(tongue.phase)) {
+    console.warn(`🐸 WARNING: Invalid tongue phase '${tongue.phase}' for frog ${frog.id}, resetting to idle`);
+    tongue.phase = 'idle';
+    tongue.isExtended = false;
+    tongue.currentLength = 0;
+    tongue.segments = [];
+  }
+  
+  // Validate meaningful data bounds
+  if (tongue.isExtended && (Math.abs(tongue.direction.x) > 1 || Math.abs(tongue.direction.y) > 1)) {
+    console.warn(`🐸 WARNING: Invalid direction vector (${tongue.direction.x}, ${tongue.direction.y}) for frog ${frog.id}, resetting`);
+    tongue.direction = { x: 0, y: 0 };
+  }
+  
+  if (tongue.currentLength < 0 || tongue.currentLength > tongue.maxRange * CELL_SIZE) {
+    tongue.currentLength = Math.max(0, Math.min(tongue.currentLength, tongue.maxRange * CELL_SIZE));
+  }
+  
   switch (tongue.phase) {
     case 'idle':
       processIdlePhase(frog, currentTime);
@@ -221,8 +241,17 @@ function updateTongueSegments(frog: FrogEntity): void {
   // Clear existing segments
   tongue.segments = [];
   
+  // No segments if no direction set
+  if (tongue.direction.x === 0 && tongue.direction.y === 0) {
+    return;
+  }
+  
   // Calculate how many grid cells the tongue covers
   const tongueGridLength = Math.floor(tongue.currentLength / CELL_SIZE);
+  
+  if (tongueGridLength <= 0) {
+    return;
+  }
   
   // Create segments along the tongue path, stopping at obstacles
   for (let i = 1; i <= tongueGridLength; i++) {
@@ -235,15 +264,13 @@ function updateTongueSegments(frog: FrogEntity): void {
       
       // Check if this position is blocked by another entity
       if (isPositionBlockedForTongue(segmentGridX, segmentGridY, frog.id)) {
-        // Hit an obstacle, stop extending here
         console.log(`🐸 Tongue hit obstacle at grid (${segmentGridX}, ${segmentGridY}), stopping extension`);
         break;
       }
       
       tongue.segments.push({ x: segmentGridX, y: segmentGridY });
     } else {
-      // Hit grid boundary, stop extending
-      console.log(`🐸 Tongue hit grid boundary, stopping extension`);
+      console.log(`🐸 Tongue hit grid boundary at (${segmentGridX}, ${segmentGridY}), stopping extension`);
       break;
     }
   }
