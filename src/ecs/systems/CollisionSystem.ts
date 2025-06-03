@@ -4,48 +4,22 @@ import {
   playerWithHealthQuery, 
   mathProblemWithRenderableQuery, 
   enemyWithColliderQuery,
+  spiderWebWithRenderableQuery,
+  frogTongueQuery,
   type PlayerEntityWithHealth,
   type MathProblemEntityWithRenderable,
-  type EnemyEntityWithCollider
+  type EnemyEntityWithCollider,
+  type SpiderWebEntityWithRenderable,
+  type FrogTongueEntity
 } from '../queries';
 import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG, CELL_SIZE } from '../../game/config';
 import { startShakeAnimation } from './AnimationSystem';
-import { createQueryDefinition } from 'ecspresso';
-import type { Components } from '../Engine';
 
 /**
  * Collision Detection System
  * Handles collisions between entities, particularly player-problem and player-web interactions
  */
-
-// Query for spider web entities
-const spiderWebQuery = createQueryDefinition({
-  with: ['position', 'spiderWeb', 'collider']
-});
-
-// Query for frog entities with tongues
-const frogTongueQuery = createQueryDefinition({
-  with: ['position', 'enemy', 'frogTongue']
-});
-
-type SpiderWebEntity = {
-  id: number;
-  components: {
-    position: Components['position'];
-    spiderWeb: Components['spiderWeb'];
-    collider: Components['collider'];
-  };
-};
-
-type FrogTongueEntity = {
-  id: number;
-  components: {
-    position: Components['position'];
-    enemy: Components['enemy'];
-    frogTongue: Components['frogTongue'];
-  };
-};
 
 // Add the collision system to ECSpresso
 export function addCollisionSystemToEngine(): void {
@@ -54,7 +28,7 @@ export function addCollisionSystemToEngine(): void {
     .addQuery('players', playerWithHealthQuery)
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
     .addQuery('enemies', enemyWithColliderQuery)
-    .addQuery('spiderWebs', spiderWebQuery)
+    .addQuery('spiderWebs', spiderWebWithRenderableQuery)
     .addQuery('frogTongues', frogTongueQuery)
     .setProcess((queries) => {
       const currentTime = performance.now();
@@ -71,7 +45,7 @@ export function addCollisionSystemToEngine(): void {
         
         // Check for frog tongue collisions (only if not invulnerable)
         if (!healthComp.invulnerable) {
-          for (const frog of queries.frogTongues as FrogTongueEntity[]) {
+          for (const frog of queries.frogTongues) {
             const tongue = frog.components.frogTongue;
             
             // Only check collision if tongue is extended
@@ -87,7 +61,7 @@ export function addCollisionSystemToEngine(): void {
         // Check for spider web collisions (only if not already frozen)
         const freezeEffect = gameEngine.entityManager.getComponent(player.id, 'freezeEffect');
         if (!freezeEffect || !freezeEffect.isActive) {
-          for (const spiderWeb of queries.spiderWebs as SpiderWebEntity[]) {
+          for (const spiderWeb of queries.spiderWebs) {
             const webComp = spiderWeb.components.spiderWeb;
             
             // Skip inactive webs
@@ -266,7 +240,7 @@ function handlePlayerEnemyCollision(
  */
 function handlePlayerSpiderWebCollision(
   player: PlayerEntityWithHealth, 
-  spiderWeb: SpiderWebEntity, 
+  spiderWeb: SpiderWebEntityWithRenderable, 
   currentTime: number
 ): void {
   const webComp = spiderWeb.components.spiderWeb;

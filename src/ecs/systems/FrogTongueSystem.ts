@@ -1,34 +1,20 @@
 import { gameEngine } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { createQueryDefinition } from 'ecspresso';
-import type { Components } from '../Engine';
 import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, GAME_CONFIG } from '../../game/config';
 import { pixelToGrid } from './MovementSystem';
 import { 
   enemyQuery, 
   playerQuery,
+  frogTongueQuery,
   type EnemyEntity,
-  type PlayerEntity
+  type PlayerEntity,
+  type FrogTongueEntity
 } from '../queries';
 
 /**
  * Frog Tongue System
  * Manages frog tongue extension, retraction, and collision detection
  */
-
-// Query for frog entities
-const frogQuery = createQueryDefinition({
-  with: ['position', 'enemy', 'frogTongue']
-});
-
-type FrogEntity = {
-  id: number;
-  components: {
-    position: Components['position'];
-    enemy: Components['enemy'];
-    frogTongue: Components['frogTongue'];
-  };
-};
 
 // Use centralized frog configuration
 const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.FROG;
@@ -37,21 +23,18 @@ const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.FROG;
 export function addFrogTongueSystemToEngine(): void {
   gameEngine.addSystem('frogTongueSystem')
     .setPriority(SYSTEM_PRIORITIES.FROG_TONGUE)
-    .addQuery('frogs', frogQuery)
+    .addQuery('frogs', frogTongueQuery)
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
     .setProcess((queries, deltaTime) => {
-      const frogs = queries.frogs as FrogEntity[];
-      const enemies = queries.enemies as EnemyEntity[];
-      const players = queries.players as PlayerEntity[];
       const currentTime = performance.now();
       
       // Store entities for obstacle checking
-      currentEnemies = enemies;
-      currentPlayers = players;
+      currentEnemies = queries.enemies;
+      currentPlayers = queries.players;
       
       // Process each frog's tongue behavior
-      for (const frog of frogs) {
+      for (const frog of queries.frogs) {
         processFrogTongue(frog, currentTime, deltaTime);
       }
     })
@@ -65,7 +48,7 @@ let currentPlayers: PlayerEntity[] = [];
 /**
  * Process a single frog's tongue behavior
  */
-function processFrogTongue(frog: FrogEntity, currentTime: number, deltaTime: number): void {
+function processFrogTongue(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
   
   // Validate tongue phase (meaningful game state validation)
@@ -107,7 +90,7 @@ function processFrogTongue(frog: FrogEntity, currentTime: number, deltaTime: num
 /**
  * Process idle phase - randomly decide to attack
  */
-function processIdlePhase(frog: FrogEntity, currentTime: number): void {
+function processIdlePhase(frog: FrogTongueEntity, currentTime: number): void {
   const tongue = frog.components.frogTongue;
   
   // Check if enough time has passed since last attack
@@ -126,7 +109,7 @@ function processIdlePhase(frog: FrogEntity, currentTime: number): void {
 /**
  * Process extending phase - extend tongue towards target
  */
-function processExtendingPhase(frog: FrogEntity, currentTime: number, deltaTime: number): void {
+function processExtendingPhase(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
   const extensionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime;
   
@@ -161,7 +144,7 @@ function processExtendingPhase(frog: FrogEntity, currentTime: number, deltaTime:
 /**
  * Process holding phase - keep tongue extended for 1 second
  */
-function processHoldingPhase(frog: FrogEntity, currentTime: number): void {
+function processHoldingPhase(frog: FrogTongueEntity, currentTime: number): void {
   const tongue = frog.components.frogTongue;
   const timeHeld = currentTime - tongue.startTime;
   
@@ -175,7 +158,7 @@ function processHoldingPhase(frog: FrogEntity, currentTime: number): void {
 /**
  * Process retracting phase - retract tongue back to frog
  */
-function processRetractingPhase(frog: FrogEntity, currentTime: number, deltaTime: number): void {
+function processRetractingPhase(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
   const retractionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime; // Same speed as extension
   
@@ -206,7 +189,7 @@ function processRetractingPhase(frog: FrogEntity, currentTime: number, deltaTime
 /**
  * Start a tongue attack in a random direction
  */
-function startTongueAttack(frog: FrogEntity, currentTime: number): void {
+function startTongueAttack(frog: FrogTongueEntity, currentTime: number): void {
   const tongue = frog.components.frogTongue;
   
   // Choose a random direction (up, down, left, right)
@@ -233,7 +216,7 @@ function startTongueAttack(frog: FrogEntity, currentTime: number): void {
 /**
  * Update tongue segment positions for collision detection
  */
-function updateTongueSegments(frog: FrogEntity): void {
+function updateTongueSegments(frog: FrogTongueEntity): void {
   const tongue = frog.components.frogTongue;
   const frogPos = frog.components.position;
   const frogGrid = pixelToGrid(frogPos.x, frogPos.y);

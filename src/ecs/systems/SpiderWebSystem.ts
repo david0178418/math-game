@@ -1,8 +1,12 @@
 import { gameEngine } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { createQueryDefinition } from 'ecspresso';
-import type { Components } from '../Engine';
 import { GAME_CONFIG } from '../../game/config';
+import { 
+  spiderWebQuery,
+  frozenPlayerQuery,
+  type SpiderWebEntity,
+  type FrozenPlayerEntity
+} from '../queries';
 
 /**
  * Spider Web System
@@ -12,49 +16,20 @@ import { GAME_CONFIG } from '../../game/config';
 // Use centralized spider configuration
 const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
 
-// Query for spider web entities
-const spiderWebQuery = createQueryDefinition({
-  with: ['position', 'spiderWeb']
-});
-
-// Query for players with freeze effects
-const frozenPlayerQuery = createQueryDefinition({
-  with: ['position', 'player', 'freezeEffect']
-});
-
-type SpiderWebEntity = {
-  id: number;
-  components: {
-    position: Components['position'];
-    spiderWeb: Components['spiderWeb'];
-  };
-};
-
-type FrozenPlayerEntity = {
-  id: number;
-  components: {
-    position: Components['position'];
-    player: Components['player'];
-    freezeEffect: Components['freezeEffect'];
-  };
-};
-
 // Add the spider web system to ECSpresso
 export function addSpiderWebSystemToEngine(): void {
   gameEngine.addSystem('spiderWebSystem')
-    .setPriority(SYSTEM_PRIORITIES.SPIDER_WEB) // Use centralized priority configuration
+    .setPriority(SYSTEM_PRIORITIES.SPIDER_WEB)
     .addQuery('spiderWebs', spiderWebQuery)
     .addQuery('frozenPlayers', frozenPlayerQuery)
     .setProcess((queries) => {
       const currentTime = performance.now();
-      const spiderWebs = queries.spiderWebs as SpiderWebEntity[];
-      const frozenPlayers = queries.frozenPlayers as FrozenPlayerEntity[];
       
       // Process spider web lifecycle
-      processSpiderWebLifecycle(spiderWebs, currentTime);
+      processSpiderWebLifecycle(queries.spiderWebs, currentTime);
       
       // Process player freeze effects
-      processFreezeEffects(frozenPlayers, currentTime);
+      processFreezeEffects(queries.frozenPlayers, currentTime);
     })
     .build();
 }
