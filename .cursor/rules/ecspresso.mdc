@@ -1,0 +1,244 @@
+---
+description: 
+globs: src/ecs/**/*
+alwaysApply: false
+---
+# ECSpresso Framework Guidelines
+
+## TypeScript Best Practices
+
+### Strict Typing Requirements
+- Always use the strictest TypeScript settings
+- Avoid casting types - lean on type inference where possible
+- Never cast to `any` unless absolutely necessary
+- Ensure TypeScript type checks pass at all times
+- Prefer explicit component interfaces over generic objects
+
+### Component Type Patterns
+```typescript
+// ✅ Good: Explicit component interface
+interface FrogTongueComponent {
+  isExtended: boolean;
+  direction: { x: number; y: number };
+  maxRange: number;
+  currentLength: number;
+  startTime: number;
+  phase: 'idle' | 'extending' | 'holding' | 'retracting';
+  segments: Array<{ x: number; y: number }>;
+}
+
+// ❌ Avoid: Generic object or any casting
+const tongue = entity.components.frogTongue as any;
+```
+
+## ECSpresso Architecture Patterns
+
+### System Priority Organization
+- Use centralized `SYSTEM_PRIORITIES` configuration
+- Order systems logically: Input → AI → Movement → Animation → Collision → Rendering
+- Document system dependencies and execution order
+
+### Query Optimization
+- Create specific queries for each system's needs
+- Use parallel queries when systems need multiple entity types
+- Avoid broad entity queries when specific component queries suffice
+
+```typescript
+// ✅ Good: Specific component queries
+export const frogTongueQuery = gameEngine.defineQuery(['frogTongue', 'position', 'enemy']);
+export const spiderWebQuery = gameEngine.defineQuery(['spiderWeb', 'position', 'renderable']);
+
+// ❌ Avoid: Overly broad queries
+export const allEntitiesQuery = gameEngine.defineQuery(['position']);
+```
+
+### Component Lifecycle Management
+- Initialize components with meaningful defaults
+- Validate component data on critical operations
+- Clean up components properly when entities are removed
+- Use centralized factory methods for complex entity creation
+
+```typescript
+// ✅ Good: Centralized entity factory
+export function createFrog(gridX: number, gridY: number): number {
+  const frogEntity = gameEngine.spawn({
+    position: { x: gridX * CELL_SIZE, y: gridY * CELL_SIZE },
+    enemy: { enemyType: 'frog', health: FROG_CONFIG.HEALTH },
+    // ... other components
+  });
+  
+  initializeFrogTongue(frogEntity.id);
+  return frogEntity.id;
+}
+```
+
+## Common Pitfalls and Solutions
+
+### Logical Operator Precedence
+```typescript
+// ❌ Bug: Operator precedence issue
+if (condition1 && condition2 || condition3 && condition4)
+
+// ✅ Fix: Use explicit parentheses
+if ((condition1 && condition2) || (condition3 && condition4))
+```
+
+### Entity Self-Blocking Prevention
+```typescript
+// ✅ Always exclude self from collision/placement checks
+function isValidPosition(gridX: number, gridY: number, excludeEntityId: number): boolean {
+  for (const entity of entities) {
+    if (entity.id === excludeEntityId) continue; // Skip self
+    // ... collision check logic
+  }
+}
+```
+
+### Animation Timing Issues
+- Use `performance.now()` for consistent timing
+- Validate timing data for meaningful bounds checking
+- Handle edge cases where animations might be interrupted
+
+## Resource Management
+
+### Configuration Centralization
+```typescript
+// ✅ Good: Centralized configuration
+export const GAME_CONFIG = {
+  ENEMY_TYPES: {
+    SPIDER: {
+      WEB_DURATION: 8000,
+      FREEZE_DURATION: 2000,
+      WEB_PLACEMENT_PROBABILITY: 0.2
+    },
+    FROG: {
+      TONGUE_RANGE: 3,
+      TONGUE_SPEED: 400,
+      TONGUE_HOLD_DURATION: 1000,
+      TONGUE_COOLDOWN: 3000,
+      TONGUE_ATTACK_PROBABILITY: 0.15
+    }
+  }
+};
+```
+
+### State Management Patterns
+- Use sequential spawning patterns when order matters
+- Track cycle completion for repeating patterns
+- Implement proper state reset mechanisms
+
+## Debugging and Validation
+
+### Meaningful Validation
+```typescript
+// ✅ Good: Validate meaningful game state
+if (tongue.phase !== 'idle' && tongue.phase !== 'extending' && 
+    tongue.phase !== 'holding' && tongue.phase !== 'retracting') {
+  console.warn(`Invalid tongue phase '${tongue.phase}', resetting to idle`);
+  tongue.phase = 'idle';
+}
+
+// ❌ Avoid: Redundant type validation TypeScript already handles
+if (typeof tongue.phase !== 'string') // TypeScript prevents this
+```
+
+### Comprehensive Logging
+- Use emoji prefixes for different system logs (🐸, 🕸️, 🧊)
+- Log meaningful state transitions
+- Include entity IDs in error messages for debugging
+- Use appropriate log levels (error, warn, info, log)
+
+### Error Handling Patterns
+```typescript
+// ✅ Good: Graceful error handling with fallbacks
+try {
+  gameEngine.entityManager.removeEntity(entityId);
+} catch (error) {
+  console.error(`Failed to remove entity ${entityId}:`, error);
+  // Continue execution with fallback behavior
+}
+```
+
+## Performance Considerations
+
+### Batch Operations
+- Process multiple entities of the same type together
+- Use entity batching for similar operations
+- Minimize component lookups within tight loops
+
+### Memory Management
+- Clean up expired entities promptly
+- Remove unused components from entities
+- Use object pooling for frequently created/destroyed entities
+
+## Component Design Principles
+
+### Single Responsibility
+- Each component should represent one aspect of an entity
+- Avoid combining unrelated data in the same component
+- Use composition over inheritance
+
+### Data-Oriented Design
+- Store only data in components, not behavior
+- Keep components as plain data objects
+- Put all logic in systems, not components
+
+### Immutability Where Possible
+- Prefer readonly arrays for static data
+- Use const assertions for constant values
+- Minimize mutable state
+
+## Event System Usage
+
+### Event Publishing
+```typescript
+// ✅ Good: Meaningful event data
+gameEngine.eventBus.publish('tongueCollision', {
+  playerId: player.id,
+  tongueId: frog.id,
+  damage: 1,
+  position: { x: playerPos.x, y: playerPos.y }
+});
+```
+
+### Event Naming Conventions
+- Use descriptive, action-based names
+- Include relevant context data
+- Follow consistent naming patterns across systems
+
+## Testing Considerations
+
+### Never Edit Tests Unless Directed
+- Failing tests indicate unintended behavior changes
+- Ask for clarification when tests contradict requirements
+- Tests document expected behavior - preserve this documentation
+
+### Component Testing
+- Test component initialization separately from system behavior
+- Validate component state transitions
+- Test edge cases and boundary conditions
+
+## Grid-Based Game Specific Patterns
+
+### Grid Coordinate Management
+- Use consistent pixel-to-grid conversion functions
+- Validate grid boundaries before operations
+- Handle fractional positions appropriately
+
+### Collision Detection Optimization
+- Use grid-based spatial partitioning
+- Pre-calculate collision masks where possible
+- Separate broad-phase and narrow-phase collision detection
+
+## Documentation Standards
+
+### Code Comments
+- Document complex algorithms and business logic
+- Explain non-obvious design decisions
+- Include performance considerations for critical paths
+- Use JSDoc for public APIs
+
+### System Documentation
+- Document system dependencies and execution order
+- Explain component relationships
+- Include usage examples for complex components

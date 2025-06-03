@@ -8731,7 +8731,796 @@ _**Assistant**_
 You're absolutely right again! I'm still doing unnecessary type casting and not fully leveraging ECSpresso's type system. Looking at line 44:
 
 ```typescript
-const
+const frogs = queries.frogs as FrogEntity[];
+```
+
+This manual casting is unnecessary and goes against ECSpresso's design. Let me refactor to properly leverage the framework:
+
+---
+
+Read file: src/ecs/systems/FrogTongueSystem.ts
+
+---
+
+You're absolutely right! I can see several issues:
+
+1. **Manual type casting**: `queries.frogs as FrogEntity[]`
+2. **Redundant type definitions**: We're defining `FrogEntity` when ECSpresso can infer this
+3. **Not leveraging centralized queries**: We're redefining queries locally instead of using the centralized ones
+
+Let me refactor to properly leverage ECSpresso:
+
+---
+
+```diff
+  import { gameEngine } from '../Engine';
+  import { SYSTEM_PRIORITIES } from '../systemConfigs';
+- import { createQueryDefinition } from 'ecspresso';
+- import type { Components } from '../Engine';
+  import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, GAME_CONFIG } from '../../game/config';
+  import { pixelToGrid } from './MovementSystem';
+  import { 
+    enemyQuery, 
+    playerQuery,
++   frogTongueQuery,
+    type EnemyEntity,
+-   type PlayerEntity
++   type PlayerEntity,
++   type FrogTongueEntity
+  } from '../queries';
+  
+```
+
+```diff
+   */
+  
+- // Query for frog entities
+- const frogQuery = createQueryDefinition({
+-   with: ['position', 'enemy', 'frogTongue']
+- });
+- 
+- type FrogEntity = {
+-   id: number;
+-   components: {
+-     position: Components['position'];
+-     enemy: Components['enemy'];
+-     frogTongue: Components['frogTongue'];
+-   };
+- };
+- 
+  // Use centralized frog configuration
+  const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.FROG;
+```
+
+```diff
+    gameEngine.addSystem('frogTongueSystem')
+      .setPriority(SYSTEM_PRIORITIES.FROG_TONGUE)
+-     .addQuery('frogs', frogQuery)
++     .addQuery('frogs', frogTongueQuery)
+      .addQuery('enemies', enemyQuery)
+      .addQuery('players', playerQuery)
+      .setProcess((queries, deltaTime) => {
+-       const frogs = queries.frogs as FrogEntity[];
+-       const enemies = queries.enemies as EnemyEntity[];
+-       const players = queries.players as PlayerEntity[];
+        const currentTime = performance.now();
+        
+        // Store entities for obstacle checking
+-       currentEnemies = enemies;
+-       currentPlayers = players;
++       currentEnemies = queries.enemies;
++       currentPlayers = queries.players;
+        
+        // Process each frog's tongue behavior
+-       for (const frog of frogs) {
++       for (const frog of queries.frogs) {
+          processFrogTongue(frog, currentTime, deltaTime);
+        }
+```
+
+```diff
+   * Process a single frog's tongue behavior
+   */
+- function processFrogTongue(frog: FrogEntity, currentTime: number, deltaTime: number): void {
++ function processFrogTongue(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
+    const tongue = frog.components.frogTongue;
+    
+```
+
+```diff
+   * Process idle phase - randomly decide to attack
+   */
+- function processIdlePhase(frog: FrogEntity, currentTime: number): void {
++ function processIdlePhase(frog: FrogTongueEntity, currentTime: number): void {
+    const tongue = frog.components.frogTongue;
+    
+```
+
+```diff
+   * Process extending phase - extend tongue towards target
+   */
+- function processExtendingPhase(frog: FrogEntity, currentTime: number, deltaTime: number): void {
++ function processExtendingPhase(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
+    const tongue = frog.components.frogTongue;
+    const extensionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime;
+```
+
+```diff
+   * Process holding phase - keep tongue extended for 1 second
+   */
+- function processHoldingPhase(frog: FrogEntity, currentTime: number): void {
++ function processHoldingPhase(frog: FrogTongueEntity, currentTime: number): void {
+    const tongue = frog.components.frogTongue;
+    const timeHeld = currentTime - tongue.startTime;
+```
+
+```diff
+   * Process retracting phase - retract tongue back to frog
+   */
+- function processRetractingPhase(frog: FrogEntity, currentTime: number, deltaTime: number): void {
++ function processRetractingPhase(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
+    const tongue = frog.components.frogTongue;
+    const retractionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime; // Same speed as extension
+```
+
+```diff
+   * Start a tongue attack in a random direction
+   */
+- function startTongueAttack(frog: FrogEntity, currentTime: number): void {
++ function startTongueAttack(frog: FrogTongueEntity, currentTime: number): void {
+    const tongue = frog.components.frogTongue;
+    
+```
+
+```diff
+   * Update tongue segment positions for collision detection
+   */
+- function updateTongueSegments(frog: FrogEntity): void {
++ function updateTongueSegments(frog: FrogTongueEntity): void {
+    const tongue = frog.components.frogTongue;
+    const frogPos = frog.components.position;
+```
+
+---
+
+Now let me do the same for the SpiderWebSystem:
+
+---
+
+```diff
+  import { gameEngine } from '../Engine';
+  import { SYSTEM_PRIORITIES } from '../systemConfigs';
+- import { createQueryDefinition } from 'ecspresso';
+- import type { Components } from '../Engine';
+  import { GAME_CONFIG } from '../../game/config';
++ import { 
++   spiderWebQuery,
++   frozenPlayerQuery,
++   type SpiderWebEntity,
++   type FrozenPlayerEntity
++ } from '../queries';
+  
+  /**
+```
+
+```diff
+  // Use centralized spider configuration
+  const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
+- 
+- // Query for spider web entities
+- const spiderWebQuery = createQueryDefinition({
+-   with: ['position', 'spiderWeb']
+- });
+- 
+- // Query for players with freeze effects
+- const frozenPlayerQuery = createQueryDefinition({
+-   with: ['position', 'player', 'freezeEffect']
+- });
+- 
+- type SpiderWebEntity = {
+-   id: number;
+-   components: {
+-     position: Components['position'];
+-     spiderWeb: Components['spiderWeb'];
+-   };
+- };
+- 
+- type FrozenPlayerEntity = {
+-   id: number;
+-   components: {
+-     position: Components['position'];
+-     player: Components['player'];
+-     freezeEffect: Components['freezeEffect'];
+-   };
+- };
+  
+  // Add the spider web system to ECSpresso
+  export function addSpiderWebSystemToEngine(): void {
+    gameEngine.addSystem('spiderWebSystem')
+-     .setPriority(SYSTEM_PRIORITIES.SPIDER_WEB) // Use centralized priority configuration
++     .setPriority(SYSTEM_PRIORITIES.SPIDER_WEB)
+      .addQuery('spiderWebs', spiderWebQuery)
+      .addQuery('frozenPlayers', frozenPlayerQuery)
+      .setProcess((queries) => {
+        const currentTime = performance.now();
+-       const spiderWebs = queries.spiderWebs as SpiderWebEntity[];
+-       const frozenPlayers = queries.frozenPlayers as FrozenPlayerEntity[];
+        
+        // Process spider web lifecycle
+-       processSpiderWebLifecycle(spiderWebs, currentTime);
++       processSpiderWebLifecycle(queries.spiderWebs, currentTime);
+        
+        // Process player freeze effects
+-       processFreezeEffects(frozenPlayers, currentTime);
++       processFreezeEffects(queries.frozenPlayers, currentTime);
+      })
+      .build();
+```
+
+---
+
+Now let me check the CollisionSystem for similar improvements:
+
+---
+
+Read file: src/ecs/systems/CollisionSystem.ts
+
+---
+
+I can see the CollisionSystem has the same issues. Let me refactor it:
+
+---
+
+```diff
+    mathProblemWithRenderableQuery, 
+    enemyWithColliderQuery,
++   spiderWebWithRenderableQuery,
++   frogTongueQuery,
+    type PlayerEntityWithHealth,
+    type MathProblemEntityWithRenderable,
+-   type EnemyEntityWithCollider
++   type EnemyEntityWithCollider,
++   type SpiderWebEntityWithRenderable,
++   type FrogTongueEntity
+  } from '../queries';
+  import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
+  import { ANIMATION_CONFIG, CELL_SIZE } from '../../game/config';
+  import { startShakeAnimation } from './AnimationSystem';
+- import { createQueryDefinition } from 'ecspresso';
+- import type { Components } from '../Engine';
+  
+  /**
+```
+
+```diff
+   */
+  
+- // Query for spider web entities
+- const spiderWebQuery = createQueryDefinition({
+-   with: ['position', 'spiderWeb', 'collider']
+- });
+- 
+- // Query for frog entities with tongues
+- const frogTongueQuery = createQueryDefinition({
+-   with: ['position', 'enemy', 'frogTongue']
+- });
+- 
+- type SpiderWebEntity = {
+-   id: number;
+-   components: {
+-     position: Components['position'];
+-     spiderWeb: Components['spiderWeb'];
+-     collider: Components['collider'];
+-   };
+- };
+- 
+- type FrogTongueEntity = {
+-   id: number;
+-   components: {
+-     position: Components['position'];
+-     enemy: Components['enemy'];
+-     frogTongue: Components['frogTongue'];
+-   };
+- };
+- 
+  // Add the collision system to ECSpresso
+  export function addCollisionSystemToEngine(): void {
+```
+
+```diff
+      .addQuery('mathProblems', mathProblemWithRenderableQuery)
+      .addQuery('enemies', enemyWithColliderQuery)
+-     .addQuery('spiderWebs', spiderWebQuery)
++     .addQuery('spiderWebs', spiderWebWithRenderableQuery)
+      .addQuery('frogTongues', frogTongueQuery)
+      .setProcess((queries) => {
+```
+
+```diff
+          // Check for frog tongue collisions (only if not invulnerable)
+          if (!healthComp.invulnerable) {
+-           for (const frog of queries.frogTongues as FrogTongueEntity[]) {
++           for (const frog of queries.frogTongues) {
+              const tongue = frog.components.frogTongue;
+              
+```
+
+```diff
+          const freezeEffect = gameEngine.entityManager.getComponent(player.id, 'freezeEffect');
+          if (!freezeEffect || !freezeEffect.isActive) {
+-           for (const spiderWeb of queries.spiderWebs as SpiderWebEntity[]) {
++           for (const spiderWeb of queries.spiderWebs) {
+              const webComp = spiderWeb.components.spiderWeb;
+              
+```
+
+```diff
+  function handlePlayerSpiderWebCollision(
+    player: PlayerEntityWithHealth, 
+-   spiderWeb: SpiderWebEntity, 
++   spiderWeb: SpiderWebEntityWithRenderable, 
+    currentTime: number
+  ): void {
+```
+
+---
+
+
+
+---
+
+Let me verify that our centralized query definitions in `queries.ts` include all the types we need:
+
+---
+
+Model provided invalid arguments to read file tool.
+
+---
+
+Read file: src/ecs/queries.ts
+
+---
+
+Perfect! Now let me run a build to ensure our refactoring didn't break anything:
+
+---
+
+```bash
+npm run build
+```
+
+```
+dgranado@MacBook-Pro math % npm run build
+
+> math@0.0.0 build
+> tsc && vite build
+
+vite v6.3.5 building for production...
+✓ 25 modules transformed.
+dist/index.html                  1.01 kB │ gzip:  0.51 kB
+dist/assets/fly-DJnpwrPM.svg     4.47 kB │ gzip:  1.34 kB
+dist/assets/index-C1FB4JF5.css  29.90 kB │ gzip:  6.08 kB
+dist/assets/index-Dbfm0hZc.js   75.21 kB │ gzip: 21.07 kB │ map: 270.95 kB
+✓ built in 188ms
+dgranado@MacBook-Pro math %
+```
+
+---
+
+Excellent! The build passed. You're absolutely right - we were over-engineering and fighting against ECSpresso's framework instead of leveraging it properly. Here's what I improved:
+
+## Key Simplifications by Leveraging ECSpresso:
+
+### 1. **Removed Manual Type Casting**
+- **Before**: `queries.frogs as FrogEntity[]`
+- **After**: `queries.frogs` (ECSpresso infers types automatically)
+
+### 2. **Eliminated Redundant Type Definitions**
+- **Before**: Local `type FrogEntity = { ... }` definitions in each system
+- **After**: Use centralized types from `queries.ts` that ECSpresso generates
+
+### 3. **Leveraged Centralized Queries**
+- **Before**: Local `createQueryDefinition()` in each system
+- **After**: Import from centralized `queries.ts` for consistency and reusability
+
+### 4. **Cleaner System Registration**
+```typescript
+// Before (manual casting and local queries)
+.setProcess((queries, deltaTime) => {
+  const frogs = queries.frogs as FrogEntity[];
+  const enemies = queries.enemies as EnemyEntity[];
+  const players = queries.players as PlayerEntity[];
+  // ...
+})
+
+// After (leveraging ECSpresso's type inference)
+.setProcess((queries, deltaTime) => {
+  for (const frog of queries.frogs) {
+    processFrogTongue(frog, currentTime, deltaTime);
+  }
+})
+```
+
+## Benefits of This Approach:
+
+1. **Type Safety**: ECSpresso's query system guarantees component presence and correct typing
+2. **Less Code**: Removed ~50 lines of redundant type definitions and casting
+3. **Better Framework Integration**: Working with ECSpresso instead of against it
+4. **Maintainability**: Single source of truth for queries and types
+5. **Performance**: No runtime type assertions needed
+
+The build passes cleanly, confirming that ECSpresso's type system handles everything we need without manual intervention. This is a much cleaner, more idiomatic use of the framework!
+
+---
+
+_**User**_
+
+@ecspresso.mdc Update this rule file for future reference to prevent these types of redundant typings in the future.  Additionally, write any other rule information into this rule file from your learnings that will be helpful for future projects that might leverage ecpresso.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll help you update the ECSpresso rule file with comprehensive learnings from this project to prevent redundant typings and capture best practices for future ECSpresso projects.
+
+---
+
+<details>
+            <summary>Searched codebase "ecspresso.mdc" • **1** results</summary>
+        
+| File |
+|------|
+| `undefined` |
+
+</details>
+
+---
+
+Read file: .cursor/rules/ecspresso.mdc
+
+---
+
+The file is empty, so I'll create a comprehensive ECSpresso rule file based on the learnings from your math game project:
+
+---
+
+```diff
+- 
++ # ECSpresso Framework Guidelines
++ 
++ ## TypeScript Best Practices
++ 
++ ### Strict Typing Requirements
++ - Always use the strictest TypeScript settings
++ - Avoid casting types - lean on type inference where possible
++ - Never cast to `any` unless absolutely necessary
++ - Ensure TypeScript type checks pass at all times
++ - Prefer explicit component interfaces over generic objects
++ 
++ ### Component Type Patterns
++ ```typescript
++ // ✅ Good: Explicit component interface
++ interface FrogTongueComponent {
++   isExtended: boolean;
++   direction: { x: number; y: number };
++   maxRange: number;
++   currentLength: number;
++   startTime: number;
++   phase: 'idle' | 'extending' | 'holding' | 'retracting';
++   segments: Array<{ x: number; y: number }>;
++ }
++ 
++ // ❌ Avoid: Generic object or any casting
++ const tongue = entity.components.frogTongue as any;
++ ```
++ 
++ ## ECSpresso Architecture Patterns
++ 
++ ### System Priority Organization
++ - Use centralized `SYSTEM_PRIORITIES` configuration
++ - Order systems logically: Input → AI → Movement → Animation → Collision → Rendering
++ - Document system dependencies and execution order
++ 
++ ### Query Optimization
++ - Create specific queries for each system's needs
++ - Use parallel queries when systems need multiple entity types
++ - Avoid broad entity queries when specific component queries suffice
++ 
++ ```typescript
++ // ✅ Good: Specific component queries
++ export const frogTongueQuery = gameEngine.defineQuery(['frogTongue', 'position', 'enemy']);
++ export const spiderWebQuery = gameEngine.defineQuery(['spiderWeb', 'position', 'renderable']);
++ 
++ // ❌ Avoid: Overly broad queries
++ export const allEntitiesQuery = gameEngine.defineQuery(['position']);
++ ```
++ 
++ ### Component Lifecycle Management
++ - Initialize components with meaningful defaults
++ - Validate component data on critical operations
++ - Clean up components properly when entities are removed
++ - Use centralized factory methods for complex entity creation
++ 
++ ```typescript
++ // ✅ Good: Centralized entity factory
++ export function createFrog(gridX: number, gridY: number): number {
++   const frogEntity = gameEngine.spawn({
++     position: { x: gridX * CELL_SIZE, y: gridY * CELL_SIZE },
++     enemy: { enemyType: 'frog', health: FROG_CONFIG.HEALTH },
++     // ... other components
++   });
++   
++   initializeFrogTongue(frogEntity.id);
++   return frogEntity.id;
++ }
++ ```
++ 
++ ## Common Pitfalls and Solutions
++ 
++ ### Logical Operator Precedence
++ ```typescript
++ // ❌ Bug: Operator precedence issue
++ if (condition1 && condition2 || condition3 && condition4)
++ 
++ // ✅ Fix: Use explicit parentheses
++ if ((condition1 && condition2) || (condition3 && condition4))
++ ```
++ 
++ ### Entity Self-Blocking Prevention
++ ```typescript
++ // ✅ Always exclude self from collision/placement checks
++ function isValidPosition(gridX: number, gridY: number, excludeEntityId: number): boolean {
++   for (const entity of entities) {
++     if (entity.id === excludeEntityId) continue; // Skip self
++     // ... collision check logic
++   }
++ }
++ ```
++ 
++ ### Animation Timing Issues
++ - Use `performance.now()` for consistent timing
++ - Validate timing data for meaningful bounds checking
++ - Handle edge cases where animations might be interrupted
++ 
++ ## Resource Management
++ 
++ ### Configuration Centralization
++ ```typescript
++ // ✅ Good: Centralized configuration
++ export const GAME_CONFIG = {
++   ENEMY_TYPES: {
++     SPIDER: {
++       WEB_DURATION: 8000,
++       FREEZE_DURATION: 2000,
++       WEB_PLACEMENT_PROBABILITY: 0.2
++     },
++     FROG: {
++       TONGUE_RANGE: 3,
++       TONGUE_SPEED: 400,
++       TONGUE_HOLD_DURATION: 1000,
++       TONGUE_COOLDOWN: 3000,
++       TONGUE_ATTACK_PROBABILITY: 0.15
++     }
++   }
++ };
++ ```
++ 
++ ### State Management Patterns
++ - Use sequential spawning patterns when order matters
++ - Track cycle completion for repeating patterns
++ - Implement proper state reset mechanisms
++ 
++ ## Debugging and Validation
++ 
++ ### Meaningful Validation
++ ```typescript
++ // ✅ Good: Validate meaningful game state
++ if (tongue.phase !== 'idle' && tongue.phase !== 'extending' && 
++     tongue.phase !== 'holding' && tongue.phase !== 'retracting') {
++   console.warn(`Invalid tongue phase '${tongue.phase}', resetting to idle`);
++   tongue.phase = 'idle';
++ }
++ 
++ // ❌ Avoid: Redundant type validation TypeScript already handles
++ if (typeof tongue.phase !== 'string') // TypeScript prevents this
++ ```
++ 
++ ### Comprehensive Logging
++ - Use emoji prefixes for different system logs (🐸, 🕸️, 🧊)
++ - Log meaningful state transitions
++ - Include entity IDs in error messages for debugging
++ - Use appropriate log levels (error, warn, info, log)
++ 
++ ### Error Handling Patterns
++ ```typescript
++ // ✅ Good: Graceful error handling with fallbacks
++ try {
++   gameEngine.entityManager.removeEntity(entityId);
++ } catch (error) {
++   console.error(`Failed to remove entity ${entityId}:`, error);
++   // Continue execution with fallback behavior
++ }
++ ```
++ 
++ ## Performance Considerations
++ 
++ ### Batch Operations
++ - Process multiple entities of the same type together
++ - Use entity batching for similar operations
++ - Minimize component lookups within tight loops
++ 
++ ### Memory Management
++ - Clean up expired entities promptly
++ - Remove unused components from entities
++ - Use object pooling for frequently created/destroyed entities
++ 
++ ## Component Design Principles
++ 
++ ### Single Responsibility
++ - Each component should represent one aspect of an entity
++ - Avoid combining unrelated data in the same component
++ - Use composition over inheritance
++ 
++ ### Data-Oriented Design
++ - Store only data in components, not behavior
++ - Keep components as plain data objects
++ - Put all logic in systems, not components
++ 
++ ### Immutability Where Possible
++ - Prefer readonly arrays for static data
++ - Use const assertions for constant values
++ - Minimize mutable state
++ 
++ ## Event System Usage
++ 
++ ### Event Publishing
++ ```typescript
++ // ✅ Good: Meaningful event data
++ gameEngine.eventBus.publish('tongueCollision', {
++   playerId: player.id,
++   tongueId: frog.id,
++   damage: 1,
++   position: { x: playerPos.x, y: playerPos.y }
++ });
++ ```
++ 
++ ### Event Naming Conventions
++ - Use descriptive, action-based names
++ - Include relevant context data
++ - Follow consistent naming patterns across systems
++ 
++ ## Testing Considerations
++ 
++ ### Never Edit Tests Unless Directed
++ - Failing tests indicate unintended behavior changes
++ - Ask for clarification when tests contradict requirements
++ - Tests document expected behavior - preserve this documentation
++ 
++ ### Component Testing
++ - Test component initialization separately from system behavior
++ - Validate component state transitions
++ - Test edge cases and boundary conditions
++ 
++ ## Grid-Based Game Specific Patterns
++ 
++ ### Grid Coordinate Management
++ - Use consistent pixel-to-grid conversion functions
++ - Validate grid boundaries before operations
++ - Handle fractional positions appropriately
++ 
++ ### Collision Detection Optimization
++ - Use grid-based spatial partitioning
++ - Pre-calculate collision masks where possible
++ - Separate broad-phase and narrow-phase collision detection
++ 
++ ## Documentation Standards
++ 
++ ### Code Comments
++ - Document complex algorithms and business logic
++ - Explain non-obvious design decisions
++ - Include performance considerations for critical paths
++ - Use JSDoc for public APIs
++ 
++ ### System Documentation
++ - Document system dependencies and execution order
++ - Explain component relationships
++ - Include usage examples for complex components
++ 
+```
+
+---
+
+Perfect! I've created a comprehensive ECSpresso rule file that captures all the key learnings from your math game project. This rule file will help prevent the types of issues you encountered and establish best practices for future ECSpresso projects.
+
+## Key areas covered in the updated rule file:
+
+### **TypeScript Best Practices**
+- Strict typing requirements to avoid redundant type validation
+- Component interface patterns vs. casting to `any`
+- Proper type inference usage
+
+### **ECSpresso Architecture Patterns**
+- System priority organization and execution order
+- Query optimization strategies
+- Component lifecycle management with centralized factories
+
+### **Common Pitfalls Prevention**
+- **Logical operator precedence issues** (like the spider web placement bug you fixed)
+- **Entity self-blocking prevention** (like the spider blocking itself from placing webs)
+- Animation timing consistency using `performance.now()`
+
+### **Resource Management**
+- Configuration centralization patterns (like your `GAME_CONFIG`)
+- State management for sequential spawning systems
+- Proper cleanup and reset mechanisms
+
+### **Debugging and Validation**
+- **Meaningful validation** vs. redundant TypeScript checking
+- Comprehensive logging with emoji prefixes (🐸, 🕸️, 🧊)
+- Graceful error handling patterns
+
+### **Performance and Design Principles**
+- Data-oriented component design
+- Event system best practices
+- Grid-based game optimization patterns
+
+### **Testing Guidelines**
+- Never edit tests unless directed (following your specific rule)
+- Proper test documentation preservation
+
+This rule file should significantly reduce development time and prevent the types of debugging sessions you had to go through with the logical operator precedence and entity self-blocking issues. Future ECSpresso projects can reference these patterns to maintain consistency and avoid common pitfalls.
+
+---
+
+_**User**_
+
+This rule can be included manually, at the agent request, auto attached based on the file or directory, or always included. Which of these options should apply to this file?
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Based on the content and purpose of this ECSpresso rule file, I recommend **auto-attached based on file or directory**.
+
+Here's why this makes the most sense:
+
+## **Auto-Attached Based on File/Directory** ✅
+
+**Trigger Conditions:**
+- Any files in the `src/ecs/` directory
+- Files that contain ECSpresso imports or ECS patterns
+- Component definition files (`*Component.ts`, `*System.ts`)
+- Query definition files
+- Files importing from `../Engine` or similar ECS patterns
+
+**Reasoning:**
+
+1. **Project-Specific Relevance**: This rule file is highly specific to ECSpresso framework projects. It wouldn't be useful for React, vanilla JS, or other non-ECS projects.
+
+2. **Comprehensive but Focused**: The rule file is quite detailed (covering TypeScript patterns, architecture, debugging, etc.) but only relevant when actually working on ECS code.
+
+3. **Prevents Common Pitfalls**: When developers are actively working on ECS systems, components, or queries, having these guidelines immediately available prevents the exact types of issues you encountered (logical operator precedence, entity self-blocking, etc.).
+
+4. **Performance Balance**: Including it always would add unnecessary overhead to non-ECS conversations, but including it manually would require remembering to request it when needed.
+
+5. **Context-Aware**: The rules become most valuable precisely when working on the ECS architecture - that's when developers need reminders about component design, system priorities, proper validation patterns, etc.
+
+**Suggested File/Directory Patterns:**
+- `src/ecs/**/*`
+- `**/systems/*.ts`
+- `**/components/*.ts` 
+- `**/queries.ts`
+- Files containing `gameEngine.addSystem` or similar ECSpresso patterns
+
+This way, the comprehensive ECSpresso guidelines will automatically be available whenever you're working on the ECS architecture, but won't clutter conversations about other parts of your codebase.
 
 ---
 
