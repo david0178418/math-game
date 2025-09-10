@@ -15,18 +15,43 @@ export const GAME_CONFIG = {
   PERFORMANCE: {
     TARGET_FPS: 60,
     MAX_ENTITIES: 50, // Prevent memory issues
-    CLEANUP_INTERVAL: 5000, // Clean up old entities every 5 seconds
+    MAX_ENTITIES_PER_FRAME: 1000, // Maximum entities to process per frame
+    PATHFINDING_CACHE_SIZE: 100,  // Maximum cached pathfinding results
+    RENDER_CULLING_MARGIN: 50,    // Pixels outside screen to still render
+    LOW_FPS_THRESHOLD: 30, // Warn when FPS drops below this
+    SLOW_SYSTEM_THRESHOLD: 5, // Warn when system takes more than 5ms
+    HIGH_ENTITY_THRESHOLD: 100, // Warn when entity count exceeds this
+  },
+  
+  // Development settings
+  DEVELOPMENT: {
+    PORT: 3000,
+    AUTO_OPEN_BROWSER: true,
+    ENABLE_PERFORMANCE_LOGGING: true,
+    ENABLE_DEBUG_RENDERING: false,
+    LOG_LEVEL: 'info' as const,
   },
   
   // Game mechanics
   GAMEPLAY: {
     PLAYER_LIVES: 3,
     STARTING_SCORE: 0,
-    INVULNERABILITY_TIME: 2000, // 2 seconds
     SCORE_THRESHOLDS: {
       MEDIUM_DIFFICULTY: 50,
       HARD_DIFFICULTY: 200,
     },
+  },
+  
+  // Timing constants
+  TIMING: {
+    INVULNERABILITY: 2000, // 2 seconds
+    FPS_CHECK_INTERVAL: 1000, // 1 second
+    CLEANUP_INTERVAL: 5000, // 5 seconds
+    BASE_SPAWN_INTERVAL: 3000, // 3 seconds
+    MIN_SPAWN_INTERVAL: 1500, // 1.5 seconds
+    SHORT_DELAY: 1000, // 1 second
+    MEDIUM_DELAY: 2000, // 2 seconds
+    LONG_DELAY: 3000, // 3 seconds
   },
   
   // Visual settings
@@ -61,8 +86,6 @@ export const GAME_CONFIG = {
     MAX_ENEMIES: 3,                    // Total enemies in game
     SPAWN_ORDER: ['lizard', 'spider', 'frog'] as const,
     RESET_ON_ALL_DEFEATED: true,      // Restart spawn cycle when all enemies defeated
-    BASE_SPAWN_INTERVAL: 3000,        // 3 seconds between spawns
-    MIN_SPAWN_INTERVAL: 1500,         // Minimum spawn interval with difficulty scaling
   },
   
   // Enemy type-specific configurations
@@ -76,9 +99,9 @@ export const GAME_CONFIG = {
       COLOR: 'purple',                 // 8-legged spider
       MOVE_SPEED_MULTIPLIER: 0.9,      // Slightly slower than lizard
       WEB_DURATION: 8000,              // 8 seconds until web disappears
-      FREEZE_DURATION: 2000,           // 2 seconds freeze when caught
       WEB_PLACEMENT_CHANCE: 0.20,      // 20% chance per move to place web
       WEB_COOLDOWN: 1000,              // 1 second cooldown between web placements
+      FREEZE_DURATION: 2000,           // 2 seconds freeze when caught
       AI_BEHAVIORS: ['random', 'patrol'] as const,
     },
     FROG: {
@@ -88,7 +111,7 @@ export const GAME_CONFIG = {
       TONGUE_SPEED: 424,               // Pixels per second (106px/0.25s = 424px/s)
       TONGUE_ATTACK_PROBABILITY: 0.10, // 10% chance per second to attack
       TONGUE_COOLDOWN: 2000,           // 2 seconds between attacks
-      TONGUE_HOLD_DURATION: 1000,     // 1 second hold when fully extended
+      TONGUE_HOLD_DURATION: 1000,      // 1 second hold when fully extended
       AI_BEHAVIORS: ['chase', 'random'] as const,
     },
   },

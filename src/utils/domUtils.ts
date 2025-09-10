@@ -4,6 +4,7 @@
  */
 
 import { UI_STYLES, UI_TIMING } from '../game/UIConstants';
+import type { ButtonStyle, ButtonSize, HUDColorType } from '../types/shared';
 
 /**
  * Create a styled button element
@@ -11,8 +12,8 @@ import { UI_STYLES, UI_TIMING } from '../game/UIConstants';
 export function createStyledButton(
   text: string,
   id: string,
-  style: 'success' | 'primary' | 'warning' | 'danger' | 'secondary',
-  size: 'large' | 'medium' = 'medium'
+  style: ButtonStyle,
+  size: ButtonSize = 'medium'
 ): HTMLButtonElement {
   const button = document.createElement('button');
   button.id = id;
@@ -85,7 +86,7 @@ export function createStyledContainer(styles: Partial<CSSStyleDeclaration>): HTM
 export function createHUDElement(
   id: string,
   text: string,
-  colorType: 'success' | 'danger' | 'info' | 'purple' | 'gray'
+  colorType: HUDColorType
 ): HTMLDivElement {
   const element = document.createElement('div');
   element.id = id;

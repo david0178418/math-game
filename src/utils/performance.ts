@@ -3,6 +3,9 @@
  * Helps track game performance and identify bottlenecks
  */
 
+import { GAME_CONFIG } from '../game/config';
+import type { PerformanceStats } from '../types/shared';
+
 export class PerformanceMonitor {
   private static instance: PerformanceMonitor;
   private frameCount = 0;
@@ -25,13 +28,13 @@ export class PerformanceMonitor {
     this.frameCount++;
     const now = performance.now();
     
-    if (now - this.lastFPSCheck >= 1000) {
-      this.currentFPS = Math.round((this.frameCount * 1000) / (now - this.lastFPSCheck));
+    if (now - this.lastFPSCheck >= GAME_CONFIG.TIMING.FPS_CHECK_INTERVAL) {
+      this.currentFPS = Math.round((this.frameCount * GAME_CONFIG.TIMING.FPS_CHECK_INTERVAL) / (now - this.lastFPSCheck));
       this.frameCount = 0;
       this.lastFPSCheck = now;
       
       // Log performance warnings
-      if (this.currentFPS < 30) {
+      if (this.currentFPS < GAME_CONFIG.PERFORMANCE.LOW_FPS_THRESHOLD) {
         console.warn(`Low FPS detected: ${this.currentFPS}`);
       }
     }
@@ -55,7 +58,7 @@ export class PerformanceMonitor {
     
     // Warn about slow systems
     const avgTime = timings.reduce((a, b) => a + b, 0) / timings.length;
-    if (avgTime > 5) { // 5ms threshold
+    if (avgTime > GAME_CONFIG.PERFORMANCE.SLOW_SYSTEM_THRESHOLD) {
       console.warn(`Slow system detected: ${systemName} averaging ${avgTime.toFixed(2)}ms`);
     }
   }
@@ -67,7 +70,7 @@ export class PerformanceMonitor {
     this.entityCount = count;
     
     // Warn about too many entities
-    if (count > 100) {
+    if (count > GAME_CONFIG.PERFORMANCE.HIGH_ENTITY_THRESHOLD) {
       console.warn(`High entity count: ${count}`);
     }
   }
@@ -75,11 +78,7 @@ export class PerformanceMonitor {
   /**
    * Get current performance stats
    */
-  getStats(): {
-    fps: number;
-    entityCount: number;
-    systemTimings: Record<string, number>;
-  } {
+  getStats(): PerformanceStats {
     const avgTimings: Record<string, number> = {};
     
     for (const [system, timings] of this.systemTimings.entries()) {

@@ -1,5 +1,6 @@
 import ECSpresso from 'ecspresso';
 import { GAME_CONFIG, CELL_SIZE, PLAYER_LIVES, STARTING_SCORE } from '../game/config';
+import type { AIBehavior, EnemyType } from '../types/shared';
 import flyImage from '../assets/images/fly.svg';
 
 // Re-export for convenience
@@ -7,8 +8,8 @@ export { GAME_CONFIG };
 
 // Define component type interfaces
 export interface Components {
-  position: { 
-    x: number; 
+  position: {
+    x: number;
     y: number;
     // Animation properties for smooth grid movement
     targetX?: number;
@@ -53,8 +54,8 @@ export interface Components {
     deathScale?: number; // Scale factor for shrinking effect
   };
   enemy: { 
-    enemyType: 'lizard' | 'spider' | 'frog';
-    behaviorType: 'chase' | 'patrol' | 'random' | 'guard';
+    enemyType: EnemyType;
+    behaviorType: AIBehavior;
     nextMoveTime: number;
     aiState?: {
       targetGridX: number;
@@ -87,14 +88,14 @@ export interface Components {
   spiderWeb: {
     duration: number;        // Time until web disappears (8000ms)
     freezeTime: number;      // Time player is frozen when caught (2000ms)
-    createdTime: number;     // When the web was created (timestamp)
+    createdTime: number;  // When the web was created (timestamp)
     isActive: boolean;       // Whether the web is still active
   };
   freezeEffect: {
-    startTime: number;       // When freeze started
+    startTime: number;    // When freeze started
     duration: number;        // How long to freeze (2000ms)
     isActive: boolean;       // Whether player is currently frozen
-    sourceWebId?: number;    // ID of the spider web that caused this freeze
+    sourceWebId?: string;  // ID of the spider web that caused this freeze
   };
   frogTongue: {
     isExtended: boolean;                    // Whether tongue is currently out
@@ -297,7 +298,7 @@ export const EntityFactory = {
     return entity;
   },
 
-  createEnemy(x: number, y: number, enemyType: 'lizard' | 'spider' | 'frog' = 'lizard', behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+  createEnemy(x: number, y: number, enemyType: EnemyType = 'lizard', behaviorType: AIBehavior = 'random'): { id: number } {
     // Determine enemy color based on type
     let enemyColor: string;
     switch (enemyType) {
@@ -343,15 +344,15 @@ export const EntityFactory = {
     return entity;
   },
 
-  createLizard(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+  createLizard(x: number, y: number, behaviorType: AIBehavior = 'random'): { id: number } {
     return this.createEnemy(x, y, 'lizard', behaviorType);
   },
 
-  createSpider(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+  createSpider(x: number, y: number, behaviorType: AIBehavior = 'random'): { id: number } {
     return this.createEnemy(x, y, 'spider', behaviorType);
   },
 
-  createFrog(x: number, y: number, behaviorType: 'chase' | 'patrol' | 'random' | 'guard' = 'random'): { id: number } {
+  createFrog(x: number, y: number, behaviorType: AIBehavior = 'random'): { id: number } {
     return this.createEnemy(x, y, 'frog', behaviorType);
   },
 

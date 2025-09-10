@@ -83,7 +83,10 @@ function processFreezeEffects(frozenPlayers: FrozenPlayerEntity[], currentTime: 
       
       // Clean up the specific spider web that caught this player
       if (freezeEffect.sourceWebId) {
-        cleanupSpecificWeb(freezeEffect.sourceWebId);
+        const webId = typeof freezeEffect.sourceWebId === 'string' 
+          ? parseInt(freezeEffect.sourceWebId, 10) 
+          : freezeEffect.sourceWebId;
+        cleanupSpecificWeb(webId);
       }
       
       try {

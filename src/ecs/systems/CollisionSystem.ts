@@ -13,7 +13,7 @@ import {
   type FrogTongueEntity
 } from '../queries';
 import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
-import { ANIMATION_CONFIG, CELL_SIZE } from '../../game/config';
+import { ANIMATION_CONFIG, CELL_SIZE, GAME_CONFIG } from '../../game/config';
 import { startShakeAnimation } from './AnimationSystem';
 
 /**
@@ -253,7 +253,7 @@ function handlePlayerSpiderWebCollision(
   
   if (webComp.freezeTime <= 0) {
     console.warn(`🕸️ WARNING: Invalid freeze time ${webComp.freezeTime} for web ${spiderWeb.id}, using default`);
-    webComp.freezeTime = 2000;
+    webComp.freezeTime = GAME_CONFIG.TIMING.MEDIUM_DELAY;
   }
   
   console.log(`🕸️ Player caught in spider web! Freezing for ${webComp.freezeTime}ms`);
