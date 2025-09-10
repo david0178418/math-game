@@ -12,8 +12,8 @@ import {
   type SpiderWebEntityWithRenderable,
   type FrogTongueEntity
 } from '../queries';
-import { COLLISION_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
-import { ANIMATION_CONFIG, CELL_SIZE, GAME_CONFIG } from '../../game/config';
+import { SYSTEM_PRIORITIES } from '../systemConfigs';
+import { ANIMATION_CONFIG, GAME_CONFIG } from '../../game/config';
 import { startShakeAnimation } from './AnimationSystem';
 
 /**
@@ -217,7 +217,7 @@ function handlePlayerEnemyCollision(
   
   // Set invulnerability period using centralized config
   healthComp.invulnerable = true;
-  healthComp.invulnerabilityTime = performance.now() + COLLISION_CONFIG.INVULNERABILITY_DURATION;
+  healthComp.invulnerabilityTime = performance.now() + GAME_CONFIG.TIMING.INVULNERABILITY;
   
   // Check for game over
   if (playerComp.lives <= 0) {
@@ -263,7 +263,7 @@ function handlePlayerSpiderWebCollision(
       startTime: currentTime,
       duration: webComp.freezeTime,
       isActive: true,
-      sourceWebId: spiderWeb.id
+      sourceWebId: spiderWeb.id.toString()
     });
     
     webComp.isActive = false;
@@ -311,7 +311,7 @@ function handlePlayerTongueCollision(
     console.log(`💔 Player loses 1 life. Lives remaining: ${playerComp.lives}`);
     
     healthComp.invulnerable = true;
-    healthComp.invulnerabilityTime = performance.now() + COLLISION_CONFIG.INVULNERABILITY_DURATION;
+    healthComp.invulnerabilityTime = performance.now() + GAME_CONFIG.TIMING.INVULNERABILITY;
     
     startShakeAnimation(
       player.components.position, 
@@ -359,8 +359,8 @@ function checkPlayerTongueCollision(
   }
   
   try {
-    const playerGridX = Math.round(playerPos.x / CELL_SIZE);
-    const playerGridY = Math.round(playerPos.y / CELL_SIZE);
+    const playerGridX = Math.round(playerPos.x / GAME_CONFIG.GRID.CELL_SIZE);
+    const playerGridY = Math.round(playerPos.y / GAME_CONFIG.GRID.CELL_SIZE);
     
     for (const segment of tongue.segments) {
       if (playerGridX === segment.x && playerGridY === segment.y) {

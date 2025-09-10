@@ -1,5 +1,9 @@
-import { CELL_SIZE } from '../game/config';
+import { GAME_CONFIG, SCORE_THRESHOLDS } from '../game/config';
 import type { PlayerEntity } from './queries';
+
+// Simple caches for expensive calculations
+const gridToPixelCache = new Map<string, { x: number; y: number }>();
+const pixelToGridCache = new Map<string, { x: number; y: number }>();
 
 /**
  * Game Utility Functions
@@ -26,8 +30,8 @@ export function calculateDifficultyInterval(
  */
 export function getPlayerDifficultyLevel(player: PlayerEntity): 'Easy' | 'Medium' | 'Hard' {
   const score = player.components.player.score;
-  if (score < 50) return 'Easy';
-  if (score < 200) return 'Medium';
+  if (score < SCORE_THRESHOLDS.MEDIUM_DIFFICULTY_SCORE) return 'Easy';
+  if (score < SCORE_THRESHOLDS.HARD_DIFFICULTY_SCORE) return 'Medium';
   return 'Hard';
 }
 
@@ -38,10 +42,10 @@ export function sameGridPosition(
   pos1: { x: number; y: number }, 
   pos2: { x: number; y: number }
 ): boolean {
-  const gridX1 = Math.round(pos1.x / CELL_SIZE);
-  const gridY1 = Math.round(pos1.y / CELL_SIZE);
-  const gridX2 = Math.round(pos2.x / CELL_SIZE);
-  const gridY2 = Math.round(pos2.y / CELL_SIZE);
+  const gridX1 = Math.round(pos1.x / GAME_CONFIG.GRID.CELL_SIZE);
+  const gridY1 = Math.round(pos1.y / GAME_CONFIG.GRID.CELL_SIZE);
+  const gridX2 = Math.round(pos2.x / GAME_CONFIG.GRID.CELL_SIZE);
+  const gridY2 = Math.round(pos2.y / GAME_CONFIG.GRID.CELL_SIZE);
   
   return gridX1 === gridX2 && gridY1 === gridY2;
 }
@@ -50,20 +54,54 @@ export function sameGridPosition(
  * Convert pixel coordinates to grid coordinates
  */
 export function pixelToGrid(x: number, y: number): { x: number; y: number } {
-  return {
-    x: Math.round(x / CELL_SIZE),
-    y: Math.round(y / CELL_SIZE)
-  };
+  const key = `${x},${y}`;
+  let result = pixelToGridCache.get(key);
+  
+  if (!result) {
+    result = {
+      x: Math.round(x / GAME_CONFIG.GRID.CELL_SIZE),
+      y: Math.round(y / GAME_CONFIG.GRID.CELL_SIZE)
+    };
+    
+    // Limit cache size to prevent memory growth
+    if (pixelToGridCache.size >= 100) {
+      const firstKey = pixelToGridCache.keys().next().value;
+      if (firstKey) {
+        pixelToGridCache.delete(firstKey);
+      }
+    }
+    
+    pixelToGridCache.set(key, result);
+  }
+  
+  return result;
 }
 
 /**
  * Convert grid coordinates to pixel coordinates
  */
 export function gridToPixel(gridX: number, gridY: number): { x: number; y: number } {
-  return {
-    x: gridX * CELL_SIZE,
-    y: gridY * CELL_SIZE
-  };
+  const key = `${gridX},${gridY}`;
+  let result = gridToPixelCache.get(key);
+  
+  if (!result) {
+    result = {
+      x: gridX * GAME_CONFIG.GRID.CELL_SIZE,
+      y: gridY * GAME_CONFIG.GRID.CELL_SIZE
+    };
+    
+    // Limit cache size to prevent memory growth
+    if (gridToPixelCache.size >= 100) {
+      const firstKey = gridToPixelCache.keys().next().value;
+      if (firstKey) {
+        gridToPixelCache.delete(firstKey);
+      }
+    }
+    
+    gridToPixelCache.set(key, result);
+  }
+  
+  return result;
 }
 
 /**

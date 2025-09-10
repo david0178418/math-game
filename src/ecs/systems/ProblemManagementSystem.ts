@@ -1,5 +1,5 @@
 import { gameEngine, EntityFactory } from '../Engine';
-import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+import { GAME_CONFIG, SCORE_THRESHOLDS } from '../../game/config';
 import { gridToPixel } from './MovementSystem';
 import { mathProblemGenerator } from '../../game/MathProblemGenerator';
 import { 
@@ -37,7 +37,7 @@ export function addProblemManagementSystemToEngine(): void {
       // Check if we need to populate the grid initially or after level completion
       const currentTime = performance.now();
       if (activeProblems.length === 0 && 
-          currentTime - lastSpawnTime > PROBLEM_CONFIG.SPAWN_DELAY) {
+          currentTime - lastSpawnTime > GAME_CONFIG.TIMING.SHORT_DELAY) {
         
         // Adjust difficulty based on player score
         const player = queries.players[0];
@@ -108,16 +108,16 @@ function getAllGridPositionsWithoutMathProblems(allPositionEntities: PositionEnt
     const hasMathProblem = entity.components.mathProblem;
     
     if (position && hasMathProblem) {
-      const gridX = Math.round(position.x / CELL_SIZE);
-      const gridY = Math.round(position.y / CELL_SIZE);
+      const gridX = Math.round(position.x / GAME_CONFIG.GRID.CELL_SIZE);
+      const gridY = Math.round(position.y / GAME_CONFIG.GRID.CELL_SIZE);
       mathProblemPositions.add(`${gridX},${gridY}`);
     }
   }
   
   // Get all positions that don't have math problems yet
   const availablePositions: { x: number; y: number }[] = [];
-  for (let y = 0; y < GRID_HEIGHT; y++) {
-    for (let x = 0; x < GRID_WIDTH; x++) {
+  for (let y = 0; y < GAME_CONFIG.GRID.HEIGHT; y++) {
+    for (let x = 0; x < GAME_CONFIG.GRID.WIDTH; x++) {
       const key = `${x},${y}`;
       if (!mathProblemPositions.has(key)) {
         availablePositions.push({ x, y });
@@ -132,9 +132,9 @@ function getAllGridPositionsWithoutMathProblems(allPositionEntities: PositionEnt
  * Adjust difficulty based on player score
  */
 function adjustDifficultyBasedOnScore(score: number): void {
-  if (score < 50) {
+  if (score < SCORE_THRESHOLDS.MEDIUM_DIFFICULTY_SCORE) {
     mathProblemGenerator.setDifficulty('EASY');
-  } else if (score < 200) {
+  } else if (score < SCORE_THRESHOLDS.HARD_DIFFICULTY_SCORE) {
     mathProblemGenerator.setDifficulty('MEDIUM');
   } else {
     mathProblemGenerator.setDifficulty('HARD');

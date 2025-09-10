@@ -1,3 +1,4 @@
+import { MATH_GENERATION } from "./config";
 import { DIFFICULTY_CONFIG } from './config';
 
 /**
@@ -35,7 +36,7 @@ export class MathProblemGenerator {
     const problems: ProblemOption[] = [];
     
     // Generate all multiples from 1 to 12
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= MATH_GENERATION.MAX_MULTIPLICATION_FACTOR; i++) {
       const multiple = multipleOf * i;
       problems.push({
         value: multiple,
@@ -50,7 +51,7 @@ export class MathProblemGenerator {
     
     // Generate numbers that are NOT multiples of the target, between 2 and 144
     while (incorrectNumbers.size < incorrectNumbersNeeded) {
-      const randomNum = Math.floor(Math.random() * 143) + 2; // Random between 2 and 144
+      const randomNum = Math.floor(Math.random() * (MATH_GENERATION.MAX_RANDOM_VALUE - 1)) + MATH_GENERATION.MIN_RANDOM_VALUE; // Random between 2 and 144
       
       // Make sure it's not a multiple and not already used
       if (!correctNumbers.has(randomNum) && randomNum % multipleOf !== 0) {

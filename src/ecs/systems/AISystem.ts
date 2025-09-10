@@ -1,6 +1,7 @@
 import { gameEngine } from '../Engine';
 import { pixelToGrid, gridToPixel } from './MovementSystem';
-import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, GAME_CONFIG } from '../../game/config';
+import { GAME_CONFIG } from '../../game/config';
+import type { AIBehavior } from '../../types/shared';
 import { 
   enemyQuery, 
   playerQuery,
@@ -33,8 +34,6 @@ type ObstacleEntity = {
   };
 };
 
-// AI behavior types
-export type AIBehaviorType = 'chase' | 'patrol' | 'random' | 'guard';
 
 // AI state for pathfinding
 interface AIState {
@@ -123,8 +122,8 @@ function processEnemyAI(
   const aiState = enemyData.aiState;
   
   // Determine next move based on behavior type
-  let nextGridX = Math.round(enemyPos.x / CELL_SIZE);
-  let nextGridY = Math.round(enemyPos.y / CELL_SIZE);
+  let nextGridX = Math.round(enemyPos.x / GAME_CONFIG.GRID.CELL_SIZE);
+  let nextGridY = Math.round(enemyPos.y / GAME_CONFIG.GRID.CELL_SIZE);
   let moveInterval: number = calculateMoveInterval(enemyData.behaviorType, player, enemyData.enemyType);
   
   switch (enemyData.behaviorType) {
@@ -171,20 +170,16 @@ function processEnemyAI(
   if (enemyData.enemyType === 'spider' && 
       (newPixelPos.x !== enemyPos.x || newPixelPos.y !== enemyPos.y)) {
     
-    console.log(`🕷️ Spider moved from (${enemyPos.x}, ${enemyPos.y}) to (${newPixelPos.x}, ${newPixelPos.y})`);
     
     // Use configured chance to place a web when moving
     if (Math.random() < SPIDER_CONFIG.WEB_PLACEMENT_CHANCE) {
       const oldGridPos = pixelToGrid(enemyPos.x, enemyPos.y);
       
-      console.log(`🕷️ Attempting to place web at grid (${oldGridPos.x}, ${oldGridPos.y})`);
       
       // Check if position is valid for web placement (not occupied by other entities)
       if (isValidWebPosition(oldGridPos.x, oldGridPos.y, allEnemies, player, enemy)) {
         createSpiderWeb(oldGridPos.x, oldGridPos.y);
-        console.log(`🕸️ SUCCESS: Web placed at grid (${oldGridPos.x}, ${oldGridPos.y})`);
       } else {
-        console.log(`❌ BLOCKED: Cannot place web at grid (${oldGridPos.x}, ${oldGridPos.y}) - position occupied`);
       }
     }
   }
@@ -199,7 +194,7 @@ function processEnemyAI(
 /**
  * Calculate move interval based on behavior type and player score (difficulty)
  */
-function calculateMoveInterval(behaviorType: AIBehaviorType, player: PlayerEntity, enemyType?: 'lizard' | 'spider' | 'frog'): number {
+function calculateMoveInterval(behaviorType: AIBehavior, player: PlayerEntity, enemyType?: 'lizard' | 'spider' | 'frog'): number {
   const score = player?.components?.player?.score || 0;
   
   // Scale difficulty based on score
@@ -269,11 +264,11 @@ function processChaseAI(
   
   // Move horizontally first, then vertically (prevents diagonal movement)
   if (enemyGrid.x < playerGrid.x) {
-    nextX = Math.min(GRID_WIDTH - 1, enemyGrid.x + 1);
+    nextX = Math.min(GAME_CONFIG.GRID.WIDTH - 1, enemyGrid.x + 1);
   } else if (enemyGrid.x > playerGrid.x) {
     nextX = Math.max(0, enemyGrid.x - 1);
   } else if (enemyGrid.y < playerGrid.y) {
-    nextY = Math.min(GRID_HEIGHT - 1, enemyGrid.y + 1);
+    nextY = Math.min(GAME_CONFIG.GRID.HEIGHT - 1, enemyGrid.y + 1);
   } else if (enemyGrid.y > playerGrid.y) {
     nextY = Math.max(0, enemyGrid.y - 1);
   }
@@ -324,8 +319,8 @@ function processPatrolAI(
   let nextY = currentGrid.y + direction.y;
   
   // Clamp to grid boundaries
-  nextX = Math.max(0, Math.min(GRID_WIDTH - 1, nextX));
-  nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, nextY));
+  nextX = Math.max(0, Math.min(GAME_CONFIG.GRID.WIDTH - 1, nextX));
+  nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, nextY));
   
   // Check if target position is blocked by other enemies
   if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
@@ -338,7 +333,7 @@ function processPatrolAI(
     ];
     
     for (const alt of alternatives) {
-      if (alt.x >= 0 && alt.x < GRID_WIDTH && alt.y >= 0 && alt.y < GRID_HEIGHT &&
+      if (alt.x >= 0 && alt.x < GAME_CONFIG.GRID.WIDTH && alt.y >= 0 && alt.y < GAME_CONFIG.GRID.HEIGHT &&
           !isPositionBlocked(alt.x, alt.y, obstacles, allEnemies, enemy)) {
         nextX = alt.x;
         nextY = alt.y;
@@ -383,8 +378,8 @@ function processRandomAI(
   ];
   
   const randomDir = directions[Math.floor(Math.random() * directions.length)];
-  let nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + randomDir.x));
-  let nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
+  let nextX = Math.max(0, Math.min(GAME_CONFIG.GRID.WIDTH - 1, currentGrid.x + randomDir.x));
+  let nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGrid.y + randomDir.y));
   
   // If the chosen position is blocked, stay in place
   if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
@@ -419,8 +414,8 @@ function processGuardAI(
   // If too far from guard position, move back towards it
   if (distance > 2) { // 2 grid cells
     const direction = getDirectionToTarget(currentGrid, guardPos);
-    let nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + direction.x));
-    let nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + direction.y));
+    let nextX = Math.max(0, Math.min(GAME_CONFIG.GRID.WIDTH - 1, currentGrid.x + direction.x));
+    let nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGrid.y + direction.y));
     
     // Check if position is blocked by other enemies
     if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
@@ -433,7 +428,7 @@ function processGuardAI(
       ];
       
       for (const alt of alternatives) {
-        if (alt.x >= 0 && alt.x < GRID_WIDTH && alt.y >= 0 && alt.y < GRID_HEIGHT &&
+        if (alt.x >= 0 && alt.x < GAME_CONFIG.GRID.WIDTH && alt.y >= 0 && alt.y < GAME_CONFIG.GRID.HEIGHT &&
             !isPositionBlocked(alt.x, alt.y, obstacles, allEnemies, enemy)) {
           nextX = alt.x;
           nextY = alt.y;
@@ -457,8 +452,8 @@ function processGuardAI(
         { x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 }
       ];
       const randomDir = directions[Math.floor(Math.random() * directions.length)];
-      let nextX = Math.max(0, Math.min(GRID_WIDTH - 1, currentGrid.x + randomDir.x));
-      let nextY = Math.max(0, Math.min(GRID_HEIGHT - 1, currentGrid.y + randomDir.y));
+      let nextX = Math.max(0, Math.min(GAME_CONFIG.GRID.WIDTH - 1, currentGrid.x + randomDir.x));
+      let nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGrid.y + randomDir.y));
       
       // Only move if it keeps us close to guard position and isn't blocked
       const newDistance = Math.abs(nextX - guardPos.x) + Math.abs(nextY - guardPos.y);
@@ -482,7 +477,7 @@ function isPositionBlocked(
   currentEnemy: EnemyEntity
 ): boolean {
   // Check boundaries
-  if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
+  if (gridX < 0 || gridX >= GAME_CONFIG.GRID.WIDTH || gridY < 0 || gridY >= GAME_CONFIG.GRID.HEIGHT) {
     return true;
   }
   
@@ -493,8 +488,8 @@ function isPositionBlocked(
     
     // Get the other enemy's grid position
     const otherPos = otherEnemy.components.position;
-    const otherGridX = Math.round(otherPos.x / CELL_SIZE);
-    const otherGridY = Math.round(otherPos.y / CELL_SIZE);
+    const otherGridX = Math.round(otherPos.x / GAME_CONFIG.GRID.CELL_SIZE);
+    const otherGridY = Math.round(otherPos.y / GAME_CONFIG.GRID.CELL_SIZE);
     
     // Check if positions match
     if (otherGridX === gridX && otherGridY === gridY) {
@@ -533,13 +528,13 @@ function getAlternativeDirections(
   // If trying to move horizontally, try vertical directions
   if (from.x !== to.x) {
     if (from.y > 0) alternatives.push({ x: from.x, y: from.y - 1 });
-    if (from.y < GRID_HEIGHT - 1) alternatives.push({ x: from.x, y: from.y + 1 });
+    if (from.y < GAME_CONFIG.GRID.HEIGHT - 1) alternatives.push({ x: from.x, y: from.y + 1 });
   }
   
   // If trying to move vertically, try horizontal directions
   if (from.y !== to.y) {
     if (from.x > 0) alternatives.push({ x: from.x - 1, y: from.y });
-    if (from.x < GRID_WIDTH - 1) alternatives.push({ x: from.x + 1, y: from.y });
+    if (from.x < GAME_CONFIG.GRID.WIDTH - 1) alternatives.push({ x: from.x + 1, y: from.y });
   }
   
   return alternatives;
@@ -558,7 +553,7 @@ function isValidWebPosition(
   console.log(`🔍 Checking web position validity for grid (${gridX}, ${gridY})`);
   
   // Check boundaries
-  if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
+  if (gridX < 0 || gridX >= GAME_CONFIG.GRID.WIDTH || gridY < 0 || gridY >= GAME_CONFIG.GRID.HEIGHT) {
     console.log(`❌ Position (${gridX}, ${gridY}) is outside grid boundaries`);
     return false;
   }
@@ -599,8 +594,8 @@ function generatePatrolWaypoints(startPos: { x: number, y: number }): Array<{ x:
   const size = 3; // Patrol area size
   return [
     { x: startPos.x, y: startPos.y },
-    { x: Math.min(GRID_WIDTH - 1, startPos.x + size), y: startPos.y },
-    { x: Math.min(GRID_WIDTH - 1, startPos.x + size), y: Math.min(GRID_HEIGHT - 1, startPos.y + size) },
-    { x: startPos.x, y: Math.min(GRID_HEIGHT - 1, startPos.y + size) },
+    { x: Math.min(GAME_CONFIG.GRID.WIDTH - 1, startPos.x + size), y: startPos.y },
+    { x: Math.min(GAME_CONFIG.GRID.WIDTH - 1, startPos.x + size), y: Math.min(GAME_CONFIG.GRID.HEIGHT - 1, startPos.y + size) },
+    { x: startPos.x, y: Math.min(GAME_CONFIG.GRID.HEIGHT - 1, startPos.y + size) },
   ];
 } 

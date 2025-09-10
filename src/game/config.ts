@@ -117,12 +117,6 @@ export const GAME_CONFIG = {
   },
 } as const;
 
-// Legacy compatibility - maintain old naming for existing code
-export const GRID_WIDTH = GAME_CONFIG.GRID.WIDTH;
-export const GRID_HEIGHT = GAME_CONFIG.GRID.HEIGHT;
-export const CELL_SIZE = GAME_CONFIG.GRID.CELL_SIZE;
-export const PLAYER_LIVES = GAME_CONFIG.GAMEPLAY.PLAYER_LIVES;
-export const STARTING_SCORE = GAME_CONFIG.GAMEPLAY.STARTING_SCORE;
 
 // Math problem difficulty settings
 export const DIFFICULTY_CONFIG = {
@@ -179,4 +173,27 @@ export const ANIMATION_CONFIG = {
     SCALE_START: 1.0,
     SCALE_END: 0.0
   }
+} as const;
+
+// Score-based difficulty thresholds
+export const SCORE_THRESHOLDS = {
+  MEDIUM_DIFFICULTY_SCORE: 50,
+  HARD_DIFFICULTY_SCORE: 200,
+  DIFFICULTY_SCALE_SCORE: 100, // Score points per AI difficulty increase
+} as const;
+
+// Math problem generation constants
+export const MATH_GENERATION = {
+  MAX_RANDOM_VALUE: 144,
+  MIN_RANDOM_VALUE: 2,
+  MAX_MULTIPLICATION_FACTOR: 12,
+} as const;
+
+// Rendering constants
+export const RENDER_CONFIG = {
+  INVULNERABILITY_OPACITY: 0.5,
+  WEB_MARGIN: 5,
+  WEB_STROKE_OPACITY: 0.6,
+  WEB_PATTERN_STEP: 12,
+  WEB_INNER_RADIUS: 8,
 } as const; 

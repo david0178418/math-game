@@ -5,32 +5,15 @@ import { GAME_CONFIG } from '../game/config';
  * Centralized configuration for all ECS systems
  */
 
-// Collision System Configuration
-export const COLLISION_CONFIG = {
-  INVULNERABILITY_DURATION: GAME_CONFIG.TIMING.INVULNERABILITY,
-} as const;
-
-// Enemy Spawn System Configuration
-export const ENEMY_SPAWN_CONFIG = {
-  MAX_ENEMIES: GAME_CONFIG.ENEMY_SPAWN.MAX_ENEMIES,
-  BASE_SPAWN_INTERVAL: GAME_CONFIG.TIMING.BASE_SPAWN_INTERVAL,
-  MIN_SPAWN_INTERVAL: GAME_CONFIG.TIMING.MIN_SPAWN_INTERVAL,
-  DIFFICULTY_SCALE_SCORE: 100,  // Score points per difficulty increase
-  SPAWN_ORDER: GAME_CONFIG.ENEMY_SPAWN.SPAWN_ORDER,
-  RESET_ON_ALL_DEFEATED: GAME_CONFIG.ENEMY_SPAWN.RESET_ON_ALL_DEFEATED,
-} as const;
-
-// Problem Management System Configuration
+// Problem Management System Configuration (unique values not in GAME_CONFIG)
 export const PROBLEM_CONFIG = {
   TOTAL_PROBLEMS: 30,           // Total problems needed to fill entire 6x5 grid
-  SPAWN_DELAY: GAME_CONFIG.TIMING.SHORT_DELAY,
 } as const;
 
-// AI System Configuration
+// AI System Configuration (unique values not in GAME_CONFIG)
 export const AI_CONFIG = {
   BASE_MOVE_INTERVAL: 2_500,       // Base milliseconds between enemy moves (slowed down)
   MIN_MOVE_INTERVAL: 800,         // Minimum move interval (fastest)
-  PATH_UPDATE_INTERVAL: GAME_CONFIG.TIMING.MEDIUM_DELAY,
   DETECTION_RANGE: 6,             // Grid cells within which AI detects player
   CHASE_SPEED_MULTIPLIER: 0.8,    // Chase moves slightly faster
   PATROL_SPEED_MULTIPLIER: 1.2,   // Patrol moves slower
@@ -61,9 +44,4 @@ export const SYSTEM_PRIORITIES = {
   RENDER: 10,                   // Rendering (should be last)
 } as const;
 
-// Performance-related configurations
-export const PERFORMANCE_CONFIG = {
-  MAX_ENTITIES_PER_FRAME: GAME_CONFIG.PERFORMANCE.MAX_ENTITIES_PER_FRAME,
-  PATHFINDING_CACHE_SIZE: GAME_CONFIG.PERFORMANCE.PATHFINDING_CACHE_SIZE,
-  RENDER_CULLING_MARGIN: GAME_CONFIG.PERFORMANCE.RENDER_CULLING_MARGIN,
-} as const; 
+ 

@@ -121,17 +121,14 @@ function cleanupSpecificWeb(webId: number): void {
  */
 export function createSpiderWeb(gridX: number, gridY: number): void {
   // Validate meaningful bounds
-  const GRID_WIDTH = 6;
-  const GRID_HEIGHT = 5;
-  if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
-    console.error(`🕸️ ERROR: Grid coordinates (${gridX}, ${gridY}) outside bounds (0,0) to (${GRID_WIDTH-1},${GRID_HEIGHT-1})`);
+  if (gridX < 0 || gridX >= GAME_CONFIG.GRID.WIDTH || gridY < 0 || gridY >= GAME_CONFIG.GRID.HEIGHT) {
+    console.error(`🕸️ ERROR: Grid coordinates (${gridX}, ${gridY}) outside bounds (0,0) to (${GAME_CONFIG.GRID.WIDTH-1},${GAME_CONFIG.GRID.HEIGHT-1})`);
     return;
   }
   
   const currentTime = performance.now();
-  const CELL_SIZE = 106;
-  const pixelX = gridX * CELL_SIZE;
-  const pixelY = gridY * CELL_SIZE;
+  const pixelX = gridX * GAME_CONFIG.GRID.CELL_SIZE;
+  const pixelY = gridY * GAME_CONFIG.GRID.CELL_SIZE;
   
   try {
     const webEntity = gameEngine.spawn({
@@ -145,12 +142,12 @@ export function createSpiderWeb(gridX: number, gridY: number): void {
       renderable: {
         shape: 'rectangle',
         color: 'rgba(128, 0, 128, 0.3)',
-        size: CELL_SIZE * 0.8,
+        size: GAME_CONFIG.GRID.CELL_SIZE * 0.8,
         layer: 1
       },
       collider: {
-        width: CELL_SIZE,
-        height: CELL_SIZE,
+        width: GAME_CONFIG.GRID.CELL_SIZE,
+        height: GAME_CONFIG.GRID.CELL_SIZE,
         group: 'spiderWeb'
       }
     });

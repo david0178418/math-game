@@ -9,13 +9,7 @@ export interface GridPosition {
   readonly y: number;
 }
 
-// Common result types
-export type Result<T, E = Error> = 
-  | { success: true; data: T }
-  | { success: false; error: E };
 
-// Animation states
-export type AnimationState = 'idle' | 'moving' | 'rotating' | 'shaking' | 'dying';
 
 // AI behavior types from config
 export type AIBehavior = 'chase' | 'patrol' | 'random' | 'guard';
@@ -34,20 +28,6 @@ export type ButtonStyle = 'success' | 'primary' | 'warning' | 'danger' | 'second
 export type ButtonSize = 'large' | 'medium';
 export type HUDColorType = 'success' | 'danger' | 'info' | 'purple' | 'gray';
 
-// System priority type
-export type SystemPriority = number & { readonly brand: unique symbol };
-
-// Component type helpers
-export interface ComponentBase {
-  readonly type: string;
-}
-
-// Event types for system communication
-export interface GameEvent {
-  readonly type: string;
-  readonly timestamp: number;
-  readonly data?: Record<string, unknown>;
-}
 
 // Performance monitoring types
 export interface PerformanceStats {
@@ -68,10 +48,3 @@ export function createGridPosition(x: number, y: number): GridPosition | null {
   return null;
 }
 
-// Utility type for readonly deep objects
-export type DeepReadonly<T> = {
-  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
-};
-
-// Type for configuration objects
-export type ConfigObject<T> = DeepReadonly<T> & { readonly [K in keyof T]: T[K] };

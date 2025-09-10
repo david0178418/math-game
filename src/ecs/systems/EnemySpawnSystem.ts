@@ -1,12 +1,12 @@
 import { gameEngine, EntityFactory } from '../Engine';
-import { GRID_WIDTH, GRID_HEIGHT } from '../../game/config';
+import { GAME_CONFIG } from '../../game/config';
 import { gridToPixel } from '../gameUtils';
 import { 
   enemyQuery, 
   playerQuery,
   type PlayerEntity
 } from '../queries';
-import { ENEMY_SPAWN_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
+import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { calculateDifficultyInterval } from '../gameUtils';
 
 /**
@@ -80,7 +80,7 @@ export function addEnemySpawnSystemToEngine(): void {
       }
       
       // Only spawn if cycle is not complete and enough time has passed
-      if (!spawnCycleComplete && currentEnemyCount < ENEMY_SPAWN_CONFIG.MAX_ENEMIES) {
+      if (!spawnCycleComplete && currentEnemyCount < GAME_CONFIG.ENEMY_SPAWN.MAX_ENEMIES) {
         const spawnInterval = calculateSpawnInterval(queries.players[0]);
         
         if (currentTime - lastSpawnTime > spawnInterval) {
@@ -100,14 +100,14 @@ export function addEnemySpawnSystemToEngine(): void {
  * Calculate spawn interval based on player score (difficulty scaling)
  */
 function calculateSpawnInterval(player: PlayerEntity): number {
-  if (!player) return ENEMY_SPAWN_CONFIG.BASE_SPAWN_INTERVAL;
+  if (!player) return GAME_CONFIG.TIMING.BASE_SPAWN_INTERVAL;
   
   const score = player.components.player.score;
   
   return calculateDifficultyInterval(
-    ENEMY_SPAWN_CONFIG.BASE_SPAWN_INTERVAL,
-    ENEMY_SPAWN_CONFIG.MIN_SPAWN_INTERVAL,
-    ENEMY_SPAWN_CONFIG.DIFFICULTY_SCALE_SCORE,
+    GAME_CONFIG.TIMING.BASE_SPAWN_INTERVAL,
+    GAME_CONFIG.TIMING.MIN_SPAWN_INTERVAL,
+    100,
     500, // Reduction per level
     score
   );
@@ -137,23 +137,23 @@ function getRandomEdgePosition(): { x: number; y: number } {
   const edges = [];
   
   // Top edge
-  for (let x = 0; x < GRID_WIDTH; x++) {
+  for (let x = 0; x < GAME_CONFIG.GRID.WIDTH; x++) {
     edges.push({ x, y: 0 });
   }
   
   // Bottom edge
-  for (let x = 0; x < GRID_WIDTH; x++) {
-    edges.push({ x, y: GRID_HEIGHT - 1 });
+  for (let x = 0; x < GAME_CONFIG.GRID.WIDTH; x++) {
+    edges.push({ x, y: GAME_CONFIG.GRID.HEIGHT - 1 });
   }
   
   // Left edge (excluding corners already added)
-  for (let y = 1; y < GRID_HEIGHT - 1; y++) {
+  for (let y = 1; y < GAME_CONFIG.GRID.HEIGHT - 1; y++) {
     edges.push({ x: 0, y });
   }
   
   // Right edge (excluding corners already added)
-  for (let y = 1; y < GRID_HEIGHT - 1; y++) {
-    edges.push({ x: GRID_WIDTH - 1, y });
+  for (let y = 1; y < GAME_CONFIG.GRID.HEIGHT - 1; y++) {
+    edges.push({ x: GAME_CONFIG.GRID.WIDTH - 1, y });
   }
   
   // Return random edge position

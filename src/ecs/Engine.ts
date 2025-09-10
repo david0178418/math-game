@@ -1,5 +1,5 @@
 import ECSpresso from 'ecspresso';
-import { GAME_CONFIG, CELL_SIZE, PLAYER_LIVES, STARTING_SCORE } from '../game/config';
+import { GAME_CONFIG } from '../game/config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import flyImage from '../assets/images/fly.svg';
 
@@ -142,7 +142,7 @@ let gameRunning = false;
 export function initializeEngine(): void {
   // Add initial resources
   gameEngine.addResource('gameState', 'menu');
-  gameEngine.addResource('score', { value: STARTING_SCORE });
+  gameEngine.addResource('score', { value: GAME_CONFIG.GAMEPLAY.STARTING_SCORE });
 
   // Set up event handlers
   setupEventHandlers();
@@ -270,26 +270,26 @@ export const EntityFactory = {
       renderable: { 
         shape: 'image', 
         color: GAME_CONFIG.COLORS.PLAYER, // Fallback color if image fails to load
-        size: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+        size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
         layer: GAME_CONFIG.LAYERS.PLAYER,
         imageSrc: flyImage
       },
       player: { 
-        score: STARTING_SCORE, 
-        lives: PLAYER_LIVES, 
+        score: GAME_CONFIG.GAMEPLAY.STARTING_SCORE, 
+        lives: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES, 
         inputState: { up: false, down: false, left: false, right: false, eat: false },
         gameOverPending: false,
         deathAnimationActive: false,
         deathScale: 1.0
       },
       collider: { 
-        width: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
-        height: CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
+        width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
+        height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
         group: 'player' 
       },
       health: { 
-        current: PLAYER_LIVES, 
-        max: PLAYER_LIVES, 
+        current: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES, 
+        max: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES, 
         invulnerable: false, 
         invulnerabilityTime: 0 
       }
@@ -320,7 +320,7 @@ export const EntityFactory = {
       renderable: { 
         shape: 'rectangle', 
         color: enemyColor, 
-        size: CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
+        size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
         layer: GAME_CONFIG.LAYERS.ENTITIES 
       },
       enemy: { 
@@ -329,8 +329,8 @@ export const EntityFactory = {
         nextMoveTime: 0
       },
       collider: { 
-        width: CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
-        height: CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
+        width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
+        height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
         group: 'enemy' 
       },
       health: { 
@@ -362,7 +362,7 @@ export const EntityFactory = {
       renderable: { 
         shape: 'rectangle', 
         color: GAME_CONFIG.COLORS.MATH_PROBLEM, 
-        size: CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
+        size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
         layer: GAME_CONFIG.LAYERS.MATH_PROBLEMS
       },
       mathProblem: { 
@@ -372,8 +372,8 @@ export const EntityFactory = {
         consumed: false 
       },
       collider: { 
-        width: CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
-        height: CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
+        width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
+        height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
         group: 'problem' 
       }
     });

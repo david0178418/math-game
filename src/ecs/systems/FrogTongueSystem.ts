@@ -1,6 +1,6 @@
 import { gameEngine } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, GAME_CONFIG } from '../../game/config';
+import { GAME_CONFIG } from '../../game/config';
 import { pixelToGrid } from './MovementSystem';
 import { 
   enemyQuery, 
@@ -67,8 +67,8 @@ function processFrogTongue(frog: FrogTongueEntity, currentTime: number, deltaTim
     tongue.direction = { x: 0, y: 0 };
   }
   
-  if (tongue.currentLength < 0 || tongue.currentLength > tongue.maxRange * CELL_SIZE) {
-    tongue.currentLength = Math.max(0, Math.min(tongue.currentLength, tongue.maxRange * CELL_SIZE));
+  if (tongue.currentLength < 0 || tongue.currentLength > tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE) {
+    tongue.currentLength = Math.max(0, Math.min(tongue.currentLength, tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE));
   }
   
   switch (tongue.phase) {
@@ -114,7 +114,7 @@ function processExtendingPhase(frog: FrogTongueEntity, currentTime: number, delt
   const extensionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime;
   
   // Calculate how far the tongue should extend
-  const targetExtension = Math.min(tongue.currentLength + extensionSpeed, tongue.maxRange * CELL_SIZE);
+  const targetExtension = Math.min(tongue.currentLength + extensionSpeed, tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE);
   const previousLength = tongue.currentLength;
   tongue.currentLength = targetExtension;
   
@@ -123,20 +123,18 @@ function processExtendingPhase(frog: FrogTongueEntity, currentTime: number, delt
   
   // Check if we hit an obstacle (segments stopped growing despite having range left)
   const segmentCount = tongue.segments.length;
-  const expectedSegments = Math.floor(tongue.currentLength / CELL_SIZE);
+  const expectedSegments = Math.floor(tongue.currentLength / GAME_CONFIG.GRID.CELL_SIZE);
   const hitObstacle = segmentCount < expectedSegments && segmentCount < tongue.maxRange;
   
   // Check if fully extended or hit an obstacle
-  if (tongue.currentLength >= tongue.maxRange * CELL_SIZE || hitObstacle) {
-    console.log(`🐸 Frog tongue fully extended (${segmentCount} segments), starting hold phase`);
+  if (tongue.currentLength >= tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE || hitObstacle) {
     tongue.phase = 'holding';
     tongue.startTime = currentTime;
   } else {
     // Log progress every quarter second
-    const currentSegments = Math.floor(tongue.currentLength / CELL_SIZE);
-    const previousSegments = Math.floor(previousLength / CELL_SIZE);
+    const currentSegments = Math.floor(tongue.currentLength / GAME_CONFIG.GRID.CELL_SIZE);
+    const previousSegments = Math.floor(previousLength / GAME_CONFIG.GRID.CELL_SIZE);
     if (currentSegments > previousSegments) {
-      console.log(`🐸 Frog tongue extended to ${currentSegments} segments`);
     }
   }
 }
@@ -149,7 +147,6 @@ function processHoldingPhase(frog: FrogTongueEntity, currentTime: number): void 
   const timeHeld = currentTime - tongue.startTime;
   
   if (timeHeld >= FROG_CONFIG.TONGUE_HOLD_DURATION) {
-    console.log(`🐸 Frog tongue hold complete, starting retraction`);
     tongue.phase = 'retracting';
     tongue.startTime = currentTime;
   }
@@ -170,15 +167,13 @@ function processRetractingPhase(frog: FrogTongueEntity, currentTime: number, del
   updateTongueSegments(frog);
   
   // Log progress every quarter second
-  const currentSegments = Math.floor(tongue.currentLength / CELL_SIZE);
-  const previousSegments = Math.floor(previousLength / CELL_SIZE);
+  const currentSegments = Math.floor(tongue.currentLength / GAME_CONFIG.GRID.CELL_SIZE);
+  const previousSegments = Math.floor(previousLength / GAME_CONFIG.GRID.CELL_SIZE);
   if (currentSegments < previousSegments) {
-    console.log(`🐸 Frog tongue retracted to ${currentSegments} segments`);
   }
   
   // Check if fully retracted
   if (tongue.currentLength <= 0) {
-    console.log(`🐸 Frog tongue fully retracted, returning to idle`);
     tongue.phase = 'idle';
     tongue.isExtended = false;
     tongue.segments = [];
@@ -230,7 +225,7 @@ function updateTongueSegments(frog: FrogTongueEntity): void {
   }
   
   // Calculate how many grid cells the tongue covers
-  const tongueGridLength = Math.floor(tongue.currentLength / CELL_SIZE);
+  const tongueGridLength = Math.floor(tongue.currentLength / GAME_CONFIG.GRID.CELL_SIZE);
   
   if (tongueGridLength <= 0) {
     return;
@@ -242,8 +237,8 @@ function updateTongueSegments(frog: FrogTongueEntity): void {
     const segmentGridY = frogGrid.y + (tongue.direction.y * i);
     
     // Check if segment is within grid bounds
-    if (segmentGridX >= 0 && segmentGridX < GRID_WIDTH && 
-        segmentGridY >= 0 && segmentGridY < GRID_HEIGHT) {
+    if (segmentGridX >= 0 && segmentGridX < GAME_CONFIG.GRID.WIDTH && 
+        segmentGridY >= 0 && segmentGridY < GAME_CONFIG.GRID.HEIGHT) {
       
       // Check if this position is blocked by another entity
       if (isPositionBlockedForTongue(segmentGridX, segmentGridY, frog.id)) {
@@ -268,8 +263,8 @@ function isPositionBlockedForTongue(gridX: number, gridY: number, frogId: number
     // Skip the frog itself
     if (enemy.id === frogId) continue;
     
-    const enemyGridX = Math.round(enemy.components.position.x / CELL_SIZE);
-    const enemyGridY = Math.round(enemy.components.position.y / CELL_SIZE);
+    const enemyGridX = Math.round(enemy.components.position.x / GAME_CONFIG.GRID.CELL_SIZE);
+    const enemyGridY = Math.round(enemy.components.position.y / GAME_CONFIG.GRID.CELL_SIZE);
     
     if (enemyGridX === gridX && enemyGridY === gridY) {
       return true;
@@ -278,8 +273,8 @@ function isPositionBlockedForTongue(gridX: number, gridY: number, frogId: number
   
   // Check against players
   for (const player of currentPlayers) {
-    const playerGridX = Math.round(player.components.position.x / CELL_SIZE);
-    const playerGridY = Math.round(player.components.position.y / CELL_SIZE);
+    const playerGridX = Math.round(player.components.position.x / GAME_CONFIG.GRID.CELL_SIZE);
+    const playerGridY = Math.round(player.components.position.y / GAME_CONFIG.GRID.CELL_SIZE);
     
     if (playerGridX === gridX && playerGridY === gridY) {
       return true;

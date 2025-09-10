@@ -1,16 +1,18 @@
 import { gameEngine } from '../Engine';
-import { GRID_WIDTH, GRID_HEIGHT, CELL_SIZE } from '../../game/config';
+import { GAME_CONFIG } from '../../game/config';
 import { 
   renderableEntityQuery, 
   playerQuery, 
   mathProblemQuery,
   type PlayerEntity,
-  type MathProblemEntity
+  type MathProblemEntity,
+  type FrogTongueEntity,
+  type SpiderWebEntity,
+  type FrozenPlayerEntity
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import flyImage from '../../assets/images/fly.svg';
 import { createQueryDefinition } from 'ecspresso';
-import type { Components } from '../Engine';
 
 // Canvas context and configuration
 let canvas: HTMLCanvasElement | null = null;
@@ -77,8 +79,8 @@ export function cleanupRenderSystem(): void {
 function resizeCanvas(): void {
   if (!canvas) return;
   
-  const gameWidth = GRID_WIDTH * CELL_SIZE;
-  const gameHeight = GRID_HEIGHT * CELL_SIZE;
+  const gameWidth = GAME_CONFIG.GRID.WIDTH * GAME_CONFIG.GRID.CELL_SIZE;
+  const gameHeight = GAME_CONFIG.GRID.HEIGHT * GAME_CONFIG.GRID.CELL_SIZE;
   
   // Calculate scale to fit screen while maintaining aspect ratio
   const scaleX = (window.innerWidth * 0.8) / gameWidth; // Leave some margin
@@ -123,32 +125,6 @@ const frozenPlayerQuery = createQueryDefinition({
   with: ['position', 'player', 'freezeEffect']
 });
 
-type FrogTongueEntity = {
-  id: number;
-  components: {
-    position: Components['position'];
-    enemy: Components['enemy'];
-    frogTongue: Components['frogTongue'];
-  };
-};
-
-type SpiderWebEntity = {
-  id: number;
-  components: {
-    position: Components['position'];
-    spiderWeb: Components['spiderWeb'];
-    renderable: Components['renderable'];
-  };
-};
-
-type FrozenPlayerEntity = {
-  id: number;
-  components: {
-    position: Components['position'];
-    player: Components['player'];
-    freezeEffect: Components['freezeEffect'];
-  };
-};
 
 // Add the render system to ECSpresso
 export function addRenderSystemToEngine(): void {
@@ -173,7 +149,7 @@ export function addRenderSystemToEngine(): void {
       if (!ctx || !canvas) return;
       
       // Clear the canvas
-      ctx.clearRect(0, 0, GRID_WIDTH * CELL_SIZE, GRID_HEIGHT * CELL_SIZE);
+      ctx.clearRect(0, 0, GAME_CONFIG.GRID.WIDTH * GAME_CONFIG.GRID.CELL_SIZE, GAME_CONFIG.GRID.HEIGHT * GAME_CONFIG.GRID.CELL_SIZE);
       
       // Draw grid background
       drawGrid();
@@ -225,20 +201,20 @@ function drawGrid(): void {
   ctx.lineWidth = 1;
   
   // Draw vertical lines
-  for (let x = 0; x <= GRID_WIDTH; x++) {
-    const pixelX = x * CELL_SIZE;
+  for (let x = 0; x <= GAME_CONFIG.GRID.WIDTH; x++) {
+    const pixelX = x * GAME_CONFIG.GRID.CELL_SIZE;
     ctx.beginPath();
     ctx.moveTo(pixelX, 0);
-    ctx.lineTo(pixelX, GRID_HEIGHT * CELL_SIZE);
+    ctx.lineTo(pixelX, GAME_CONFIG.GRID.HEIGHT * GAME_CONFIG.GRID.CELL_SIZE);
     ctx.stroke();
   }
   
   // Draw horizontal lines
-  for (let y = 0; y <= GRID_HEIGHT; y++) {
-    const pixelY = y * CELL_SIZE;
+  for (let y = 0; y <= GAME_CONFIG.GRID.HEIGHT; y++) {
+    const pixelY = y * GAME_CONFIG.GRID.CELL_SIZE;
     ctx.beginPath();
     ctx.moveTo(0, pixelY);
-    ctx.lineTo(GRID_WIDTH * CELL_SIZE, pixelY);
+    ctx.lineTo(GAME_CONFIG.GRID.WIDTH * GAME_CONFIG.GRID.CELL_SIZE, pixelY);
     ctx.stroke();
   }
 }
@@ -259,8 +235,8 @@ function drawPlayerHighlight(players: PlayerEntity[], mathProblems: MathProblemE
       if (mathProblemComp.consumed) continue;
       
       // Check if positions match (same grid cell)
-      if (Math.abs(playerPos.x - problemPos.x) < CELL_SIZE / 2 && 
-          Math.abs(playerPos.y - problemPos.y) < CELL_SIZE / 2) {
+      if (Math.abs(playerPos.x - problemPos.x) < GAME_CONFIG.GRID.CELL_SIZE / 2 && 
+          Math.abs(playerPos.y - problemPos.y) < GAME_CONFIG.GRID.CELL_SIZE / 2) {
         
         // Draw a pulsing highlight around the cell
         const time = Date.now() / 300; // Pulse speed
@@ -268,12 +244,12 @@ function drawPlayerHighlight(players: PlayerEntity[], mathProblems: MathProblemE
         
         ctx.save();
         ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`; // Yellow highlight
-        ctx.fillRect(problemPos.x, problemPos.y, CELL_SIZE, CELL_SIZE);
+        ctx.fillRect(problemPos.x, problemPos.y, GAME_CONFIG.GRID.CELL_SIZE, GAME_CONFIG.GRID.CELL_SIZE);
         
         // Add a border
         ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)'; // Gold border
         ctx.lineWidth = 2;
-        ctx.strokeRect(problemPos.x + 1, problemPos.y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+        ctx.strokeRect(problemPos.x + 1, problemPos.y + 1, GAME_CONFIG.GRID.CELL_SIZE - 2, GAME_CONFIG.GRID.CELL_SIZE - 2);
         ctx.restore();
         
         break; // Only highlight one problem per player
@@ -289,22 +265,22 @@ function calculateImageDimensions(
   requestedHeight?: number
 ): { width: number; height: number } {
   const aspectRatio = img.width / img.height;
-  let renderWidth = requestedWidth || CELL_SIZE * 0.8;
-  let renderHeight = requestedHeight || CELL_SIZE * 0.8;
+  let renderWidth = requestedWidth || GAME_CONFIG.GRID.CELL_SIZE * 0.8;
+  let renderHeight = requestedHeight || GAME_CONFIG.GRID.CELL_SIZE * 0.8;
   
   // Adjust to maintain aspect ratio and fit in cell
   if (aspectRatio > 1) {
     // Wider than tall
     renderHeight = renderWidth / aspectRatio;
-    if (renderHeight > CELL_SIZE * 0.8) {
-      renderHeight = CELL_SIZE * 0.8;
+    if (renderHeight > GAME_CONFIG.GRID.CELL_SIZE * 0.8) {
+      renderHeight = GAME_CONFIG.GRID.CELL_SIZE * 0.8;
       renderWidth = renderHeight * aspectRatio;
     }
   } else {
     // Taller than wide or square
     renderWidth = renderHeight * aspectRatio;
-    if (renderWidth > CELL_SIZE * 0.8) {
-      renderWidth = CELL_SIZE * 0.8;
+    if (renderWidth > GAME_CONFIG.GRID.CELL_SIZE * 0.8) {
+      renderWidth = GAME_CONFIG.GRID.CELL_SIZE * 0.8;
       renderHeight = renderWidth / aspectRatio;
     }
   }
@@ -332,8 +308,8 @@ function drawEntity(
   // Apply shake offset to position
   const shakeX = position.shakeOffsetX || 0;
   const shakeY = position.shakeOffsetY || 0;
-  const centerX = position.x + CELL_SIZE / 2 + shakeX;
-  const centerY = position.y + CELL_SIZE / 2 + shakeY;
+  const centerX = position.x + GAME_CONFIG.GRID.CELL_SIZE / 2 + shakeX;
+  const centerY = position.y + GAME_CONFIG.GRID.CELL_SIZE / 2 + shakeY;
   
   // Apply reduced opacity for invulnerable entities
   if (isInvulnerable) {
@@ -586,8 +562,8 @@ function drawMathProblemNumbers(mathProblems: MathProblemEntity[]): void {
     // Skip consumed problems (they're already invisible)
     if (mathProblemComp.consumed) continue;
     
-    const centerX = position.x + CELL_SIZE / 2;
-    const centerY = position.y + CELL_SIZE / 2;
+    const centerX = position.x + GAME_CONFIG.GRID.CELL_SIZE / 2;
+    const centerY = position.y + GAME_CONFIG.GRID.CELL_SIZE / 2;
     
     // Use white text with black outline for visibility on both green and gray backgrounds
     ctx.strokeStyle = 'black';
@@ -634,12 +610,12 @@ function drawEnhancedSpiderWebs(spiderWebs: SpiderWebEntity[]): void {
     
     // Draw web background with fade
     ctx.fillStyle = `rgba(128, 0, 128, ${baseOpacity * 0.3})`;
-    ctx.fillRect(pos.x + 5, pos.y + 5, CELL_SIZE - 10, CELL_SIZE - 10);
+    ctx.fillRect(pos.x + 5, pos.y + 5, GAME_CONFIG.GRID.CELL_SIZE - 10, GAME_CONFIG.GRID.CELL_SIZE - 10);
     
     // Draw web pattern
-    const centerX = pos.x + CELL_SIZE / 2;
-    const centerY = pos.y + CELL_SIZE / 2;
-    const webSize = CELL_SIZE * 0.4;
+    const centerX = pos.x + GAME_CONFIG.GRID.CELL_SIZE / 2;
+    const centerY = pos.y + GAME_CONFIG.GRID.CELL_SIZE / 2;
+    const webSize = GAME_CONFIG.GRID.CELL_SIZE * 0.4;
     
     ctx.strokeStyle = `rgba(160, 32, 160, ${baseOpacity})`;
     ctx.lineWidth = 2;
@@ -704,8 +680,8 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
     }
     
     // Get frog center position
-    const frogCenterX = frogPos.x + CELL_SIZE / 2;
-    const frogCenterY = frogPos.y + CELL_SIZE / 2;
+    const frogCenterX = frogPos.x + GAME_CONFIG.GRID.CELL_SIZE / 2;
+    const frogCenterY = frogPos.y + GAME_CONFIG.GRID.CELL_SIZE / 2;
     
     ctx.save();
     
@@ -728,7 +704,7 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
         break;
       case 'retracting':
         // Fading effect during retraction
-        const retractFade = Math.max(0.3, tongue.currentLength / (tongue.maxRange * CELL_SIZE));
+        const retractFade = Math.max(0.3, tongue.currentLength / (tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE));
         baseOpacity = retractFade;
         break;
     }
@@ -742,8 +718,8 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
     ctx.moveTo(frogCenterX + 2, frogCenterY + 2);
     
     for (const segment of tongue.segments) {
-      const segmentCenterX = segment.x * CELL_SIZE + CELL_SIZE / 2 + 2;
-      const segmentCenterY = segment.y * CELL_SIZE + CELL_SIZE / 2 + 2;
+      const segmentCenterX = segment.x * GAME_CONFIG.GRID.CELL_SIZE + GAME_CONFIG.GRID.CELL_SIZE / 2 + 2;
+      const segmentCenterY = segment.y * GAME_CONFIG.GRID.CELL_SIZE + GAME_CONFIG.GRID.CELL_SIZE / 2 + 2;
       ctx.lineTo(segmentCenterX, segmentCenterY);
     }
     
@@ -757,8 +733,8 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
     ctx.moveTo(frogCenterX, frogCenterY);
     
     for (const segment of tongue.segments) {
-      const segmentCenterX = segment.x * CELL_SIZE + CELL_SIZE / 2;
-      const segmentCenterY = segment.y * CELL_SIZE + CELL_SIZE / 2;
+      const segmentCenterX = segment.x * GAME_CONFIG.GRID.CELL_SIZE + GAME_CONFIG.GRID.CELL_SIZE / 2;
+      const segmentCenterY = segment.y * GAME_CONFIG.GRID.CELL_SIZE + GAME_CONFIG.GRID.CELL_SIZE / 2;
       ctx.lineTo(segmentCenterX, segmentCenterY);
     }
     
@@ -767,8 +743,8 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
     // Draw enhanced tongue tip with glow effect
     if (tongue.segments.length > 0) {
       const lastSegment = tongue.segments[tongue.segments.length - 1];
-      const tipX = lastSegment.x * CELL_SIZE + CELL_SIZE / 2;
-      const tipY = lastSegment.y * CELL_SIZE + CELL_SIZE / 2;
+      const tipX = lastSegment.x * GAME_CONFIG.GRID.CELL_SIZE + GAME_CONFIG.GRID.CELL_SIZE / 2;
+      const tipY = lastSegment.y * GAME_CONFIG.GRID.CELL_SIZE + GAME_CONFIG.GRID.CELL_SIZE / 2;
       
       // Glow effect
       const glowRadius = 12;
@@ -822,13 +798,13 @@ function drawFrozenPlayerEffects(frozenPlayers: FrozenPlayerEntity[]): void {
     ctx.save();
     
     // Ice crystal overlay
-    const centerX = pos.x + CELL_SIZE / 2;
-    const centerY = pos.y + CELL_SIZE / 2;
+    const centerX = pos.x + GAME_CONFIG.GRID.CELL_SIZE / 2;
+    const centerY = pos.y + GAME_CONFIG.GRID.CELL_SIZE / 2;
     
     // Draw ice effect background
     const iceOpacity = 0.4 * freezeProgress;
     ctx.fillStyle = `rgba(173, 216, 230, ${iceOpacity})`;
-    ctx.fillRect(pos.x, pos.y, CELL_SIZE, CELL_SIZE);
+    ctx.fillRect(pos.x, pos.y, GAME_CONFIG.GRID.CELL_SIZE, GAME_CONFIG.GRID.CELL_SIZE);
     
     // Draw ice crystals
     ctx.strokeStyle = `rgba(135, 206, 250, ${freezeProgress})`;
