@@ -1,9 +1,12 @@
 import { gameEngine } from '../Engine';
 import { GAME_CONFIG } from '../../game/config';
-import { 
-  renderableEntityQuery, 
-  playerQuery, 
+import {
+  renderableEntityQuery,
+  playerQuery,
   mathProblemQuery,
+  frogTongueQuery,
+  spiderWebQuery,
+  frozenPlayerQuery,
   type PlayerEntity,
   type MathProblemEntity,
   type FrogTongueEntity,
@@ -12,7 +15,6 @@ import {
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import flyImage from '../../assets/images/fly.svg';
-import { createQueryDefinition } from 'ecspresso';
 
 // Canvas context and configuration
 let canvas: HTMLCanvasElement | null = null;
@@ -110,22 +112,6 @@ function resizeCanvas(): void {
   }
 }
 
-// Query for frog entities with tongues
-const frogTongueQuery = createQueryDefinition({
-  with: ['position', 'enemy', 'frogTongue']
-});
-
-// Query for spider web entities for enhanced rendering
-const spiderWebQuery = createQueryDefinition({
-  with: ['position', 'spiderWeb', 'renderable']
-});
-
-// Query for frozen players for visual feedback
-const frozenPlayerQuery = createQueryDefinition({
-  with: ['position', 'player', 'freezeEffect']
-});
-
-
 // Add the render system to ECSpresso
 export function addRenderSystemToEngine(): void {
   gameEngine.addSystem('renderSystem')
@@ -136,6 +122,7 @@ export function addRenderSystemToEngine(): void {
     .addQuery('frogTongues', frogTongueQuery)
     .addQuery('spiderWebs', spiderWebQuery)
     .addQuery('frozenPlayers', frozenPlayerQuery)
+
     .setOnInitialize((_ecs) => {
       console.log('🎨 Render system initialized');
       // Could set up additional rendering resources here
@@ -145,7 +132,7 @@ export function addRenderSystemToEngine(): void {
       // Clean up rendering resources
       cleanupRenderSystem();
     })
-    .setProcess((queries) => {
+    .setProcess(({ queries }) => {
       if (!ctx || !canvas) return;
       
       // Clear the canvas
@@ -189,8 +176,7 @@ export function addRenderSystemToEngine(): void {
       
       // Draw numbers on math problem tiles (after drawing the entities)
       drawMathProblemNumbers(queries.mathProblems);
-    })
-    .build();
+    });
 }
 
 // Draw the grid background

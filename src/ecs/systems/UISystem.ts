@@ -18,7 +18,7 @@ export function addUISystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.UI)
     .addQuery('players', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)
-    .setProcess((queries) => {
+    .setProcess(({ queries }) => {
       const gameState = gameEngine.getResource('gameState');
       
       // Only update gameplay UI when in playing state
@@ -53,8 +53,7 @@ export function addUISystemToEngine(): void {
         
         uiManager.showScreen('gameOver');
       }
-    })
-    .build();
+    });
 }
 
 /**

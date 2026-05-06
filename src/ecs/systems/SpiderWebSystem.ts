@@ -22,16 +22,15 @@ export function addSpiderWebSystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.SPIDER_WEB)
     .addQuery('spiderWebs', spiderWebQuery)
     .addQuery('frozenPlayers', frozenPlayerQuery)
-    .setProcess((queries) => {
+    .setProcess(({ queries }) => {
       const currentTime = performance.now();
-      
+
       // Process spider web lifecycle
       processSpiderWebLifecycle(queries.spiderWebs, currentTime);
-      
+
       // Process player freeze effects
       processFreezeEffects(queries.frozenPlayers, currentTime);
-    })
-    .build();
+    });
 }
 
 /**

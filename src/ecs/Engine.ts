@@ -121,7 +121,6 @@ export interface Events {
   animationComplete: { entityId: number; x: number; y: number };
 }
 
-// Define resource types (for future use)
 export interface Resources {
   gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
   score: { value: number };
@@ -129,8 +128,13 @@ export interface Resources {
   currentLevel: number;
 }
 
-// Create and configure the ECSpresso engine using new constructor pattern
-export const gameEngine = new ECSpresso<Components, Events, Resources>();
+export const gameEngine = ECSpresso.create()
+  .withComponentTypes<Components>()
+  .withEventTypes<Events>()
+  .withResourceTypes<Resources>()
+  .build();
+
+export type GameEngine = typeof gameEngine;
 
 // Game loop state
 let lastFrameTime = 0;
@@ -139,7 +143,7 @@ let gameRunning = false;
 /**
  * Initialize the game engine with default configuration
  */
-export function initializeEngine(): void {
+export async function initializeEngine(): Promise<void> {
   // Add initial resources
   gameEngine.addResource('gameState', 'menu');
   gameEngine.addResource('score', { value: GAME_CONFIG.GAMEPLAY.STARTING_SCORE });
@@ -149,6 +153,8 @@ export function initializeEngine(): void {
 
   // Set up component callbacks
   setupComponentCallbacks();
+
+  await gameEngine.initialize();
 
   console.log('ECSpresso engine initialized');
 }
@@ -188,30 +194,30 @@ function setupEventHandlers(): void {
  */
 function setupComponentCallbacks(): void {
   // Monitor player component changes
-  gameEngine.entityManager.onComponentAdded('player', (value, entity) => {
+  gameEngine.onComponentAdded('player', ({ value, entity }) => {
     console.log(`🎮 Player component added to entity ${entity.id}:`, value);
   });
 
-  gameEngine.entityManager.onComponentRemoved('player', (oldValue, entity) => {
-    console.log(`🎮 Player component removed from entity ${entity.id}:`, oldValue);
+  gameEngine.onComponentRemoved('player', ({ value, entity }) => {
+    console.log(`🎮 Player component removed from entity ${entity.id}:`, value);
   });
 
   // Monitor enemy spawning/despawning
-  gameEngine.entityManager.onComponentAdded('enemy', (value, entity) => {
+  gameEngine.onComponentAdded('enemy', ({ value, entity }) => {
     console.log(`👾 Enemy spawned (entity ${entity.id}):`, value);
   });
 
-  gameEngine.entityManager.onComponentRemoved('enemy', (oldValue, entity) => {
-    console.log(`👾 Enemy despawned (entity ${entity.id}):`, oldValue);
+  gameEngine.onComponentRemoved('enemy', ({ value, entity }) => {
+    console.log(`👾 Enemy despawned (entity ${entity.id}):`, value);
   });
 
   // Monitor math problem lifecycle
-  gameEngine.entityManager.onComponentAdded('mathProblem', (value, entity) => {
+  gameEngine.onComponentAdded('mathProblem', ({ value, entity }) => {
     console.log(`🔢 Math problem created (entity ${entity.id}):`, value);
   });
 
-  gameEngine.entityManager.onComponentRemoved('mathProblem', (oldValue, entity) => {
-    console.log(`🔢 Math problem removed (entity ${entity.id}):`, oldValue);
+  gameEngine.onComponentRemoved('mathProblem', ({ value, entity }) => {
+    console.log(`🔢 Math problem removed (entity ${entity.id}):`, value);
   });
 
   console.log('Component callbacks initialized');
@@ -256,7 +262,7 @@ function gameLoop(currentTime: number): void {
 /**
  * Get the game engine instance
  */
-export function getEngine(): ECSpresso<Components, Events, Resources> {
+export function getEngine(): GameEngine {
   return gameEngine;
 }
 

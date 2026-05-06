@@ -26,19 +26,18 @@ export function addFrogTongueSystemToEngine(): void {
     .addQuery('frogs', frogTongueQuery)
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
-    .setProcess((queries, deltaTime) => {
+    .setProcess(({ queries, dt }) => {
       const currentTime = performance.now();
-      
+
       // Store entities for obstacle checking
       currentEnemies = queries.enemies;
       currentPlayers = queries.players;
-      
+
       // Process each frog's tongue behavior
       for (const frog of queries.frogs) {
-        processFrogTongue(frog, currentTime, deltaTime);
+        processFrogTongue(frog, currentTime, dt);
       }
-    })
-    .build();
+    });
 }
 
 // Store current entities for obstacle checking

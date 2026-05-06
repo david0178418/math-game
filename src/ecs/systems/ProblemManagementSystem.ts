@@ -28,7 +28,7 @@ export function addProblemManagementSystemToEngine(): void {
     .addQuery('players', playerQuery)
     .addQuery('allPositions', positionEntityQuery)
     .addQuery('enemies', enemyQuery)
-    .setProcess((queries) => {
+    .setProcess(({ queries }) => {
       // Count active (non-consumed) problems
       const activeProblems = queries.mathProblems.filter(
         problem => !problem.components.mathProblem.consumed
@@ -56,8 +56,7 @@ export function addProblemManagementSystemToEngine(): void {
       
       // Clean up old consumed problems (optional optimization)
       cleanupConsumedProblems(queries.mathProblems);
-    })
-    .build();
+    });
 }
 
 /**

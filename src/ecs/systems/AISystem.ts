@@ -23,7 +23,7 @@ const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
 
 // Define obstacle query locally since it's specific to AI system
 const obstacleQuery = {
-  with: ['position', 'collider']
+  with: ['position', 'collider'],
 } as const;
 
 type ObstacleEntity = { 
@@ -51,7 +51,7 @@ export function addAISystemToEngine(): void {
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
     .addQuery('obstacles', obstacleQuery)
-    .setProcess((queries) => {
+    .setProcess(({ queries }) => {
       const currentTime = Date.now();
       const enemies = queries.enemies;
       const players = queries.players;
@@ -71,8 +71,7 @@ export function addAISystemToEngine(): void {
         
         processEnemyAI(enemy, player, obstacles, enemies, currentTime);
       }
-    })
-    .build();
+    });
 }
 
 /**

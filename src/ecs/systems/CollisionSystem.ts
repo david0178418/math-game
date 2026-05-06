@@ -30,7 +30,7 @@ export function addCollisionSystemToEngine(): void {
     .addQuery('enemies', enemyWithColliderQuery)
     .addQuery('spiderWebs', spiderWebWithRenderableQuery)
     .addQuery('frogTongues', frogTongueQuery)
-    .setProcess((queries) => {
+    .setProcess(({ queries }) => {
       const currentTime = performance.now();
       
       // Update invulnerability timers and check collisions
@@ -106,8 +106,7 @@ export function addCollisionSystemToEngine(): void {
           }
         }
       }
-    })
-    .build();
+    });
 }
 
 /**

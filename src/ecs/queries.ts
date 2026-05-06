@@ -1,4 +1,4 @@
-import { createQueryDefinition, type QueryResultEntity } from 'ecspresso';
+import { type QueryResultEntity } from 'ecspresso';
 import type { Components } from './Engine';
 
 /**
@@ -7,54 +7,53 @@ import type { Components } from './Engine';
  */
 
 // Common entity queries
-export const playerQuery = createQueryDefinition({
-  with: ['position', 'player']
-});
+export const playerQuery = {
+  with: ['position', 'player'],
+} as const;
 
-export const playerWithHealthQuery = createQueryDefinition({
-  with: ['position', 'player', 'collider', 'health']
-});
+export const playerWithHealthQuery = {
+  with: ['position', 'player', 'collider', 'health'],
+} as const;
 
-export const mathProblemQuery = createQueryDefinition({
-  with: ['position', 'mathProblem']
-});
+export const mathProblemQuery = {
+  with: ['position', 'mathProblem'],
+} as const;
 
-export const mathProblemWithRenderableQuery = createQueryDefinition({
-  with: ['position', 'mathProblem', 'collider', 'renderable']
-});
+export const mathProblemWithRenderableQuery = {
+  with: ['position', 'mathProblem', 'collider', 'renderable'],
+} as const;
 
-export const enemyQuery = createQueryDefinition({
-  with: ['position', 'enemy']
-});
+export const enemyQuery = {
+  with: ['position', 'enemy'],
+} as const;
 
-export const enemyWithColliderQuery = createQueryDefinition({
-  with: ['position', 'enemy', 'collider']
-});
+export const enemyWithColliderQuery = {
+  with: ['position', 'enemy', 'collider'],
+} as const;
 
-export const renderableEntityQuery = createQueryDefinition({
-  with: ['position', 'renderable']
-});
+export const renderableEntityQuery = {
+  with: ['position', 'renderable'],
+} as const;
 
-export const positionEntityQuery = createQueryDefinition({
-  with: ['position']
-});
+export const positionEntityQuery = {
+  with: ['position'],
+} as const;
 
-// New enemy type queries for Phase 6
-export const spiderWebQuery = createQueryDefinition({
-  with: ['position', 'spiderWeb']
-});
+export const spiderWebQuery = {
+  with: ['position', 'spiderWeb'],
+} as const;
 
-export const spiderWebWithRenderableQuery = createQueryDefinition({
-  with: ['position', 'spiderWeb', 'renderable', 'collider']
-});
+export const spiderWebWithRenderableQuery = {
+  with: ['position', 'spiderWeb', 'renderable', 'collider'],
+} as const;
 
-export const frogTongueQuery = createQueryDefinition({
-  with: ['position', 'enemy', 'frogTongue']
-});
+export const frogTongueQuery = {
+  with: ['position', 'enemy', 'frogTongue'],
+} as const;
 
-export const frozenPlayerQuery = createQueryDefinition({
-  with: ['position', 'player', 'freezeEffect']
-});
+export const frozenPlayerQuery = {
+  with: ['position', 'player', 'freezeEffect'],
+} as const;
 
 /**
  * Centralized Entity Types
@@ -70,7 +69,6 @@ export type EnemyEntityWithCollider = QueryResultEntity<Components, typeof enemy
 export type RenderableEntity = QueryResultEntity<Components, typeof renderableEntityQuery>;
 export type PositionEntity = QueryResultEntity<Components, typeof positionEntityQuery>;
 
-// New entity types for Phase 6
 export type SpiderWebEntity = QueryResultEntity<Components, typeof spiderWebQuery>;
 export type SpiderWebEntityWithRenderable = QueryResultEntity<Components, typeof spiderWebWithRenderableQuery>;
 export type FrogTongueEntity = QueryResultEntity<Components, typeof frogTongueQuery>;

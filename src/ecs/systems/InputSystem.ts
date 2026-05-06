@@ -1,4 +1,5 @@
 import { gameEngine } from '../Engine';
+import { playerQuery } from '../queries';
 
 // Key press tracking (for discrete movement)
 const keyPressed = {
@@ -73,10 +74,8 @@ function handleKeyUp(event: KeyboardEvent): void {
 export function addInputSystemToEngine(): void {
   gameEngine.addSystem('inputSystem')
     .setPriority(100) // High priority to process input first
-    .addQuery('players', {
-      with: ['player', 'position']
-    })
-    .setProcess((queries) => {
+    .addQuery('players', playerQuery)
+    .setProcess(({ queries }) => {
       // Process all entities with player and position components
       for (const entity of queries.players) {
         const playerComponent = entity.components.player;
@@ -111,8 +110,7 @@ export function addInputSystemToEngine(): void {
       for (const key of Object.keys(prevKeyState) as ValidKeyCode[]) {
         prevKeyState[key] = keyPressed[key];
       }
-    })
-    .build();
+    });
 }
 
 // Get current key state (for debugging)

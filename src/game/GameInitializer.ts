@@ -53,13 +53,6 @@ export class GameInitializer {
    * Initialize all ECS systems
    */
   private async initializeSystems(): Promise<void> {
-    // Initialize ECS engine
-    initializeEngine();
-
-    // Initialize input system (doesn't need canvas)
-    initializeInputSystem();
-
-    // Add all non-render systems to engine in priority order
     addInputSystemToEngine();       // Priority 100 - Input handling
     addAISystemToEngine();          // Priority 85  - AI behavior
     addMovementSystemToEngine();    // Priority 80  - Movement processing
@@ -70,6 +63,10 @@ export class GameInitializer {
     addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
     addFrogTongueSystemToEngine();  // Priority 22  - Frog Tongue system
     addSpiderWebSystemToEngine();   // Priority 20  - Spider Web system
+
+    await initializeEngine();
+
+    initializeInputSystem();
 
     console.log('Core systems initialized (render system will be added when canvas is ready)');
   }

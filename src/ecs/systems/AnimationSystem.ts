@@ -18,7 +18,7 @@ export function addAnimationSystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.ANIMATION) // Run after movement but before rendering
     .addQuery('animatedEntities', positionEntityQuery)
     .addQuery('players', playerQuery)
-    .setProcess((queries) => {
+    .setProcess(({ queries }) => {
       const currentTime = Date.now();
       
       // Handle death animations for players
@@ -34,8 +34,7 @@ export function addAnimationSystemToEngine(): void {
         processRotationAnimation(position, currentTime);
         processShakeAnimation(position, currentTime);
       }
-    })
-    .build();
+    });
 }
 
 /**

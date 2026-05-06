@@ -70,7 +70,7 @@ export function addEnemySpawnSystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.ENEMY_SPAWN)
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
-    .setProcess((queries) => {
+    .setProcess(({ queries }) => {
       const currentTime = performance.now();
       const currentEnemyCount = queries.enemies.length;
       
@@ -92,8 +92,7 @@ export function addEnemySpawnSystemToEngine(): void {
           }
         }
       }
-    })
-    .build();
+    });
 }
 
 /**

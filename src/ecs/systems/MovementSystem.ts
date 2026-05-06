@@ -3,15 +3,14 @@ import { GAME_CONFIG } from '../../game/config';
 import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { startRotationAnimation } from './AnimationSystem';
+import { playerQuery } from '../queries';
 
 // Add the movement system to ECSpresso
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
     .setPriority(SYSTEM_PRIORITIES.MOVEMENT)
-    .addQuery('playerEntities', {
-      with: ['position', 'player']
-    })
-    .setProcess((queries) => {
+    .addQuery('playerEntities', playerQuery)
+    .setProcess(({ queries }) => {
       // Process player movement based on input (grid-based)
       for (const entity of queries.playerEntities) {
         const position = entity.components.position;
@@ -108,8 +107,7 @@ export function addMovementSystemToEngine(): void {
         player.inputState.right = false;
         // Note: eat input is cleared by the collision system after processing
       }
-    })
-    .build();
+    });
 }
 
 // Helper function to convert grid coordinates to pixel coordinates
