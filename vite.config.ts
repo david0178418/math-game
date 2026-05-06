@@ -19,8 +19,8 @@ export default defineConfig({
     // Generate source maps for easier debugging
     sourcemap: true,
     
-    // Optimize for modern browsers
-    target: 'es2015',
+    // Targeting Electron (Chromium) and modern Chrome only
+    target: 'esnext',
     
     // Clean the output directory before building
     emptyOutDir: true,
