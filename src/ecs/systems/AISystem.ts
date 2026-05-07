@@ -123,7 +123,7 @@ function processEnemyAI(
   // Determine next move based on behavior type
   let nextGridX = Math.round(enemyPos.x / GAME_CONFIG.GRID.CELL_SIZE);
   let nextGridY = Math.round(enemyPos.y / GAME_CONFIG.GRID.CELL_SIZE);
-  let moveInterval: number = calculateMoveInterval(enemyData.behaviorType, player, enemyData.enemyType);
+  const moveInterval: number = calculateMoveInterval(enemyData.behaviorType, player, enemyData.enemyType);
   
   switch (enemyData.behaviorType) {
     case 'chase': {
@@ -451,8 +451,8 @@ function processGuardAI(
         { x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 }
       ];
       const randomDir = directions[Math.floor(Math.random() * directions.length)];
-      let nextX = Math.max(0, Math.min(GAME_CONFIG.GRID.WIDTH - 1, currentGrid.x + randomDir.x));
-      let nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGrid.y + randomDir.y));
+      const nextX = Math.max(0, Math.min(GAME_CONFIG.GRID.WIDTH - 1, currentGrid.x + randomDir.x));
+      const nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGrid.y + randomDir.y));
       
       // Only move if it keeps us close to guard position and isn't blocked
       const newDistance = Math.abs(nextX - guardPos.x) + Math.abs(nextY - guardPos.y);
