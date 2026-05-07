@@ -168,7 +168,7 @@ function handlePlayerProblemCollision(
       playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
       // Add delay before showing game over screen
       setTimeout(() => {
-        gameEngine.addResource('gameState', 'gameOver');
+        gameEngine.setResource('gameState', 'gameOver');
       }, ANIMATION_CONFIG.DEATH.DURATION);
     }
   }
@@ -229,7 +229,7 @@ function handlePlayerEnemyCollision(
     playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
     // Add delay before showing game over screen
     setTimeout(() => {
-      gameEngine.addResource('gameState', 'gameOver');
+      gameEngine.setResource('gameState', 'gameOver');
     }, ANIMATION_CONFIG.DEATH.DURATION);
   }
 }
@@ -331,11 +331,7 @@ function handlePlayerTongueCollision(
       playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
       
       setTimeout(() => {
-        try {
-          gameEngine.addResource('gameState', 'gameOver');
-        } catch (error) {
-          console.error(`🐸 ERROR: Failed to set game over state:`, error);
-        }
+        gameEngine.setResource('gameState', 'gameOver');
       }, ANIMATION_CONFIG.DEATH.DURATION);
     }
   } catch (error) {

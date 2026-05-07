@@ -134,6 +134,8 @@ export const gameEngine = ECSpresso.create()
   .withResourceTypes<Resources>()
   .withResource('gameState', 'menu')
   .withResource('score', { value: GAME_CONFIG.GAMEPLAY.STARTING_SCORE })
+  .withResource('gameMode', 'multiples')
+  .withResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL)
   .build();
 
 export type GameEngine = typeof gameEngine;

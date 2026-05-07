@@ -1,4 +1,5 @@
 import { gameEngine } from '../ecs/Engine';
+import { GAME_CONFIG } from './config';
 
 /**
  * UI Manager
@@ -456,9 +457,8 @@ export class UIManager {
       return;
     }
     
-    // Set the game mode in the engine
-    gameEngine.addResource('gameMode', mode);
-    gameEngine.addResource('currentLevel', 2); // Start with multiples of 2
+    gameEngine.setResource('gameMode', mode);
+    gameEngine.setResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL);
     
     this.showScreen('playing');
     // Initialize game here
@@ -496,7 +496,9 @@ export class UIManager {
         gameState = 'menu';
     }
     
-    gameEngine.addResource('gameState', gameState);
+    if (gameEngine.getResource('gameState') !== gameState) {
+      gameEngine.setResource('gameState', gameState);
+    }
   }
   
   /**

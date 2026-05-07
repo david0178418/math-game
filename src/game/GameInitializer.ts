@@ -137,18 +137,9 @@ export class GameInitializer {
    * Reset global game state
    */
   private resetGameState(): void {
-    // Reset any global resources
-    gameEngine.addResource('gameState', 'playing');
-    gameEngine.addResource('score', { value: 0 });
-    
-    // Ensure gameMode and currentLevel are set (may already be set by UIManager)
-    if (!gameEngine.getResource('gameMode')) {
-      gameEngine.addResource('gameMode', 'multiples');
-    }
-    if (!gameEngine.getResource('currentLevel')) {
-      gameEngine.addResource('currentLevel', 2);
-    }
-    
+    gameEngine.setResource('gameState', 'playing');
+    gameEngine.setResource('score', { value: 0 });
+
     console.log('Game state reset for new game');
   }
 

@@ -172,7 +172,7 @@ function checkLevelCompletion(mathProblems: MathProblemEntityWithRenderable[], e
     console.log(`🎉 Level ${currentLevel} completed! Advancing to multiples of ${nextLevel}`);
     
     // Update level and show completion message
-    gameEngine.addResource('currentLevel', nextLevel);
+    gameEngine.setResource('currentLevel', nextLevel);
     
     // Clear ALL math problems (consumed and non-consumed)
     mathProblems.forEach(problem => {
