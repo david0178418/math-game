@@ -73,16 +73,13 @@ function handleKeyUp(event: KeyboardEvent): void {
 // Add the input system to ECSpresso
 export function addInputSystemToEngine(): void {
   gameEngine.addSystem('inputSystem')
-    .setPriority(100) // High priority to process input first
+    .setPriority(100)
     .addQuery('players', playerQuery)
     .setProcess(({ queries }) => {
-      // Process all entities with player and position components
       for (const entity of queries.players) {
         const playerComponent = entity.components.player;
-        
-        // Skip input processing if game over is pending
+
         if (playerComponent.gameOverPending) {
-          // Clear all input states to prevent any remaining movement
           playerComponent.inputState.up = false;
           playerComponent.inputState.down = false;
           playerComponent.inputState.left = false;
@@ -90,23 +87,14 @@ export function addInputSystemToEngine(): void {
           playerComponent.inputState.eat = false;
           continue;
         }
-        
-        // Detect key press events (transition from false to true)
-        const upPressed = (keyPressed.ArrowUp || keyPressed.KeyW) && !(prevKeyState.ArrowUp || prevKeyState.KeyW);
-        const downPressed = (keyPressed.ArrowDown || keyPressed.KeyS) && !(prevKeyState.ArrowDown || prevKeyState.KeyS);
-        const leftPressed = (keyPressed.ArrowLeft || keyPressed.KeyA) && !(prevKeyState.ArrowLeft || prevKeyState.KeyA);
-        const rightPressed = (keyPressed.ArrowRight || keyPressed.KeyD) && !(prevKeyState.ArrowRight || prevKeyState.KeyD);
-        const eatPressed = (keyPressed.Space || keyPressed.Enter) && !(prevKeyState.Space || prevKeyState.Enter);
-        
-        // Update player input state with press events
-        playerComponent.inputState.up = upPressed;
-        playerComponent.inputState.down = downPressed;
-        playerComponent.inputState.left = leftPressed;
-        playerComponent.inputState.right = rightPressed;
-        playerComponent.inputState.eat = eatPressed;
+
+        playerComponent.inputState.up = (keyPressed.ArrowUp || keyPressed.KeyW) && !(prevKeyState.ArrowUp || prevKeyState.KeyW);
+        playerComponent.inputState.down = (keyPressed.ArrowDown || keyPressed.KeyS) && !(prevKeyState.ArrowDown || prevKeyState.KeyS);
+        playerComponent.inputState.left = (keyPressed.ArrowLeft || keyPressed.KeyA) && !(prevKeyState.ArrowLeft || prevKeyState.KeyA);
+        playerComponent.inputState.right = (keyPressed.ArrowRight || keyPressed.KeyD) && !(prevKeyState.ArrowRight || prevKeyState.KeyD);
+        playerComponent.inputState.eat = (keyPressed.Space || keyPressed.Enter) && !(prevKeyState.Space || prevKeyState.Enter);
       }
-      
-      // Update previous key state for next frame
+
       for (const key of Object.keys(prevKeyState) as ValidKeyCode[]) {
         prevKeyState[key] = keyPressed[key];
       }

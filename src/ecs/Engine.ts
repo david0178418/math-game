@@ -132,6 +132,8 @@ export const gameEngine = ECSpresso.create()
   .withComponentTypes<Components>()
   .withEventTypes<Events>()
   .withResourceTypes<Resources>()
+  .withResource('gameState', 'menu')
+  .withResource('score', { value: GAME_CONFIG.GAMEPLAY.STARTING_SCORE })
   .build();
 
 export type GameEngine = typeof gameEngine;
@@ -144,14 +146,7 @@ let gameRunning = false;
  * Initialize the game engine with default configuration
  */
 export async function initializeEngine(): Promise<void> {
-  // Add initial resources
-  gameEngine.addResource('gameState', 'menu');
-  gameEngine.addResource('score', { value: GAME_CONFIG.GAMEPLAY.STARTING_SCORE });
-
-  // Set up event handlers
   setupEventHandlers();
-
-  // Set up component callbacks
   setupComponentCallbacks();
 
   await gameEngine.initialize();

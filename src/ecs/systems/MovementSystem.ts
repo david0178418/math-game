@@ -9,104 +9,81 @@ import { playerQuery } from '../queries';
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
     .setPriority(SYSTEM_PRIORITIES.MOVEMENT)
-    .addQuery('playerEntities', playerQuery)
-    .setProcess(({ queries }) => {
-      // Process player movement based on input (grid-based)
-      for (const entity of queries.playerEntities) {
-        const position = entity.components.position;
-        const player = entity.components.player;
-        
-        // Check if player is frozen by spider web
-        const freezeEffect = gameEngine.entityManager.getComponent(entity.id, 'freezeEffect');
-        if (freezeEffect && freezeEffect.isActive) {
-          // Player is frozen - ignore all movement input and clear input state
-          player.inputState.up = false;
-          player.inputState.down = false;
-          player.inputState.left = false;
-          player.inputState.right = false;
-          
-          // Visual feedback: add slight shake or different color (can be enhanced later)
-          console.log('❄️ Player movement blocked - frozen by spider web');
-          continue;
-        }
-        
-        // Skip if already animating (prevent input during transitions)
-        if (isEntityAnimating(position)) {
-          // Clear input state to prevent queuing
-          player.inputState.up = false;
-          player.inputState.down = false;
-          player.inputState.left = false;
-          player.inputState.right = false;
-          continue;
-        }
-        
-        // Convert current pixel position to grid coordinates
-        const currentGridX = Math.round(position.x / GAME_CONFIG.GRID.CELL_SIZE);
-        const currentGridY = Math.round(position.y / GAME_CONFIG.GRID.CELL_SIZE);
-        
-        // Calculate new grid position based on input
-        let newGridX = currentGridX;
-        let newGridY = currentGridY;
-        
-        // Only allow one direction at a time (prevent diagonal movement)
-        if (player.inputState.left && !player.inputState.right && !player.inputState.up && !player.inputState.down) {
-          newGridX = Math.max(0, currentGridX - 1);
-        } else if (player.inputState.right && !player.inputState.left && !player.inputState.up && !player.inputState.down) {
-          newGridX = Math.min(GAME_CONFIG.GRID.WIDTH - 1, currentGridX + 1);
-        } else if (player.inputState.up && !player.inputState.down && !player.inputState.left && !player.inputState.right) {
-          newGridY = Math.max(0, currentGridY - 1);
-        } else if (player.inputState.down && !player.inputState.up && !player.inputState.left && !player.inputState.right) {
-          newGridY = Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGridY + 1);
-        }
-        
-        // Convert new grid position back to pixel coordinates
-        const newPixelX = newGridX * GAME_CONFIG.GRID.CELL_SIZE;
-        const newPixelY = newGridY * GAME_CONFIG.GRID.CELL_SIZE;
-        
-        // Start animation if position changed
-        if (newPixelX !== position.x || newPixelY !== position.y) {
-          // Calculate rotation based on movement direction
-          let targetRotation = position.rotation || 0; // Default to current rotation or 0 (up)
-          
-          if (player.inputState.up) {
-            targetRotation = 0; // Up
-          } else if (player.inputState.right) {
-            targetRotation = 90; // Right
-          } else if (player.inputState.down) {
-            targetRotation = 180; // Down
-          } else if (player.inputState.left) {
-            targetRotation = 270; // Left
-          }
-          
-          // Handle rotation wrapping (e.g., 350° to 10° should go through 360°, not backwards)
-          const currentRotation = position.rotation || 0;
-          if (Math.abs(targetRotation - currentRotation) > 180) {
-            if (targetRotation > currentRotation) {
-              targetRotation -= 360;
-            } else {
-              targetRotation += 360;
-            }
-          }
-          
-          // Start rotation animation (25% of movement duration)
-          const rotationDuration = 750 * 0.25; // 25% of 750ms movement duration
-          startMovementAnimation(position, newPixelX, newPixelY);
-          startRotationAnimation(position, targetRotation, rotationDuration);
-          
-          // Publish player moved event (with target position)
-          gameEngine.eventBus.publish('playerMoved', {
-            x: newPixelX,
-            y: newPixelY
-          });
-        }
-        
-        // Clear input state after processing (prevents continuous movement)
+    .setProcessEach(playerQuery, ({ entity, ecs }) => {
+      const position = entity.components.position;
+      const player = entity.components.player;
+
+      const clearMovementInput = (): void => {
         player.inputState.up = false;
         player.inputState.down = false;
         player.inputState.left = false;
         player.inputState.right = false;
-        // Note: eat input is cleared by the collision system after processing
+      };
+
+      const freezeEffect = ecs.getComponent(entity.id, 'freezeEffect');
+      if (freezeEffect && freezeEffect.isActive) {
+        clearMovementInput();
+        console.log('❄️ Player movement blocked - frozen by spider web');
+        return;
       }
+
+      if (isEntityAnimating(position)) {
+        clearMovementInput();
+        return;
+      }
+
+      const currentGridX = Math.round(position.x / GAME_CONFIG.GRID.CELL_SIZE);
+      const currentGridY = Math.round(position.y / GAME_CONFIG.GRID.CELL_SIZE);
+
+      let newGridX = currentGridX;
+      let newGridY = currentGridY;
+
+      if (player.inputState.left && !player.inputState.right && !player.inputState.up && !player.inputState.down) {
+        newGridX = Math.max(0, currentGridX - 1);
+      } else if (player.inputState.right && !player.inputState.left && !player.inputState.up && !player.inputState.down) {
+        newGridX = Math.min(GAME_CONFIG.GRID.WIDTH - 1, currentGridX + 1);
+      } else if (player.inputState.up && !player.inputState.down && !player.inputState.left && !player.inputState.right) {
+        newGridY = Math.max(0, currentGridY - 1);
+      } else if (player.inputState.down && !player.inputState.up && !player.inputState.left && !player.inputState.right) {
+        newGridY = Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGridY + 1);
+      }
+
+      const newPixelX = newGridX * GAME_CONFIG.GRID.CELL_SIZE;
+      const newPixelY = newGridY * GAME_CONFIG.GRID.CELL_SIZE;
+
+      if (newPixelX !== position.x || newPixelY !== position.y) {
+        let targetRotation = position.rotation || 0;
+
+        if (player.inputState.up) {
+          targetRotation = 0;
+        } else if (player.inputState.right) {
+          targetRotation = 90;
+        } else if (player.inputState.down) {
+          targetRotation = 180;
+        } else if (player.inputState.left) {
+          targetRotation = 270;
+        }
+
+        const currentRotation = position.rotation || 0;
+        if (Math.abs(targetRotation - currentRotation) > 180) {
+          if (targetRotation > currentRotation) {
+            targetRotation -= 360;
+          } else {
+            targetRotation += 360;
+          }
+        }
+
+        const rotationDuration = 750 * 0.25;
+        startMovementAnimation(position, newPixelX, newPixelY);
+        startRotationAnimation(position, targetRotation, rotationDuration);
+
+        ecs.eventBus.publish('playerMoved', {
+          x: newPixelX,
+          y: newPixelY,
+        });
+      }
+
+      clearMovementInput();
     });
 }
 
