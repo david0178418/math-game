@@ -77,7 +77,7 @@ export class GameInitializer {
   private setupUIIntegration(): void {
     // Override the UIManager's startGame method to properly initialize entities
     const originalStartGame = uiManager['startGame'].bind(uiManager);
-    uiManager['startGame'] = () => {
+    uiManager['startGame'] = (): void => {
       // First show the playing screen to create the canvas element
       originalStartGame();
       

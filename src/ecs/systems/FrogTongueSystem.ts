@@ -113,9 +113,7 @@ function processExtendingPhase(frog: FrogTongueEntity, currentTime: number, delt
   const extensionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime;
   
   // Calculate how far the tongue should extend
-  const targetExtension = Math.min(tongue.currentLength + extensionSpeed, tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE);
-  const previousLength = tongue.currentLength;
-  tongue.currentLength = targetExtension;
+  tongue.currentLength = Math.min(tongue.currentLength + extensionSpeed, tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE);
   
   // Update tongue segments
   updateTongueSegments(frog);
@@ -129,12 +127,6 @@ function processExtendingPhase(frog: FrogTongueEntity, currentTime: number, delt
   if (tongue.currentLength >= tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE || hitObstacle) {
     tongue.phase = 'holding';
     tongue.startTime = currentTime;
-  } else {
-    // Log progress every quarter second
-    const currentSegments = Math.floor(tongue.currentLength / GAME_CONFIG.GRID.CELL_SIZE);
-    const previousSegments = Math.floor(previousLength / GAME_CONFIG.GRID.CELL_SIZE);
-    if (currentSegments > previousSegments) {
-    }
   }
 }
 
@@ -159,18 +151,11 @@ function processRetractingPhase(frog: FrogTongueEntity, currentTime: number, del
   const retractionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime; // Same speed as extension
   
   // Retract the tongue
-  const previousLength = tongue.currentLength;
   tongue.currentLength = Math.max(0, tongue.currentLength - retractionSpeed);
-  
+
   // Update tongue segments
   updateTongueSegments(frog);
-  
-  // Log progress every quarter second
-  const currentSegments = Math.floor(tongue.currentLength / GAME_CONFIG.GRID.CELL_SIZE);
-  const previousSegments = Math.floor(previousLength / GAME_CONFIG.GRID.CELL_SIZE);
-  if (currentSegments < previousSegments) {
-  }
-  
+
   // Check if fully retracted
   if (tongue.currentLength <= 0) {
     tongue.phase = 'idle';

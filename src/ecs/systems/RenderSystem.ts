@@ -31,7 +31,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => {
+    img.onload = (): void => {
       imageCache.set(src, img);
       resolve(img);
     };
@@ -123,13 +123,11 @@ export function addRenderSystemToEngine(): void {
     .addQuery('spiderWebs', spiderWebQuery)
     .addQuery('frozenPlayers', frozenPlayerQuery)
 
-    .setOnInitialize((_ecs) => {
+    .setOnInitialize(() => {
       console.log('🎨 Render system initialized');
-      // Could set up additional rendering resources here
     })
-    .setOnDetach((_ecs) => {
+    .setOnDetach(() => {
       console.log('🎨 Render system detached');
-      // Clean up rendering resources
       cleanupRenderSystem();
     })
     .setProcess(({ queries }) => {
@@ -472,10 +470,10 @@ function drawEnhancedEnemy(
       ctx.fill();
       break;
       
-    case 'frog':
+    case 'frog': {
       // Frog: Rounded rectangle with eyes on top
       ctx.fillStyle = renderable.color;
-      
+
       // Draw frog body (rounded rectangle)
       const cornerRadius = halfSize * 0.3;
       ctx.beginPath();
@@ -487,13 +485,13 @@ function drawEnhancedEnemy(
         cornerRadius
       );
       ctx.fill();
-      
+
       // Add frog belly
       ctx.fillStyle = 'rgba(144, 238, 144, 0.7)'; // Light green belly
       ctx.beginPath();
       ctx.ellipse(centerX, centerY + halfSize * 0.2, halfSize * 0.6, halfSize * 0.4, 0, 0, 2 * Math.PI);
       ctx.fill();
-      
+
       // Draw bulging eyes on top
       const eyeRadius = halfSize * 0.25;
       const eyeOffsetY = -halfSize * 0.7;
@@ -526,6 +524,7 @@ function drawEnhancedEnemy(
       ctx.ellipse(centerX, centerY + halfSize * 0.5, halfSize * 0.4, halfSize * 0.2 * throatPulse, 0, 0, 2 * Math.PI);
       ctx.fill();
       break;
+    }
   }
   
   ctx.restore();
@@ -561,12 +560,6 @@ function drawMathProblemNumbers(mathProblems: MathProblemEntity[]): void {
   }
   
   ctx.restore();
-}
-
-// Draw frog tongues
-// @ts-ignore - Legacy function kept for reference
-function drawFrogTongues(frogs: FrogTongueEntity[]): void {
-  // This function is now empty as per the instructions
 }
 
 /**
@@ -677,22 +670,24 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
     let tongueColor = 'rgba(255, 20, 147, 1.0)';
     
     switch (tongue.phase) {
-      case 'extending':
+      case 'extending': {
         // Pulsing effect during extension
         const extendPulse = 0.8 + 0.2 * Math.sin(currentTime * 0.01);
         baseOpacity = extendPulse;
         lineWidth *= extendPulse;
         break;
+      }
       case 'holding':
         // Steady glow during hold
         tongueColor = 'rgba(255, 50, 150, 1.0)';
         lineWidth = 10;
         break;
-      case 'retracting':
+      case 'retracting': {
         // Fading effect during retraction
         const retractFade = Math.max(0.3, tongue.currentLength / (tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE));
         baseOpacity = retractFade;
         break;
+      }
     }
     
     // Draw tongue shadow for depth

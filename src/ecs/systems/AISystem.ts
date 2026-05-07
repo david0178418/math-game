@@ -21,55 +21,27 @@ import { initializeFrogTongue } from './FrogTongueSystem';
 // Use centralized enemy type configurations
 const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
 
-// Define obstacle query locally since it's specific to AI system
-const obstacleQuery = {
-  with: ['position', 'collider'],
-} as const;
-
-type ObstacleEntity = { 
-  id: number; 
-  components: { 
-    position: { x: number; y: number };
-    collider: { width: number; height: number; group: string };
-  };
-};
-
-
-// AI state for pathfinding
-interface AIState {
-  targetGridX: number;
-  targetGridY: number;
-  path: Array<{ x: number, y: number }>;
-  pathIndex: number;
-  lastPathUpdate: number;
-}
-
 // Add the AI system to ECSpresso
 export function addAISystemToEngine(): void {
   gameEngine.addSystem('aiSystem')
     .setPriority(SYSTEM_PRIORITIES.AI)
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
-    .addQuery('obstacles', obstacleQuery)
     .setProcess(({ queries }) => {
       const currentTime = Date.now();
       const enemies = queries.enemies;
       const players = queries.players;
-      const obstacles = queries.obstacles;
-      
-      // Skip if no player exists
+
       if (players.length === 0) return;
-      
-      const player = players[0]; // Use first player for AI targeting
-      
-      // Process each enemy
+
+      const player = players[0];
+
       for (const enemy of enemies) {
-        // Skip if enemy is currently animating (prevent movement during transitions)
         if (isEntityAnimating(enemy.components.position)) {
           continue;
         }
-        
-        processEnemyAI(enemy, player, obstacles, enemies, currentTime);
+
+        processEnemyAI(enemy, player, enemies, currentTime);
       }
     });
 }
@@ -80,7 +52,6 @@ export function addAISystemToEngine(): void {
 function processEnemyAI(
   enemy: EnemyEntity,
   player: PlayerEntity,
-  obstacles: ObstacleEntity[],
   allEnemies: EnemyEntity[],
   currentTime: number
 ): void {
@@ -101,61 +72,20 @@ function processEnemyAI(
     }
   }
   
-  // Check if it's time for this enemy to move
   if (currentTime < enemyData.nextMoveTime) {
-    return; // Not time to move yet
+    return;
   }
-  
-  // Initialize AI state if not present
-  if (!enemyData.aiState) {
-    const currentGrid = pixelToGrid(enemyPos.x, enemyPos.y);
-    enemyData.aiState = {
-      targetGridX: currentGrid.x,
-      targetGridY: currentGrid.y,
-      path: [],
-      pathIndex: 0,
-      lastPathUpdate: 0
-    };
-  }
-  
-  const aiState = enemyData.aiState;
-  
-  // Determine next move based on behavior type
-  let nextGridX = Math.round(enemyPos.x / GAME_CONFIG.GRID.CELL_SIZE);
-  let nextGridY = Math.round(enemyPos.y / GAME_CONFIG.GRID.CELL_SIZE);
+
   const moveInterval: number = calculateMoveInterval(enemyData.behaviorType, player, enemyData.enemyType);
-  
-  switch (enemyData.behaviorType) {
-    case 'chase': {
-      const result = processChaseAI(enemy, player, obstacles, allEnemies, currentTime, aiState);
-      nextGridX = result.x;
-      nextGridY = result.y;
-      break;
-    }
-    case 'patrol': {
-      const result = processPatrolAI(enemy, obstacles, allEnemies, currentTime, aiState);
-      nextGridX = result.x;
-      nextGridY = result.y;
-      break;
-    }
-    case 'random': {
-      const result = processRandomAI(enemy, obstacles, allEnemies, currentTime, aiState);
-      nextGridX = result.x;
-      nextGridY = result.y;
-      break;
-    }
-    case 'guard': {
-      const result = processGuardAI(enemy, obstacles, allEnemies, currentTime, aiState);
-      nextGridX = result.x;
-      nextGridY = result.y;
-      break;
-    }
-    default: {
-      const result = processRandomAI(enemy, obstacles, allEnemies, currentTime, aiState);
-      nextGridX = result.x;
-      nextGridY = result.y;
-    }
-  }
+
+  const aiProcessors: Record<AIBehavior, () => { x: number; y: number }> = {
+    chase: () => processChaseAI(enemy, player, allEnemies),
+    patrol: () => processPatrolAI(enemy, allEnemies),
+    random: () => processRandomAI(enemy, allEnemies),
+    guard: () => processGuardAI(enemy, allEnemies)
+  };
+
+  const { x: nextGridX, y: nextGridY } = aiProcessors[enemyData.behaviorType]();
   
   // Apply the movement using smooth animation (convert grid to pixel coordinates)
   const newPixelPos = gridToPixel(nextGridX, nextGridY);
@@ -178,7 +108,6 @@ function processEnemyAI(
       // Check if position is valid for web placement (not occupied by other entities)
       if (isValidWebPosition(oldGridPos.x, oldGridPos.y, allEnemies, player, enemy)) {
         createSpiderWeb(oldGridPos.x, oldGridPos.y);
-      } else {
       }
     }
   }
@@ -238,10 +167,7 @@ function calculateMoveInterval(behaviorType: AIBehavior, player: PlayerEntity, e
 function processChaseAI(
   enemy: EnemyEntity,
   player: PlayerEntity,
-  obstacles: ObstacleEntity[],
-  allEnemies: EnemyEntity[],
-  currentTime: number,
-  aiState: AIState
+  allEnemies: EnemyEntity[]
 ): { x: number, y: number } {
   const enemyPos = enemy.components.position;
   const playerPos = player.components.position;
@@ -254,7 +180,7 @@ function processChaseAI(
   const distance = Math.abs(enemyGrid.x - playerGrid.x) + Math.abs(enemyGrid.y - playerGrid.y);
   if (distance > AI_CONFIG.DETECTION_RANGE) {
     // Player too far, switch to random movement
-    return processRandomAI(enemy, obstacles, allEnemies, currentTime, aiState);
+    return processRandomAI(enemy, allEnemies);
   }
   
   // Simple chase: move one step towards player
@@ -273,14 +199,14 @@ function processChaseAI(
   }
   
   // Check if the target position is valid (not occupied by obstacles or other enemies)
-  if (!isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+  if (!isPositionBlocked(nextX, nextY, allEnemies, enemy)) {
     return { x: nextX, y: nextY };
   }
   
   // If blocked, try alternative directions
   const alternatives = getAlternativeDirections(enemyGrid, playerGrid);
   for (const alt of alternatives) {
-    if (!isPositionBlocked(alt.x, alt.y, obstacles, allEnemies, enemy)) {
+    if (!isPositionBlocked(alt.x, alt.y, allEnemies, enemy)) {
       return { x: alt.x, y: alt.y };
     }
   }
@@ -294,10 +220,7 @@ function processChaseAI(
  */
 function processPatrolAI(
   enemy: EnemyEntity,
-  obstacles: ObstacleEntity[],
-  allEnemies: EnemyEntity[],
-  _currentTime: number,
-  _aiState: AIState
+  allEnemies: EnemyEntity[]
 ): { x: number, y: number } {
   const enemyData = enemy.components.enemy;
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
@@ -322,7 +245,7 @@ function processPatrolAI(
   nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, nextY));
   
   // Check if target position is blocked by other enemies
-  if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+  if (isPositionBlocked(nextX, nextY, allEnemies, enemy)) {
     // Try alternative directions if blocked
     const alternatives = [
       { x: currentGrid.x + 1, y: currentGrid.y },
@@ -333,7 +256,7 @@ function processPatrolAI(
     
     for (const alt of alternatives) {
       if (alt.x >= 0 && alt.x < GAME_CONFIG.GRID.WIDTH && alt.y >= 0 && alt.y < GAME_CONFIG.GRID.HEIGHT &&
-          !isPositionBlocked(alt.x, alt.y, obstacles, allEnemies, enemy)) {
+          !isPositionBlocked(alt.x, alt.y, allEnemies, enemy)) {
         nextX = alt.x;
         nextY = alt.y;
         break;
@@ -341,7 +264,7 @@ function processPatrolAI(
     }
     
     // If all alternatives blocked, stay in place
-    if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+    if (isPositionBlocked(nextX, nextY, allEnemies, enemy)) {
       nextX = currentGrid.x;
       nextY = currentGrid.y;
     }
@@ -360,10 +283,7 @@ function processPatrolAI(
  */
 function processRandomAI(
   enemy: EnemyEntity,
-  obstacles: ObstacleEntity[],
-  allEnemies: EnemyEntity[],
-  _currentTime: number,
-  _aiState: AIState
+  allEnemies: EnemyEntity[]
 ): { x: number, y: number } {
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
   
@@ -381,7 +301,7 @@ function processRandomAI(
   let nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGrid.y + randomDir.y));
   
   // If the chosen position is blocked, stay in place
-  if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+  if (isPositionBlocked(nextX, nextY, allEnemies, enemy)) {
     nextX = currentGrid.x;
     nextY = currentGrid.y;
   }
@@ -394,10 +314,7 @@ function processRandomAI(
  */
 function processGuardAI(
   enemy: EnemyEntity,
-  obstacles: ObstacleEntity[],
-  allEnemies: EnemyEntity[],
-  _currentTime: number,
-  _aiState: AIState
+  allEnemies: EnemyEntity[]
 ): { x: number, y: number } {
   const enemyData = enemy.components.enemy;
   const currentGrid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
@@ -417,7 +334,7 @@ function processGuardAI(
     let nextY = Math.max(0, Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGrid.y + direction.y));
     
     // Check if position is blocked by other enemies
-    if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+    if (isPositionBlocked(nextX, nextY, allEnemies, enemy)) {
       // Try alternative directions
       const alternatives = [
         { x: currentGrid.x + 1, y: currentGrid.y },
@@ -428,7 +345,7 @@ function processGuardAI(
       
       for (const alt of alternatives) {
         if (alt.x >= 0 && alt.x < GAME_CONFIG.GRID.WIDTH && alt.y >= 0 && alt.y < GAME_CONFIG.GRID.HEIGHT &&
-            !isPositionBlocked(alt.x, alt.y, obstacles, allEnemies, enemy)) {
+            !isPositionBlocked(alt.x, alt.y, allEnemies, enemy)) {
           nextX = alt.x;
           nextY = alt.y;
           break;
@@ -436,7 +353,7 @@ function processGuardAI(
       }
       
       // If all alternatives blocked, stay in place
-      if (isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+      if (isPositionBlocked(nextX, nextY, allEnemies, enemy)) {
         nextX = currentGrid.x;
         nextY = currentGrid.y;
       }
@@ -456,7 +373,7 @@ function processGuardAI(
       
       // Only move if it keeps us close to guard position and isn't blocked
       const newDistance = Math.abs(nextX - guardPos.x) + Math.abs(nextY - guardPos.y);
-      if (newDistance <= 2 && !isPositionBlocked(nextX, nextY, obstacles, allEnemies, enemy)) {
+      if (newDistance <= 2 && !isPositionBlocked(nextX, nextY, allEnemies, enemy)) {
         return { x: nextX, y: nextY };
       }
     }
@@ -465,40 +382,28 @@ function processGuardAI(
   }
 }
 
-/**
- * Check if a grid position is blocked by obstacles or other enemies
- */
 function isPositionBlocked(
-  gridX: number, 
-  gridY: number, 
-  _obstacles: ObstacleEntity[], 
-  allEnemies: EnemyEntity[], 
+  gridX: number,
+  gridY: number,
+  allEnemies: EnemyEntity[],
   currentEnemy: EnemyEntity
 ): boolean {
-  // Check boundaries
   if (gridX < 0 || gridX >= GAME_CONFIG.GRID.WIDTH || gridY < 0 || gridY >= GAME_CONFIG.GRID.HEIGHT) {
     return true;
   }
-  
-  // Check if another enemy is already at this position
+
   for (const otherEnemy of allEnemies) {
-    // Skip self
     if (otherEnemy.id === currentEnemy.id) continue;
-    
-    // Get the other enemy's grid position
+
     const otherPos = otherEnemy.components.position;
     const otherGridX = Math.round(otherPos.x / GAME_CONFIG.GRID.CELL_SIZE);
     const otherGridY = Math.round(otherPos.y / GAME_CONFIG.GRID.CELL_SIZE);
-    
-    // Check if positions match
+
     if (otherGridX === gridX && otherGridY === gridY) {
       return true;
     }
   }
-  
-  // Future: Check obstacles here when implemented
-  // for (const obstacle of obstacles) { ... }
-  
+
   return false;
 }
 

@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import { gameEngine, type Components } from '../Engine';
 import { positionEntityQuery, playerQuery } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG } from '../../game/config';
@@ -41,7 +41,7 @@ export function addAnimationSystemToEngine(): void {
  * Process death animation for a player entity
  */
 function processDeathAnimation(
-  player: { components: { player: any; position: any } },
+  player: { components: { player: Components['player']; position: Components['position'] } },
   currentTime: number
 ): void {
   const playerComp = player.components.player;
@@ -79,7 +79,7 @@ function processDeathAnimation(
 /**
  * Process movement animation for an entity
  */
-function processMovementAnimation(position: any, currentTime: number): void {
+function processMovementAnimation(position: Components['position'], currentTime: number): void {
   if (!position.isAnimating || position.targetX == null || position.targetY == null || !position.animationStartTime) {
     return;
   }
@@ -131,7 +131,7 @@ function processMovementAnimation(position: any, currentTime: number): void {
 /**
  * Process rotation animation for an entity
  */
-function processRotationAnimation(position: any, currentTime: number): void {
+function processRotationAnimation(position: Components['position'], currentTime: number): void {
   if (position.targetRotation == null || !position.rotationStartTime || position.startRotation == null) {
     return;
   }
@@ -160,7 +160,7 @@ function processRotationAnimation(position: any, currentTime: number): void {
 /**
  * Process shake animation for an entity
  */
-function processShakeAnimation(position: any, currentTime: number): void {
+function processShakeAnimation(position: Components['position'], currentTime: number): void {
   if (position.shakeStartTime == null || position.shakeIntensity == null || position.shakeDuration == null) {
     return;
   }

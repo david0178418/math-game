@@ -20,17 +20,14 @@ export default [
         sourceType: 'module'
       },
       globals: {
-        console: 'readonly',
-        window: 'readonly',
-        document: 'readonly',
-        requestAnimationFrame: 'readonly',
-        performance: 'readonly'
+        ...globals.browser
       }
     },
     plugins: {
       '@typescript-eslint': tseslint
     },
     rules: {
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/explicit-function-return-type': 'warn',
       '@typescript-eslint/no-explicit-any': 'error',
