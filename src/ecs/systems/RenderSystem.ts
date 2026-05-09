@@ -116,7 +116,7 @@ export function addRenderSystemToEngine(): void {
   gameEngine.addSystem('renderSystem')
     .setPriority(SYSTEM_PRIORITIES.RENDER)
     .addQuery('renderableEntities', renderableEntityQuery)
-    .addQuery('players', playerQuery)
+    .addSingleton('player', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)
     .addQuery('frogTongues', frogTongueQuery)
     .addQuery('spiderWebs', spiderWebQuery)
@@ -139,7 +139,7 @@ export function addRenderSystemToEngine(): void {
       drawGrid();
       
       // Check if player is on a math problem and draw highlight
-      drawPlayerHighlight(queries.players, queries.mathProblems);
+      drawPlayerHighlight(queries.player, queries.mathProblems);
       
       // Draw enhanced spider webs with fade effects
       drawEnhancedSpiderWebs(queries.spiderWebs as SpiderWebEntity[]);
@@ -203,40 +203,38 @@ function drawGrid(): void {
 }
 
 // Draw highlight when player is on a consumable math problem
-function drawPlayerHighlight(players: PlayerEntity[], mathProblems: MathProblemEntity[]): void {
-  if (!ctx) return;
-  
-  for (const player of players) {
-    const playerPos = player.components.position;
-    
-    // Check if player is on a math problem
-    for (const problem of mathProblems) {
-      const problemPos = problem.components.position;
-      const mathProblemComp = problem.components.mathProblem;
-      
-      // Skip consumed problems
-      if (mathProblemComp.consumed) continue;
-      
-      // Check if positions match (same grid cell)
-      if (Math.abs(playerPos.x - problemPos.x) < GAME_CONFIG.GRID.CELL_SIZE / 2 && 
-          Math.abs(playerPos.y - problemPos.y) < GAME_CONFIG.GRID.CELL_SIZE / 2) {
-        
-        // Draw a pulsing highlight around the cell
-        const time = Date.now() / 300; // Pulse speed
-        const alpha = 0.3 + 0.2 * Math.sin(time); // Pulse between 0.3 and 0.5 alpha
-        
-        ctx.save();
-        ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`; // Yellow highlight
-        ctx.fillRect(problemPos.x, problemPos.y, GAME_CONFIG.GRID.CELL_SIZE, GAME_CONFIG.GRID.CELL_SIZE);
-        
-        // Add a border
-        ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)'; // Gold border
-        ctx.lineWidth = 2;
-        ctx.strokeRect(problemPos.x + 1, problemPos.y + 1, GAME_CONFIG.GRID.CELL_SIZE - 2, GAME_CONFIG.GRID.CELL_SIZE - 2);
-        ctx.restore();
-        
-        break; // Only highlight one problem per player
-      }
+function drawPlayerHighlight(player: PlayerEntity | undefined, mathProblems: MathProblemEntity[]): void {
+  if (!ctx || !player) return;
+
+  const playerPos = player.components.position;
+
+  // Check if player is on a math problem
+  for (const problem of mathProblems) {
+    const problemPos = problem.components.position;
+    const mathProblemComp = problem.components.mathProblem;
+
+    // Skip consumed problems
+    if (mathProblemComp.consumed) continue;
+
+    // Check if positions match (same grid cell)
+    if (Math.abs(playerPos.x - problemPos.x) < GAME_CONFIG.GRID.CELL_SIZE / 2 &&
+        Math.abs(playerPos.y - problemPos.y) < GAME_CONFIG.GRID.CELL_SIZE / 2) {
+
+      // Draw a pulsing highlight around the cell
+      const time = Date.now() / 300; // Pulse speed
+      const alpha = 0.3 + 0.2 * Math.sin(time); // Pulse between 0.3 and 0.5 alpha
+
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`; // Yellow highlight
+      ctx.fillRect(problemPos.x, problemPos.y, GAME_CONFIG.GRID.CELL_SIZE, GAME_CONFIG.GRID.CELL_SIZE);
+
+      // Add a border
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)'; // Gold border
+      ctx.lineWidth = 2;
+      ctx.strokeRect(problemPos.x + 1, problemPos.y + 1, GAME_CONFIG.GRID.CELL_SIZE - 2, GAME_CONFIG.GRID.CELL_SIZE - 2);
+      ctx.restore();
+
+      break; // Only highlight one problem
     }
   }
 }

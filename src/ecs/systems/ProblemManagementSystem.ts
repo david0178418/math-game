@@ -24,7 +24,7 @@ export function addProblemManagementSystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.PROBLEM_MANAGEMENT)
     .inScreens(['playing'])
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
-    .addQuery('players', playerQuery)
+    .addSingleton('player', playerQuery)
     .addQuery('allPositions', positionEntityQuery)
     .setProcess(({ queries, ecs }) => {
       const activeProblems = queries.mathProblems.filter(
@@ -34,7 +34,7 @@ export function addProblemManagementSystemToEngine(): void {
       const currentTime = performance.now();
       if (activeProblems.length === 0 &&
           currentTime - lastSpawnTime > GAME_CONFIG.TIMING.SHORT_DELAY) {
-        const player = queries.players[0];
+        const player = queries.player;
         if (player) {
           adjustDifficultyBasedOnScore(player.components.player.score);
         }

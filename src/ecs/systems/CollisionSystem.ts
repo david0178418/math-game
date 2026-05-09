@@ -37,84 +37,83 @@ const triggerGameOver = (playerComp: Components['player'], reason: string): void
 export function addCollisionSystemToEngine(): void {
   gameEngine.addSystem('collisionSystem')
     .setPriority(SYSTEM_PRIORITIES.COLLISION)
-    .addQuery('players', playerWithHealthQuery)
+    .addSingleton('player', playerWithHealthQuery)
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
     .addQuery('enemies', enemyWithColliderQuery)
     .addQuery('spiderWebs', spiderWebWithRenderableQuery)
     .addQuery('frogTongues', frogTongueQuery)
     .setProcess(({ queries, ecs }) => {
+      const player = queries.player;
+      if (!player) return;
+
       const currentTime = performance.now();
-      
-      // Update invulnerability timers and check collisions
-      for (const player of queries.players) {
-        const healthComp = player.components.health;
-        
-        // Update invulnerability timer
-        if (healthComp.invulnerable && currentTime > healthComp.invulnerabilityTime) {
-          healthComp.invulnerable = false;
-          console.log('Player invulnerability ended');
-        }
-        
-        // Check for frog tongue collisions (only if not invulnerable)
-        if (!healthComp.invulnerable) {
-          for (const frog of queries.frogTongues) {
-            const tongue = frog.components.frogTongue;
-            
-            // Only check collision if tongue is extended
-            if (tongue.isExtended && tongue.segments.length > 0) {
-              if (checkPlayerTongueCollision(player, frog)) {
-                handlePlayerTongueCollision(player, frog);
-                break; // Only one tongue can hit the player at a time
-              }
+      const healthComp = player.components.health;
+
+      // Update invulnerability timer
+      if (healthComp.invulnerable && currentTime > healthComp.invulnerabilityTime) {
+        healthComp.invulnerable = false;
+        console.log('Player invulnerability ended');
+      }
+
+      // Check for frog tongue collisions (only if not invulnerable)
+      if (!healthComp.invulnerable) {
+        for (const frog of queries.frogTongues) {
+          const tongue = frog.components.frogTongue;
+
+          // Only check collision if tongue is extended
+          if (tongue.isExtended && tongue.segments.length > 0) {
+            if (checkPlayerTongueCollision(player, frog)) {
+              handlePlayerTongueCollision(player, frog);
+              break; // Only one tongue can hit the player at a time
             }
           }
         }
-        
-        // Check for spider web collisions (only if not already frozen)
-        const freezeEffect = gameEngine.entityManager.getComponent(player.id, 'freezeEffect');
-        if (!freezeEffect || !freezeEffect.isActive) {
-          for (const spiderWeb of queries.spiderWebs) {
-            const webComp = spiderWeb.components.spiderWeb;
-            
-            // Skip inactive webs
-            if (!webComp.isActive) {
-              continue;
-            }
-            
-            // Check if player is on the same grid position as a spider web
-            if (sameGridPosition(player.components.position, spiderWeb.components.position)) {
-              handlePlayerSpiderWebCollision(ecs, player, spiderWeb, currentTime);
-              break; // Only one web can catch the player at a time
-            }
-          }
-        }
-        
-        // Check for math problems that can be consumed
-        for (const problem of queries.mathProblems) {
-          const mathProblemComp = problem.components.mathProblem;
-          
-          // Skip already consumed problems
-          if (mathProblemComp.consumed) {
+      }
+
+      // Check for spider web collisions (only if not already frozen)
+      const freezeEffect = gameEngine.entityManager.getComponent(player.id, 'freezeEffect');
+      if (!freezeEffect || !freezeEffect.isActive) {
+        for (const spiderWeb of queries.spiderWebs) {
+          const webComp = spiderWeb.components.spiderWeb;
+
+          // Skip inactive webs
+          if (!webComp.isActive) {
             continue;
           }
-          
-          // Check if player is on the same grid position as a math problem
-          if (sameGridPosition(player.components.position, problem.components.position)) {
-            // Only consume if player presses the eat button
-            if (player.components.player.inputState.eat) {
-              handlePlayerProblemCollision(player, problem);
-              // Clear eat input after processing to prevent multiple consumption
-              player.components.player.inputState.eat = false;
-            }
+
+          // Check if player is on the same grid position as a spider web
+          if (sameGridPosition(player.components.position, spiderWeb.components.position)) {
+            handlePlayerSpiderWebCollision(ecs, player, spiderWeb, currentTime);
+            break; // Only one web can catch the player at a time
           }
         }
-        
-        // Check collisions with enemies (only if not invulnerable)
-        if (!healthComp.invulnerable) {
-          for (const enemy of queries.enemies) {
-            if (sameGridPosition(player.components.position, enemy.components.position)) {
-              handlePlayerEnemyCollision(player, enemy);
-            }
+      }
+
+      // Check for math problems that can be consumed
+      for (const problem of queries.mathProblems) {
+        const mathProblemComp = problem.components.mathProblem;
+
+        // Skip already consumed problems
+        if (mathProblemComp.consumed) {
+          continue;
+        }
+
+        // Check if player is on the same grid position as a math problem
+        if (sameGridPosition(player.components.position, problem.components.position)) {
+          // Only consume if player presses the eat button
+          if (player.components.player.inputState.eat) {
+            handlePlayerProblemCollision(player, problem);
+            // Clear eat input after processing to prevent multiple consumption
+            player.components.player.inputState.eat = false;
+          }
+        }
+      }
+
+      // Check collisions with enemies (only if not invulnerable)
+      if (!healthComp.invulnerable) {
+        for (const enemy of queries.enemies) {
+          if (sameGridPosition(player.components.position, enemy.components.position)) {
+            handlePlayerEnemyCollision(player, enemy);
           }
         }
       }

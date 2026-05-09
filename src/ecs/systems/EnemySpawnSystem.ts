@@ -70,7 +70,7 @@ export function addEnemySpawnSystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.ENEMY_SPAWN)
     .inScreens(['playing'])
     .addQuery('enemies', enemyQuery)
-    .addQuery('players', playerQuery)
+    .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {
       const currentTime = performance.now();
       const currentEnemyCount = queries.enemies.length;
@@ -82,7 +82,7 @@ export function addEnemySpawnSystemToEngine(): void {
 
       // Only spawn if cycle is not complete and enough time has passed
       if (!spawnCycleComplete && currentEnemyCount < GAME_CONFIG.ENEMY_SPAWN.MAX_ENEMIES) {
-        const spawnInterval = calculateSpawnInterval(queries.players[0]);
+        const spawnInterval = calculateSpawnInterval(queries.player);
 
         if (currentTime - lastSpawnTime > spawnInterval) {
           const nextEnemyType = getNextEnemyType();
@@ -99,9 +99,9 @@ export function addEnemySpawnSystemToEngine(): void {
 /**
  * Calculate spawn interval based on player score (difficulty scaling)
  */
-function calculateSpawnInterval(player: PlayerEntity): number {
+function calculateSpawnInterval(player: PlayerEntity | undefined): number {
   if (!player) return GAME_CONFIG.TIMING.BASE_SPAWN_INTERVAL;
-  
+
   const score = player.components.player.score;
   
   return calculateDifficultyInterval(

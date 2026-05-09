@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import { gameEngine, type Components } from '../Engine';
 import { playerQuery } from '../queries';
 
 // Key press tracking (for discrete movement)
@@ -74,31 +74,34 @@ function handleKeyUp(event: KeyboardEvent): void {
 export function addInputSystemToEngine(): void {
   gameEngine.addSystem('inputSystem')
     .setPriority(100)
-    .addQuery('players', playerQuery)
+    .addSingleton('player', playerQuery)
     .setProcess(({ queries }) => {
-      for (const entity of queries.players) {
-        const playerComponent = entity.components.player;
-
-        if (playerComponent.gameOverPending) {
-          playerComponent.inputState.up = false;
-          playerComponent.inputState.down = false;
-          playerComponent.inputState.left = false;
-          playerComponent.inputState.right = false;
-          playerComponent.inputState.eat = false;
-          continue;
-        }
-
-        playerComponent.inputState.up = (keyPressed.ArrowUp || keyPressed.KeyW) && !(prevKeyState.ArrowUp || prevKeyState.KeyW);
-        playerComponent.inputState.down = (keyPressed.ArrowDown || keyPressed.KeyS) && !(prevKeyState.ArrowDown || prevKeyState.KeyS);
-        playerComponent.inputState.left = (keyPressed.ArrowLeft || keyPressed.KeyA) && !(prevKeyState.ArrowLeft || prevKeyState.KeyA);
-        playerComponent.inputState.right = (keyPressed.ArrowRight || keyPressed.KeyD) && !(prevKeyState.ArrowRight || prevKeyState.KeyD);
-        playerComponent.inputState.eat = (keyPressed.Space || keyPressed.Enter) && !(prevKeyState.Space || prevKeyState.Enter);
+      const player = queries.player;
+      if (player) {
+        applyInputToPlayer(player.components.player);
       }
 
       for (const key of Object.keys(prevKeyState) as ValidKeyCode[]) {
         prevKeyState[key] = keyPressed[key];
       }
     });
+}
+
+function applyInputToPlayer(playerComponent: Components['player']): void {
+  if (playerComponent.gameOverPending) {
+    playerComponent.inputState.up = false;
+    playerComponent.inputState.down = false;
+    playerComponent.inputState.left = false;
+    playerComponent.inputState.right = false;
+    playerComponent.inputState.eat = false;
+    return;
+  }
+
+  playerComponent.inputState.up = (keyPressed.ArrowUp || keyPressed.KeyW) && !(prevKeyState.ArrowUp || prevKeyState.KeyW);
+  playerComponent.inputState.down = (keyPressed.ArrowDown || keyPressed.KeyS) && !(prevKeyState.ArrowDown || prevKeyState.KeyS);
+  playerComponent.inputState.left = (keyPressed.ArrowLeft || keyPressed.KeyA) && !(prevKeyState.ArrowLeft || prevKeyState.KeyA);
+  playerComponent.inputState.right = (keyPressed.ArrowRight || keyPressed.KeyD) && !(prevKeyState.ArrowRight || prevKeyState.KeyD);
+  playerComponent.inputState.eat = (keyPressed.Space || keyPressed.Enter) && !(prevKeyState.Space || prevKeyState.Enter);
 }
 
 // Get current key state (for debugging)

@@ -25,13 +25,13 @@ export function addFrogTongueSystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.FROG_TONGUE)
     .addQuery('frogs', frogTongueQuery)
     .addQuery('enemies', enemyQuery)
-    .addQuery('players', playerQuery)
+    .addSingleton('player', playerQuery)
     .setProcess(({ queries, dt }) => {
       const currentTime = performance.now();
 
       // Store entities for obstacle checking
       currentEnemies = queries.enemies;
-      currentPlayers = queries.players;
+      currentPlayer = queries.player;
 
       // Process each frog's tongue behavior
       for (const frog of queries.frogs) {
@@ -42,7 +42,7 @@ export function addFrogTongueSystemToEngine(): void {
 
 // Store current entities for obstacle checking
 let currentEnemies: EnemyEntity[] = [];
-let currentPlayers: PlayerEntity[] = [];
+let currentPlayer: PlayerEntity | undefined;
 
 /**
  * Process a single frog's tongue behavior
@@ -255,16 +255,16 @@ function isPositionBlockedForTongue(gridX: number, gridY: number, frogId: number
     }
   }
   
-  // Check against players
-  for (const player of currentPlayers) {
-    const playerGridX = Math.round(player.components.position.x / GAME_CONFIG.GRID.CELL_SIZE);
-    const playerGridY = Math.round(player.components.position.y / GAME_CONFIG.GRID.CELL_SIZE);
-    
+  // Check against player
+  if (currentPlayer) {
+    const playerGridX = Math.round(currentPlayer.components.position.x / GAME_CONFIG.GRID.CELL_SIZE);
+    const playerGridY = Math.round(currentPlayer.components.position.y / GAME_CONFIG.GRID.CELL_SIZE);
+
     if (playerGridX === gridX && playerGridY === gridY) {
       return true;
     }
   }
-  
+
   return false;
 }
 

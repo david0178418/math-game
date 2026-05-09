@@ -17,15 +17,15 @@ export function addAnimationSystemToEngine(): void {
   gameEngine.addSystem('animationSystem')
     .setPriority(SYSTEM_PRIORITIES.ANIMATION) // Run after movement but before rendering
     .addQuery('animatedEntities', positionEntityQuery)
-    .addQuery('players', playerQuery)
+    .addSingleton('player', playerQuery)
     .setProcess(({ queries }) => {
       const currentTime = Date.now();
-      
-      // Handle death animations for players
-      for (const player of queries.players) {
+      const player = queries.player;
+
+      if (player) {
         processDeathAnimation(player, currentTime);
       }
-      
+
       // Handle regular position and rotation animations
       for (const entity of queries.animatedEntities) {
         const position = entity.components.position;

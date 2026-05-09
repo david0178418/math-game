@@ -27,15 +27,13 @@ export function addAISystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.AI)
     .inScreens(['playing'])
     .addQuery('enemies', enemyQuery)
-    .addQuery('players', playerQuery)
+    .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {
       const currentTime = Date.now();
       const enemies = queries.enemies;
-      const players = queries.players;
+      const player = queries.player;
 
-      if (players.length === 0) return;
-
-      const player = players[0];
+      if (!player) return;
 
       for (const enemy of enemies) {
         if (isEntityAnimating(enemy.components.position)) {
