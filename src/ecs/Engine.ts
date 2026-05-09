@@ -95,7 +95,7 @@ export interface Components {
     startTime: number;    // When freeze started
     duration: number;        // How long to freeze (2000ms)
     isActive: boolean;       // Whether player is currently frozen
-    sourceWebId?: string;  // ID of the spider web that caused this freeze
+    sourceWebId?: number;  // ID of the spider web that caused this freeze
   };
   frogTongue: {
     isExtended: boolean;                    // Whether tongue is currently out

@@ -262,7 +262,7 @@ function handlePlayerSpiderWebCollision(
       startTime: currentTime,
       duration: webComp.freezeTime,
       isActive: true,
-      sourceWebId: spiderWeb.id.toString()
+      sourceWebId: spiderWeb.id
     });
     
     webComp.isActive = false;
