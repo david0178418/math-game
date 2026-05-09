@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import { gameEngine, type GameEngine } from '../Engine';
 import { sameGridPosition } from '../gameUtils';
 import { 
   playerWithHealthQuery, 
@@ -30,7 +30,7 @@ export function addCollisionSystemToEngine(): void {
     .addQuery('enemies', enemyWithColliderQuery)
     .addQuery('spiderWebs', spiderWebWithRenderableQuery)
     .addQuery('frogTongues', frogTongueQuery)
-    .setProcess(({ queries }) => {
+    .setProcess(({ queries, ecs }) => {
       const currentTime = performance.now();
       
       // Update invulnerability timers and check collisions
@@ -71,7 +71,7 @@ export function addCollisionSystemToEngine(): void {
             
             // Check if player is on the same grid position as a spider web
             if (sameGridPosition(player.components.position, spiderWeb.components.position)) {
-              handlePlayerSpiderWebCollision(player, spiderWeb, currentTime);
+              handlePlayerSpiderWebCollision(ecs, player, spiderWeb, currentTime);
               break; // Only one web can catch the player at a time
             }
           }
@@ -238,37 +238,33 @@ function handlePlayerEnemyCollision(
  * Handle collision between player and spider web
  */
 function handlePlayerSpiderWebCollision(
-  player: PlayerEntityWithHealth, 
-  spiderWeb: SpiderWebEntityWithRenderable, 
+  ecs: GameEngine,
+  player: PlayerEntityWithHealth,
+  spiderWeb: SpiderWebEntityWithRenderable,
   currentTime: number
 ): void {
   const webComp = spiderWeb.components.spiderWeb;
-  
-  // Validate meaningful game state
+
   if (!webComp.isActive) {
     console.warn(`🕸️ WARNING: Attempting to handle collision with inactive web ${spiderWeb.id}`);
     return;
   }
-  
+
   if (webComp.freezeTime <= 0) {
     console.warn(`🕸️ WARNING: Invalid freeze time ${webComp.freezeTime} for web ${spiderWeb.id}, using default`);
     webComp.freezeTime = GAME_CONFIG.TIMING.MEDIUM_DELAY;
   }
-  
+
   console.log(`🕸️ Player caught in spider web! Freezing for ${webComp.freezeTime}ms`);
-  
-  try {
-    gameEngine.entityManager.addComponent(player.id, 'freezeEffect', {
-      startTime: currentTime,
-      duration: webComp.freezeTime,
-      isActive: true,
-      sourceWebId: spiderWeb.id
-    });
-    
-    webComp.isActive = false;
-  } catch (error) {
-    console.error(`🕸️ ERROR: Failed to apply freeze effect to player ${player.id}:`, error);
-  }
+
+  ecs.commands.addComponent(player.id, 'freezeEffect', {
+    startTime: currentTime,
+    duration: webComp.freezeTime,
+    isActive: true,
+    sourceWebId: spiderWeb.id
+  });
+
+  webComp.isActive = false;
 }
 
 /**
