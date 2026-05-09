@@ -1,5 +1,6 @@
 import { gameEngine, type Components } from '../Engine';
 import { playerQuery } from '../queries';
+import { clearDirectionalInput } from '../gameUtils';
 
 // Key press tracking (for discrete movement)
 const keyPressed = {
@@ -89,10 +90,7 @@ export function addInputSystemToEngine(): void {
 
 function applyInputToPlayer(playerComponent: Components['player']): void {
   if (playerComponent.gameOverPending) {
-    playerComponent.inputState.up = false;
-    playerComponent.inputState.down = false;
-    playerComponent.inputState.left = false;
-    playerComponent.inputState.right = false;
+    clearDirectionalInput(playerComponent.inputState);
     playerComponent.inputState.eat = false;
     return;
   }

@@ -4,6 +4,7 @@ import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { startRotationAnimation } from './AnimationSystem';
 import { playerQuery } from '../queries';
+import { clearDirectionalInput } from '../gameUtils';
 
 // Add the movement system to ECSpresso
 export function addMovementSystemToEngine(): void {
@@ -13,22 +14,15 @@ export function addMovementSystemToEngine(): void {
       const position = entity.components.position;
       const player = entity.components.player;
 
-      const clearMovementInput = (): void => {
-        player.inputState.up = false;
-        player.inputState.down = false;
-        player.inputState.left = false;
-        player.inputState.right = false;
-      };
-
       const freezeEffect = ecs.getComponent(entity.id, 'freezeEffect');
       if (freezeEffect && freezeEffect.isActive) {
-        clearMovementInput();
+        clearDirectionalInput(player.inputState);
         console.log('❄️ Player movement blocked - frozen by spider web');
         return;
       }
 
       if (isEntityAnimating(position)) {
-        clearMovementInput();
+        clearDirectionalInput(player.inputState);
         return;
       }
 
@@ -83,7 +77,7 @@ export function addMovementSystemToEngine(): void {
         });
       }
 
-      clearMovementInput();
+      clearDirectionalInput(player.inputState);
     });
 }
 
