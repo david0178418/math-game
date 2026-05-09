@@ -2,14 +2,12 @@ import { gameEngine, EntityFactory, type GameEngine } from '../Engine';
 import { GAME_CONFIG, SCORE_THRESHOLDS } from '../../game/config';
 import { gridToPixel } from './MovementSystem';
 import { mathProblemGenerator } from '../../game/MathProblemGenerator';
-import { 
-  mathProblemWithRenderableQuery, 
-  playerQuery, 
-  positionEntityQuery, 
-  enemyQuery,
+import {
+  mathProblemWithRenderableQuery,
+  playerQuery,
+  positionEntityQuery,
   type MathProblemEntityWithRenderable,
-  type PositionEntity,
-  type EnemyEntity
+  type PositionEntity
 } from '../queries';
 import { PROBLEM_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 
@@ -24,10 +22,10 @@ let lastSpawnTime = 0;
 export function addProblemManagementSystemToEngine(): void {
   gameEngine.addSystem('problemManagementSystem')
     .setPriority(SYSTEM_PRIORITIES.PROBLEM_MANAGEMENT)
+    .inScreens(['playing'])
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
     .addQuery('players', playerQuery)
     .addQuery('allPositions', positionEntityQuery)
-    .addQuery('enemies', enemyQuery)
     .setProcess(({ queries, ecs }) => {
       const activeProblems = queries.mathProblems.filter(
         problem => !problem.components.mathProblem.consumed
@@ -41,12 +39,12 @@ export function addProblemManagementSystemToEngine(): void {
           adjustDifficultyBasedOnScore(player.components.player.score);
         }
 
-        populateFullGrid(queries.allPositions);
+        populateFullGrid(ecs, queries.allPositions);
 
         lastSpawnTime = currentTime;
       }
 
-      checkLevelCompletion(ecs, queries.mathProblems, queries.enemies);
+      checkLevelCompletion(queries.mathProblems);
       cleanupConsumedProblems(ecs, queries.mathProblems);
     });
 }
@@ -54,7 +52,7 @@ export function addProblemManagementSystemToEngine(): void {
 /**
  * Populate the entire grid with math problems
  */
-function populateFullGrid(allPositionEntities: PositionEntity[]): void {
+function populateFullGrid(ecs: GameEngine, allPositionEntities: PositionEntity[]): void {
   const gameMode = gameEngine.getResource('gameMode');
   const currentLevel = gameEngine.getResource('currentLevel');
   
@@ -75,6 +73,7 @@ function populateFullGrid(allPositionEntities: PositionEntity[]): void {
     const pixelPos = gridToPixel(gridPos.x, gridPos.y);
     
     EntityFactory.createMathProblem(
+      ecs.commands,
       pixelPos.x,
       pixelPos.y,
       problem.value,
@@ -133,66 +132,43 @@ function adjustDifficultyBasedOnScore(score: number): void {
 }
 
 /**
- * Check if all correct answers have been consumed (level completion)
+ * Check if all correct answers have been consumed (level completion).
+ *
+ * Triggers a `setScreen('playing', { level: nextLevel })` round-trip — the
+ * exit clears all `{ scope: 'playing' }` entities (problems, enemies, webs)
+ * and the re-entry rebuilds the board via `GameInitializer`'s screen hook.
+ * The player entity is unscoped, so score and lives persist into the new level.
  */
-function checkLevelCompletion(ecs: GameEngine, mathProblems: MathProblemEntityWithRenderable[], enemies: EnemyEntity[]): void {
+function checkLevelCompletion(mathProblems: MathProblemEntityWithRenderable[]): void {
   const gameMode = gameEngine.getResource('gameMode');
   const currentLevel = gameEngine.getResource('currentLevel');
-  
+
   if (gameMode !== 'multiples') return;
-  
-  // Get all problems that should be correct for this level
+
   const correctMultiples: number[] = [];
   for (let i = 1; i <= 12; i++) {
     correctMultiples.push(currentLevel * i);
   }
-  
-  // Check if all correct multiples have been consumed
+
   const correctProblemsOnBoard = mathProblems.filter(problem => {
     const mathProblem = problem.components.mathProblem;
     return correctMultiples.includes(mathProblem.value) && mathProblem.isCorrect;
   });
-  
-  const allCorrectConsumed = correctProblemsOnBoard.every(problem => 
+
+  const allCorrectConsumed = correctProblemsOnBoard.every(problem =>
     problem.components.mathProblem.consumed
   );
-  
+
   if (allCorrectConsumed && correctProblemsOnBoard.length > 0) {
-    // Level completed! Advance to next level
     const nextLevel = currentLevel + 1;
-    
+
     console.log(`🎉 Level ${currentLevel} completed! Advancing to multiples of ${nextLevel}`);
-    
-    // Update level and show completion message
-    gameEngine.setResource('currentLevel', nextLevel);
-    
-    mathProblems.forEach(problem => {
-      ecs.commands.removeEntity(problem.id);
-    });
 
-    enemies.forEach((enemy) => {
-      ecs.commands.removeEntity(enemy.id);
-    });
-    
-    // Force immediate grid repopulation by resetting last spawn time
+    // Force the next ProblemManagementSystem tick (after re-entry) to repopulate
+    // immediately rather than waiting for SHORT_DELAY.
     lastSpawnTime = 0;
-    
-    // Update UI to show new level
-    updateLevelDisplay();
-    
-    console.log(`Board completely reset for multiples of ${nextLevel}`);
-  }
-}
 
-/**
- * Update the level display in the UI
- */
-function updateLevelDisplay(): void {
-  const currentLevel = gameEngine.getResource('currentLevel');
-  const objectiveDisplay = document.getElementById('objective-display');
-  
-  if (objectiveDisplay) {
-    objectiveDisplay.textContent = `Find multiples of ${currentLevel}!`;
+    void gameEngine.setScreen('playing', { level: nextLevel, isFreshGame: false });
   }
 }
 

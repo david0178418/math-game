@@ -1,6 +1,7 @@
 import { gameEngine, type GameEngine } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { GAME_CONFIG } from '../../game/config';
+import { gridToPixel } from '../gameUtils';
 import {
   spiderWebQuery,
   frozenPlayerQuery,
@@ -65,41 +66,35 @@ function processFreezeEffects(ecs: GameEngine, frozenPlayers: FrozenPlayerEntity
   }
 }
 
-export function createSpiderWeb(gridX: number, gridY: number): void {
-  // Validate meaningful bounds
+export function createSpiderWeb(ecs: GameEngine, gridX: number, gridY: number): void {
   if (gridX < 0 || gridX >= GAME_CONFIG.GRID.WIDTH || gridY < 0 || gridY >= GAME_CONFIG.GRID.HEIGHT) {
     console.error(`🕸️ ERROR: Grid coordinates (${gridX}, ${gridY}) outside bounds (0,0) to (${GAME_CONFIG.GRID.WIDTH-1},${GAME_CONFIG.GRID.HEIGHT-1})`);
     return;
   }
-  
+
   const currentTime = performance.now();
-  const pixelX = gridX * GAME_CONFIG.GRID.CELL_SIZE;
-  const pixelY = gridY * GAME_CONFIG.GRID.CELL_SIZE;
-  
-  try {
-    const webEntity = gameEngine.spawn({
-      position: { x: pixelX, y: pixelY },
-      spiderWeb: {
-        duration: SPIDER_CONFIG.WEB_DURATION,
-        freezeTime: SPIDER_CONFIG.FREEZE_DURATION,
-        createdTime: currentTime,
-        isActive: true
-      },
-      renderable: {
-        shape: 'rectangle',
-        color: 'rgba(128, 0, 128, 0.3)',
-        size: GAME_CONFIG.GRID.CELL_SIZE * 0.8,
-        layer: 1
-      },
-      collider: {
-        width: GAME_CONFIG.GRID.CELL_SIZE,
-        height: GAME_CONFIG.GRID.CELL_SIZE,
-        group: 'spiderWeb'
-      }
-    });
-    
-    console.log(`🕸️ Created spider web at grid (${gridX}, ${gridY}) with entity ID ${webEntity.id}`);
-  } catch (error) {
-    console.error(`🕸️ ERROR: Failed to create spider web at grid (${gridX}, ${gridY}):`, error);
-  }
-} 
+  const { x: pixelX, y: pixelY } = gridToPixel(gridX, gridY);
+
+  ecs.commands.spawn({
+    position: { x: pixelX, y: pixelY },
+    spiderWeb: {
+      duration: SPIDER_CONFIG.WEB_DURATION,
+      freezeTime: SPIDER_CONFIG.FREEZE_DURATION,
+      createdTime: currentTime,
+      isActive: true
+    },
+    renderable: {
+      shape: 'rectangle',
+      color: 'rgba(128, 0, 128, 0.3)',
+      size: GAME_CONFIG.GRID.CELL_SIZE * 0.8,
+      layer: 1
+    },
+    collider: {
+      width: GAME_CONFIG.GRID.CELL_SIZE,
+      height: GAME_CONFIG.GRID.CELL_SIZE,
+      group: 'spiderWeb'
+    }
+  }, { scope: 'playing' });
+
+  console.log(`🕸️ Created spider web at grid (${gridX}, ${gridY})`);
+}

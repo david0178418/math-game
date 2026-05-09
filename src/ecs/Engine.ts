@@ -136,7 +136,7 @@ export const gameEngine = ECSpresso.create()
   .withResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL)
   .withScreens(screens => screens
     .add('menu', { initialState: () => ({}) })
-    .add('playing', { initialState: () => ({}) })
+    .add('playing', { initialState: (config: { level: number; isFreshGame: boolean }) => ({ level: config.level, isFreshGame: config.isFreshGame }) })
     .add('paused', { initialState: () => ({}) })
     .add('gameOver', { initialState: () => ({}) }))
   .build();
@@ -266,124 +266,113 @@ export function getEngine(): GameEngine {
   return gameEngine;
 }
 
-/**
- * Entity factory for creating common game objects
- */
-export const EntityFactory = {
-  createPlayer(x: number, y: number): { id: number } {
-    const entity = gameEngine.spawn({
-      position: { x, y, rotation: 0 },
-      renderable: { 
-        shape: 'image', 
-        color: GAME_CONFIG.COLORS.PLAYER, // Fallback color if image fails to load
-        size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
-        layer: GAME_CONFIG.LAYERS.PLAYER,
-        imageSrc: flyImage
-      },
-      player: { 
-        score: GAME_CONFIG.GAMEPLAY.STARTING_SCORE, 
-        lives: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES, 
-        inputState: { up: false, down: false, left: false, right: false, eat: false },
-        gameOverPending: false,
-        deathAnimationActive: false,
-        deathScale: 1.0
-      },
-      collider: { 
-        width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
-        height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER, 
-        group: 'player' 
-      },
-      health: { 
-        current: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES, 
-        max: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES, 
-        invulnerable: false, 
-        invulnerabilityTime: 0 
-      }
-    });
+type Commands = GameEngine['commands'];
 
-    return entity;
+const enemyColorFor = (enemyType: EnemyType): string =>
+  GAME_CONFIG.ENEMY_TYPES[enemyType.toUpperCase() as keyof typeof GAME_CONFIG.ENEMY_TYPES]?.COLOR
+  ?? GAME_CONFIG.COLORS.ENEMY;
+
+const playerComponents = (x: number, y: number): Partial<Components> => ({
+  position: { x, y, rotation: 0 },
+  renderable: {
+    shape: 'image',
+    color: GAME_CONFIG.COLORS.PLAYER,
+    size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+    layer: GAME_CONFIG.LAYERS.PLAYER,
+    imageSrc: flyImage
   },
-
-  createEnemy(x: number, y: number, enemyType: EnemyType = 'lizard', behaviorType: AIBehavior = 'random'): { id: number } {
-    // Determine enemy color based on type
-    let enemyColor: string;
-    switch (enemyType) {
-      case 'lizard':
-        enemyColor = GAME_CONFIG.ENEMY_TYPES.LIZARD.COLOR;
-        break;
-      case 'spider':
-        enemyColor = GAME_CONFIG.ENEMY_TYPES.SPIDER.COLOR;
-        break;
-      case 'frog':
-        enemyColor = GAME_CONFIG.ENEMY_TYPES.FROG.COLOR;
-        break;
-      default:
-        enemyColor = GAME_CONFIG.COLORS.ENEMY;
-    }
-
-    const entity = gameEngine.spawn({
-      position: { x, y },
-      renderable: { 
-        shape: 'rectangle', 
-        color: enemyColor, 
-        size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
-        layer: GAME_CONFIG.LAYERS.ENTITIES 
-      },
-      enemy: { 
-        enemyType,
-        behaviorType,
-        nextMoveTime: 0
-      },
-      collider: { 
-        width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
-        height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY, 
-        group: 'enemy' 
-      },
-      health: { 
-        current: 1, 
-        max: 1, 
-        invulnerable: false, 
-        invulnerabilityTime: 0 
-      }
-    });
-
-    return entity;
+  player: {
+    score: GAME_CONFIG.GAMEPLAY.STARTING_SCORE,
+    lives: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
+    inputState: { up: false, down: false, left: false, right: false, eat: false },
+    gameOverPending: false,
+    deathAnimationActive: false,
+    deathScale: 1.0
   },
-
-  createLizard(x: number, y: number, behaviorType: AIBehavior = 'random'): { id: number } {
-    return this.createEnemy(x, y, 'lizard', behaviorType);
+  collider: {
+    width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+    height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+    group: 'player'
   },
-
-  createSpider(x: number, y: number, behaviorType: AIBehavior = 'random'): { id: number } {
-    return this.createEnemy(x, y, 'spider', behaviorType);
-  },
-
-  createFrog(x: number, y: number, behaviorType: AIBehavior = 'random'): { id: number } {
-    return this.createEnemy(x, y, 'frog', behaviorType);
-  },
-
-  createMathProblem(x: number, y: number, value: number, isCorrect: boolean, difficulty: number = 1): { id: number } {
-    const entity = gameEngine.spawn({
-      position: { x, y },
-      renderable: { 
-        shape: 'rectangle', 
-        color: GAME_CONFIG.COLORS.MATH_PROBLEM, 
-        size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
-        layer: GAME_CONFIG.LAYERS.MATH_PROBLEMS
-      },
-      mathProblem: { 
-        value, 
-        isCorrect, 
-        difficulty, 
-        consumed: false 
-      },
-      collider: { 
-        width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
-        height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM, 
-        group: 'problem' 
-      }
-    });
-
-    return entity;
+  health: {
+    current: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
+    max: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
+    invulnerable: false,
+    invulnerabilityTime: 0
   }
-}; 
+});
+
+const enemyComponents = (
+  x: number,
+  y: number,
+  enemyType: EnemyType,
+  behaviorType: AIBehavior
+): Partial<Components> => ({
+  position: { x, y },
+  renderable: {
+    shape: 'rectangle',
+    color: enemyColorFor(enemyType),
+    size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
+    layer: GAME_CONFIG.LAYERS.ENTITIES
+  },
+  enemy: {
+    enemyType,
+    behaviorType,
+    nextMoveTime: 0
+  },
+  collider: {
+    width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
+    height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
+    group: 'enemy'
+  },
+  health: {
+    current: 1,
+    max: 1,
+    invulnerable: false,
+    invulnerabilityTime: 0
+  }
+});
+
+const mathProblemComponents = (
+  x: number,
+  y: number,
+  value: number,
+  isCorrect: boolean,
+  difficulty: number
+): Partial<Components> => ({
+  position: { x, y },
+  renderable: {
+    shape: 'rectangle',
+    color: GAME_CONFIG.COLORS.MATH_PROBLEM,
+    size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
+    layer: GAME_CONFIG.LAYERS.MATH_PROBLEMS
+  },
+  mathProblem: {
+    value,
+    isCorrect,
+    difficulty,
+    consumed: false
+  },
+  collider: {
+    width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
+    height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.MATH_PROBLEM,
+    group: 'problem'
+  }
+});
+
+export const EntityFactory = {
+  // Player is unscoped so it survives the screen-exit cleanup that runs on level
+  // transitions (preserving score and lives). GameInitializer tears down any
+  // leftover player when starting a fresh game.
+  createPlayer(x: number, y: number): { id: number } {
+    return gameEngine.spawn(playerComponents(x, y));
+  },
+
+  createEnemy(commands: Commands, x: number, y: number, enemyType: EnemyType = 'lizard', behaviorType: AIBehavior = 'random'): void {
+    commands.spawn(enemyComponents(x, y, enemyType, behaviorType), { scope: 'playing' });
+  },
+
+  createMathProblem(commands: Commands, x: number, y: number, value: number, isCorrect: boolean, difficulty: number = 1): void {
+    commands.spawn(mathProblemComponents(x, y, value, isCorrect, difficulty), { scope: 'playing' });
+  }
+};

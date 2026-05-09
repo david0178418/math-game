@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import { gameEngine, type GameEngine } from '../Engine';
 import { pixelToGrid, gridToPixel } from './MovementSystem';
 import { GAME_CONFIG } from '../../game/config';
 import type { AIBehavior } from '../../types/shared';
@@ -25,9 +25,10 @@ const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
 export function addAISystemToEngine(): void {
   gameEngine.addSystem('aiSystem')
     .setPriority(SYSTEM_PRIORITIES.AI)
+    .inScreens(['playing'])
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
-    .setProcess(({ queries }) => {
+    .setProcess(({ queries, ecs }) => {
       const currentTime = Date.now();
       const enemies = queries.enemies;
       const players = queries.players;
@@ -41,7 +42,7 @@ export function addAISystemToEngine(): void {
           continue;
         }
 
-        processEnemyAI(enemy, player, enemies, currentTime);
+        processEnemyAI(ecs, enemy, player, enemies, currentTime);
       }
     });
 }
@@ -50,6 +51,7 @@ export function addAISystemToEngine(): void {
  * Process AI behavior for a single enemy
  */
 function processEnemyAI(
+  ecs: GameEngine,
   enemy: EnemyEntity,
   player: PlayerEntity,
   allEnemies: EnemyEntity[],
@@ -107,7 +109,7 @@ function processEnemyAI(
       
       // Check if position is valid for web placement (not occupied by other entities)
       if (isValidWebPosition(oldGridPos.x, oldGridPos.y, allEnemies, player, enemy)) {
-        createSpiderWeb(oldGridPos.x, oldGridPos.y);
+        createSpiderWeb(ecs, oldGridPos.x, oldGridPos.y);
       }
     }
   }

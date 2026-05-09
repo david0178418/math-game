@@ -454,9 +454,11 @@ export class UIManager {
     }
 
     gameEngine.setResource('gameMode', mode);
-    gameEngine.setResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL);
 
-    void gameEngine.setScreen('playing', {});
+    void gameEngine.setScreen('playing', {
+      level: GAME_CONFIG.GAMEPLAY.STARTING_LEVEL,
+      isFreshGame: true
+    });
     console.log(`Starting new game in ${mode} mode...`);
   }
   
@@ -485,10 +487,17 @@ export class UIManager {
     const scoreDisplay = document.getElementById('score-display');
     const livesDisplay = document.getElementById('lives-display');
     const levelDisplay = document.getElementById('level-display');
-    
+
     if (scoreDisplay) scoreDisplay.textContent = `Score: ${score}`;
     if (livesDisplay) livesDisplay.textContent = `Lives: ${lives}`;
     if (levelDisplay) levelDisplay.textContent = `Level: ${level}`;
+  }
+
+  updateObjective(level: number): void {
+    const objectiveDisplay = document.getElementById('objective-display');
+    if (objectiveDisplay) {
+      objectiveDisplay.textContent = `Find multiples of ${level}!`;
+    }
   }
   
   /**

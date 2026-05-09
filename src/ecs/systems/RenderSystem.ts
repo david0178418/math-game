@@ -50,25 +50,24 @@ async function preloadPlayerImage(): Promise<void> {
   }
 }
 
-// Initialize the render system
+// Initialize the render system. Idempotent — safe to call on every screen entry.
 export function initializeRenderSystem(canvasElement: HTMLCanvasElement): void {
+  const isFirstInit = canvas === null;
+
   canvas = canvasElement;
   ctx = canvas.getContext('2d');
-  
+
   if (!ctx) {
     throw new Error('Failed to get 2D rendering context');
   }
-  
-  // Set up canvas size
+
   resizeCanvas();
-  
-  // Set up canvas resize handling
-  window.addEventListener('resize', resizeCanvas);
-  
-  // Preload player image
-  preloadPlayerImage();
-  
-  console.log('Render system initialized');
+
+  if (isFirstInit) {
+    window.addEventListener('resize', resizeCanvas);
+    preloadPlayerImage();
+    console.log('Render system initialized');
+  }
 }
 
 // Clean up render system

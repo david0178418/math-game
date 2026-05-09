@@ -1,8 +1,8 @@
-import { gameEngine, EntityFactory } from '../Engine';
+import { gameEngine, EntityFactory, type GameEngine } from '../Engine';
 import { GAME_CONFIG } from '../../game/config';
 import { gridToPixel } from '../gameUtils';
-import { 
-  enemyQuery, 
+import {
+  enemyQuery,
   playerQuery,
   type PlayerEntity
 } from '../queries';
@@ -68,25 +68,26 @@ function shouldResetCycle(currentEnemyCount: number): boolean {
 export function addEnemySpawnSystemToEngine(): void {
   gameEngine.addSystem('enemySpawnSystem')
     .setPriority(SYSTEM_PRIORITIES.ENEMY_SPAWN)
+    .inScreens(['playing'])
     .addQuery('enemies', enemyQuery)
     .addQuery('players', playerQuery)
-    .setProcess(({ queries }) => {
+    .setProcess(({ queries, ecs }) => {
       const currentTime = performance.now();
       const currentEnemyCount = queries.enemies.length;
-      
+
       // Check if we should reset the spawn cycle (all enemies defeated)
       if (shouldResetCycle(currentEnemyCount)) {
         resetSpawnCycle();
       }
-      
+
       // Only spawn if cycle is not complete and enough time has passed
       if (!spawnCycleComplete && currentEnemyCount < GAME_CONFIG.ENEMY_SPAWN.MAX_ENEMIES) {
         const spawnInterval = calculateSpawnInterval(queries.players[0]);
-        
+
         if (currentTime - lastSpawnTime > spawnInterval) {
           const nextEnemyType = getNextEnemyType();
           if (nextEnemyType) {
-            spawnEnemyFromEdge(nextEnemyType);
+            spawnEnemyFromEdge(ecs, nextEnemyType);
             incrementSpawnIndex();
             lastSpawnTime = currentTime;
           }
@@ -115,17 +116,15 @@ function calculateSpawnInterval(player: PlayerEntity): number {
 /**
  * Spawn a specific enemy type from a random edge position
  */
-function spawnEnemyFromEdge(enemyType: 'lizard' | 'spider' | 'frog'): void {
+function spawnEnemyFromEdge(ecs: GameEngine, enemyType: 'lizard' | 'spider' | 'frog'): void {
   const edgePosition = getRandomEdgePosition();
   const pixelPos = gridToPixel(edgePosition.x, edgePosition.y);
-  
-  // Choose random behavior type
+
   const behaviorTypes: Array<'chase' | 'patrol' | 'random' | 'guard'> = ['chase', 'random', 'patrol', 'guard'];
   const randomBehavior = behaviorTypes[Math.floor(Math.random() * behaviorTypes.length)];
-  
-  // Spawn the specific enemy type
-  EntityFactory.createEnemy(pixelPos.x, pixelPos.y, enemyType, randomBehavior);
-  
+
+  EntityFactory.createEnemy(ecs.commands, pixelPos.x, pixelPos.y, enemyType, randomBehavior);
+
   console.log(`Spawned ${enemyType} (#${totalEnemiesSpawned + 1}/3) with ${randomBehavior} behavior at edge position (${edgePosition.x}, ${edgePosition.y})`);
 }
 

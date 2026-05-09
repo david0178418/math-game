@@ -1,23 +1,23 @@
-import { 
-  initializeEngine, 
-  startGameLoop, 
+import {
+  initializeEngine,
+  startGameLoop,
   EntityFactory,
   gameEngine
 } from '../ecs/Engine';
-import { 
-  initializeInputSystem, 
-  addInputSystemToEngine 
+import {
+  initializeInputSystem,
+  addInputSystemToEngine
 } from '../ecs/systems/InputSystem';
-import { 
+import {
   addMovementSystemToEngine,
-  gridToPixel 
+  gridToPixel
 } from '../ecs/systems/MovementSystem';
-import { 
-  addAnimationSystemToEngine 
+import {
+  addAnimationSystemToEngine
 } from '../ecs/systems/AnimationSystem';
-import { 
-  initializeRenderSystem, 
-  addRenderSystemToEngine 
+import {
+  initializeRenderSystem,
+  addRenderSystemToEngine
 } from '../ecs/systems/RenderSystem';
 import { addCollisionSystemToEngine } from '../ecs/systems/CollisionSystem';
 import { addUISystemToEngine } from '../ecs/systems/UISystem';
@@ -33,13 +33,7 @@ import { uiManager } from './UIManager';
  * Handles all game setup and system initialization
  */
 export class GameInitializer {
-  private canvas: HTMLCanvasElement | null = null;
-
-  /**
-   * Initialize the complete game
-   */
   async initialize(): Promise<void> {
-    // UI Manager handles HTML setup now
     await this.initializeSystems();
 
     this.setupScreenHooks();
@@ -54,11 +48,12 @@ export class GameInitializer {
       uiManager.showScreen('menu');
     });
 
-    gameEngine.onScreenEnter('playing', () => {
+    gameEngine.onScreenEnter('playing', ({ config }) => {
       uiManager.showScreen('playing');
       this.setupCanvas();
-      this.createEntities();
-      this.startGame();
+      this.enterPlayingScreen(config);
+      uiManager.updateObjective(config.level);
+      startGameLoop();
     });
 
     gameEngine.onScreenEnter('paused', () => {
@@ -76,9 +71,6 @@ export class GameInitializer {
     });
   }
 
-  /**
-   * Initialize all ECS systems
-   */
   private async initializeSystems(): Promise<void> {
     addInputSystemToEngine();       // Priority 100 - Input handling
     addAISystemToEngine();          // Priority 85  - AI behavior
@@ -90,80 +82,41 @@ export class GameInitializer {
     addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
     addFrogTongueSystemToEngine();  // Priority 22  - Frog Tongue system
     addSpiderWebSystemToEngine();   // Priority 20  - Spider Web system
+    addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
 
     await initializeEngine();
 
     initializeInputSystem();
-
-    console.log('Core systems initialized (render system will be added when canvas is ready)');
   }
 
-  /**
-   * Get and validate the canvas element, initialize render system
-   */
   private setupCanvas(): void {
-    this.canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
-    if (!this.canvas) {
+    const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
+    if (!canvas) {
       throw new Error('Canvas element not found');
     }
-
-    // Now initialize render system with the canvas
-    initializeRenderSystem(this.canvas);
-    addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
-    
-    console.log('Render system initialized');
+    initializeRenderSystem(canvas);
   }
 
   /**
-   * Start the game loop
+   * Set up game state for a 'playing' screen entry.
+   *
+   * On fresh game: tear down any leftover player (e.g. from a prior gameOver)
+   * and create a new one — the player is unscoped so it survives screen exits.
+   * On level transition: leave the existing player so score and lives persist.
    */
-  private startGame(): void {
-    startGameLoop();
-    console.log('Math Game Phase 6 started successfully!');
+  private enterPlayingScreen({ level, isFreshGame }: { level: number; isFreshGame: boolean }): void {
+    if (isFreshGame) {
+      gameEngine.setResource('score', { value: 0 });
+    }
+    gameEngine.setResource('currentLevel', level);
+
+    if (isFreshGame) {
+      gameEngine.entityManager
+        .getEntitiesWithQuery(['player'])
+        .forEach(player => gameEngine.removeEntity(player.id));
+
+      const playerPixelPos = gridToPixel(3, 2);
+      EntityFactory.createPlayer(playerPixelPos.x, playerPixelPos.y);
+    }
   }
-
-  /**
-   * Create initial game entities
-   */
-  private createEntities(): void {
-    // Reset game state first
-    this.resetGameState();
-    
-    // Create player in center of grid (3,2 for 6x5 grid)
-    const playerGridPos = { x: 3, y: 2 };
-    const playerPixelPos = gridToPixel(playerGridPos.x, playerGridPos.y);
-    EntityFactory.createPlayer(playerPixelPos.x, playerPixelPos.y);
-
-    // Create initial set of math problems
-    this.createInitialMathProblems();
-    
-    // Create initial enemies
-    this.createInitialEnemies();
-  }
-
-  /**
-   * Reset global game state
-   */
-  private resetGameState(): void {
-    gameEngine.setResource('score', { value: 0 });
-
-    console.log('Game state reset for new game');
-  }
-
-  /**
-   * Create initial math problems based on game mode
-   */
-  private createInitialMathProblems(): void {
-    // The ProblemManagementSystem will handle creating problems based on the game mode
-    // So we'll just create a few starter problems
-    console.log('Initial math problems will be created by ProblemManagementSystem');
-  }
-
-  /**
-   * Create initial enemy entities (now starts with 0 enemies)
-   */
-  private createInitialEnemies(): void {
-    // Start with no enemies - they will be spawned dynamically by the EnemySpawnSystem
-    console.log('Starting with 0 enemies - they will spawn dynamically from edges');
-  }
-} 
+}
