@@ -122,7 +122,6 @@ export interface Events {
 }
 
 export interface Resources {
-  gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
   score: { value: number };
   gameMode: string;
   currentLevel: number;
@@ -132,10 +131,14 @@ export const gameEngine = ECSpresso.create()
   .withComponentTypes<Components>()
   .withEventTypes<Events>()
   .withResourceTypes<Resources>()
-  .withResource('gameState', 'menu')
   .withResource('score', { value: GAME_CONFIG.GAMEPLAY.STARTING_SCORE })
   .withResource('gameMode', 'multiples')
   .withResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL)
+  .withScreens(screens => screens
+    .add('menu', { initialState: () => ({}) })
+    .add('playing', { initialState: () => ({}) })
+    .add('paused', { initialState: () => ({}) })
+    .add('gameOver', { initialState: () => ({}) }))
   .build();
 
 export type GameEngine = typeof gameEngine;

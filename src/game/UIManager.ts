@@ -40,9 +40,9 @@ export class UIManager {
       switch (event.code) {
         case 'Escape':
           if (this.currentScreen === 'playing') {
-            this.showScreen('paused');
+            void gameEngine.pushScreen('paused', {});
           } else if (this.currentScreen === 'paused') {
-            this.showScreen('playing');
+            void gameEngine.popScreen();
           }
           break;
         case 'F1':
@@ -67,19 +67,16 @@ export class UIManager {
       const currentElement = this.screenElements.get(this.currentScreen)!;
       currentElement.style.display = 'none';
     }
-    
+
     // Show new screen
     if (!this.screenElements.has(screen)) {
       this.createScreen(screen);
     }
-    
+
     const screenElement = this.screenElements.get(screen)!;
     screenElement.style.display = 'flex';
     this.currentScreen = screen;
-    
-    // Update game state
-    this.updateGameState(screen);
-    
+
     console.log(`UI: Switched to ${screen} screen`);
   }
   
@@ -224,7 +221,7 @@ export class UIManager {
     const backBtn = modeSelectScreen.querySelector('#back-to-main-btn') as HTMLButtonElement;
     
     multiplesMode.addEventListener('click', () => this.startGame('multiples'));
-    backBtn.addEventListener('click', () => this.showScreen('menu'));
+    backBtn.addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
     
     this.gameContainer!.appendChild(modeSelectScreen);
     this.screenElements.set('modeSelect', modeSelectScreen);
@@ -285,7 +282,7 @@ export class UIManager {
     
     // Add pause button functionality
     const pauseBtn = gameplayScreen.querySelector('#pause-btn') as HTMLButtonElement;
-    pauseBtn.addEventListener('click', () => this.showScreen('paused'));
+    pauseBtn.addEventListener('click', () => { void gameEngine.pushScreen('paused', {}); });
     
     this.gameContainer!.appendChild(gameplayScreen);
     this.screenElements.set('playing', gameplayScreen);
@@ -352,7 +349,7 @@ export class UIManager {
     
     // Add event listeners
     const backBtn = settingsScreen.querySelector('#back-to-menu-btn') as HTMLButtonElement;
-    backBtn.addEventListener('click', () => this.showScreen('menu'));
+    backBtn.addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
     
     this.gameContainer!.appendChild(settingsScreen);
     this.screenElements.set('settings', settingsScreen);
@@ -396,7 +393,7 @@ export class UIManager {
       // Force full page reload to ensure clean state
       window.location.reload();
     });
-    mainMenuBtn.addEventListener('click', () => this.showScreen('menu'));
+    mainMenuBtn.addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
     
     this.gameContainer!.appendChild(gameOverScreen);
     this.screenElements.set('gameOver', gameOverScreen);
@@ -437,9 +434,9 @@ export class UIManager {
     const settingsBtn = pauseScreen.querySelector('#pause-settings-btn') as HTMLButtonElement;
     const quitBtn = pauseScreen.querySelector('#quit-to-menu-btn') as HTMLButtonElement;
     
-    resumeBtn.addEventListener('click', () => this.showScreen('playing'));
+    resumeBtn.addEventListener('click', () => { void gameEngine.popScreen(); });
     settingsBtn.addEventListener('click', () => this.showScreen('settings'));
-    quitBtn.addEventListener('click', () => this.showScreen('menu'));
+    quitBtn.addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
     
     this.gameContainer!.appendChild(pauseScreen);
     this.screenElements.set('paused', pauseScreen);
@@ -449,19 +446,17 @@ export class UIManager {
    * Start a new game
    */
   private startGame(mode: string = 'multiples'): void {
-    // Check if this is a subsequent game start (entities already exist)
-    // If so, do a full page reload to ensure clean state
+    // Subsequent start: reload for clean state (canvas/entity teardown is not yet supported).
     if (document.querySelector('canvas')) {
       console.log('Canvas already exists, reloading for clean state...');
       window.location.reload();
       return;
     }
-    
+
     gameEngine.setResource('gameMode', mode);
     gameEngine.setResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL);
-    
-    this.showScreen('playing');
-    // Initialize game here
+
+    void gameEngine.setScreen('playing', {});
     console.log(`Starting new game in ${mode} mode...`);
   }
   
@@ -470,35 +465,6 @@ export class UIManager {
    */
   private showHighScores(): void {
     alert('High Scores feature coming soon!');
-  }
-  
-  /**
-   * Update game state resource
-   */
-  private updateGameState(screen: GameScreen): void {
-    let gameState: 'menu' | 'playing' | 'paused' | 'gameOver';
-    
-    switch (screen) {
-      case 'menu':
-      case 'settings':
-        gameState = 'menu';
-        break;
-      case 'playing':
-        gameState = 'playing';
-        break;
-      case 'paused':
-        gameState = 'paused';
-        break;
-      case 'gameOver':
-        gameState = 'gameOver';
-        break;
-      default:
-        gameState = 'menu';
-    }
-    
-    if (gameEngine.getResource('gameState') !== gameState) {
-      gameEngine.setResource('gameState', gameState);
-    }
   }
   
   /**
@@ -516,8 +482,6 @@ export class UIManager {
    * Update UI elements with game data
    */
   updateGameplayUI(score: number, lives: number, level: string): void {
-    if (this.currentScreen !== 'playing') return;
-    
     const scoreDisplay = document.getElementById('score-display');
     const livesDisplay = document.getElementById('lives-display');
     const levelDisplay = document.getElementById('level-display');

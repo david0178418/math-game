@@ -41,12 +41,39 @@ export class GameInitializer {
   async initialize(): Promise<void> {
     // UI Manager handles HTML setup now
     await this.initializeSystems();
-    
-    // Set up integration between UI and game systems
-    this.setupUIIntegration();
-    
-    // Show main menu (entities will be created when game starts)
-    uiManager.showScreen('menu');
+
+    this.setupScreenHooks();
+    await gameEngine.setScreen('menu', {});
+  }
+
+  /**
+   * Wire screen lifecycle hooks. ECS screen state drives DOM, not vice versa.
+   */
+  private setupScreenHooks(): void {
+    gameEngine.onScreenEnter('menu', () => {
+      uiManager.showScreen('menu');
+    });
+
+    gameEngine.onScreenEnter('playing', () => {
+      uiManager.showScreen('playing');
+      this.setupCanvas();
+      this.createEntities();
+      this.startGame();
+    });
+
+    gameEngine.onScreenEnter('paused', () => {
+      uiManager.showScreen('paused');
+    });
+
+    gameEngine.onScreenEnter('gameOver', () => {
+      const player = gameEngine.entityManager.getEntitiesWithQuery(['player']).at(0);
+      const finalScore = player?.components.player.score ?? 0;
+      const finalScoreElement = document.getElementById('final-score');
+      if (finalScoreElement) {
+        finalScoreElement.textContent = `Final Score: ${finalScore}`;
+      }
+      uiManager.showScreen('gameOver');
+    });
   }
 
   /**
@@ -69,25 +96,6 @@ export class GameInitializer {
     initializeInputSystem();
 
     console.log('Core systems initialized (render system will be added when canvas is ready)');
-  }
-
-  /**
-   * Set up integration between UI and game systems
-   */
-  private setupUIIntegration(): void {
-    // Override the UIManager's startGame method to properly initialize entities
-    const originalStartGame = uiManager['startGame'].bind(uiManager);
-    uiManager['startGame'] = (): void => {
-      // First show the playing screen to create the canvas element
-      originalStartGame();
-      
-      // Then set up the canvas and game entities
-      setTimeout(() => {
-        this.setupCanvas();
-        this.createEntities();
-        this.startGame();
-      }, 0); // Use setTimeout to ensure DOM update completes
-    };
   }
 
   /**
@@ -137,7 +145,6 @@ export class GameInitializer {
    * Reset global game state
    */
   private resetGameState(): void {
-    gameEngine.setResource('gameState', 'playing');
     gameEngine.setResource('score', { value: 0 });
 
     console.log('Game state reset for new game');

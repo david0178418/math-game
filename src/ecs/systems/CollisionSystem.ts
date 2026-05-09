@@ -15,6 +15,18 @@ import {
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG, GAME_CONFIG } from '../../game/config';
 import { startShakeAnimation } from './AnimationSystem';
+import type { Components } from '../Engine';
+
+const triggerGameOver = (playerComp: Components['player'], reason: string): void => {
+  console.log(reason);
+  playerComp.gameOverPending = true;
+  playerComp.deathAnimationActive = true;
+  playerComp.deathAnimationStartTime = Date.now();
+  playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
+  setTimeout(() => {
+    gameEngine.setScreen('gameOver', {});
+  }, ANIMATION_CONFIG.DEATH.DURATION);
+};
 
 /**
  * Collision Detection System
@@ -157,22 +169,11 @@ function handlePlayerProblemCollision(
       ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.DURATION
     );
     
-    // Check for game over
     if (playerComp.lives <= 0) {
-      console.log('Game Over!');
-      // Disable player controls immediately
-      playerComp.gameOverPending = true;
-      // Start death animation
-      playerComp.deathAnimationActive = true;
-      playerComp.deathAnimationStartTime = Date.now();
-      playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
-      // Add delay before showing game over screen
-      setTimeout(() => {
-        gameEngine.setResource('gameState', 'gameOver');
-      }, ANIMATION_CONFIG.DEATH.DURATION);
+      triggerGameOver(playerComp, 'Game Over!');
     }
   }
-  
+
   // Hide the consumed problem by making it invisible
   problemRenderable.color = 'transparent';
   problemRenderable.size = 0;
@@ -218,19 +219,8 @@ function handlePlayerEnemyCollision(
   healthComp.invulnerable = true;
   healthComp.invulnerabilityTime = performance.now() + GAME_CONFIG.TIMING.INVULNERABILITY;
   
-  // Check for game over
   if (playerComp.lives <= 0) {
-    console.log('Game Over!');
-    // Disable player controls immediately
-    playerComp.gameOverPending = true;
-    // Start death animation
-    playerComp.deathAnimationActive = true;
-    playerComp.deathAnimationStartTime = Date.now();
-    playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
-    // Add delay before showing game over screen
-    setTimeout(() => {
-      gameEngine.setResource('gameState', 'gameOver');
-    }, ANIMATION_CONFIG.DEATH.DURATION);
+    triggerGameOver(playerComp, 'Game Over!');
   }
 }
 
@@ -320,15 +310,7 @@ function handlePlayerTongueCollision(
     });
     
     if (playerComp.lives <= 0) {
-      console.log('💀 Game Over due to frog tongue attack!');
-      playerComp.gameOverPending = true;
-      playerComp.deathAnimationActive = true;
-      playerComp.deathAnimationStartTime = Date.now();
-      playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
-      
-      setTimeout(() => {
-        gameEngine.setResource('gameState', 'gameOver');
-      }, ANIMATION_CONFIG.DEATH.DURATION);
+      triggerGameOver(playerComp, '💀 Game Over due to frog tongue attack!');
     }
   } catch (error) {
     console.error(`🐸 ERROR: Failed to handle tongue collision for player ${player.id}:`, error);
