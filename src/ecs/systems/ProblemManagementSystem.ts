@@ -1,4 +1,4 @@
-import { gameEngine, EntityFactory } from '../Engine';
+import { gameEngine, EntityFactory, type GameEngine } from '../Engine';
 import { GAME_CONFIG, SCORE_THRESHOLDS } from '../../game/config';
 import { gridToPixel } from './MovementSystem';
 import { mathProblemGenerator } from '../../game/MathProblemGenerator';
@@ -28,34 +28,26 @@ export function addProblemManagementSystemToEngine(): void {
     .addQuery('players', playerQuery)
     .addQuery('allPositions', positionEntityQuery)
     .addQuery('enemies', enemyQuery)
-    .setProcess(({ queries }) => {
-      // Count active (non-consumed) problems
+    .setProcess(({ queries, ecs }) => {
       const activeProblems = queries.mathProblems.filter(
         problem => !problem.components.mathProblem.consumed
       );
-      
-      // Check if we need to populate the grid initially or after level completion
+
       const currentTime = performance.now();
-      if (activeProblems.length === 0 && 
+      if (activeProblems.length === 0 &&
           currentTime - lastSpawnTime > GAME_CONFIG.TIMING.SHORT_DELAY) {
-        
-        // Adjust difficulty based on player score
         const player = queries.players[0];
         if (player) {
           adjustDifficultyBasedOnScore(player.components.player.score);
         }
-        
-        // Populate entire grid with problems
+
         populateFullGrid(queries.allPositions);
-        
+
         lastSpawnTime = currentTime;
       }
-      
-      // Check for level completion in multiples mode
-      checkLevelCompletion(queries.mathProblems, queries.enemies);
-      
-      // Clean up old consumed problems (optional optimization)
-      cleanupConsumedProblems(queries.mathProblems);
+
+      checkLevelCompletion(ecs, queries.mathProblems, queries.enemies);
+      cleanupConsumedProblems(ecs, queries.mathProblems);
     });
 }
 
@@ -143,7 +135,7 @@ function adjustDifficultyBasedOnScore(score: number): void {
 /**
  * Check if all correct answers have been consumed (level completion)
  */
-function checkLevelCompletion(mathProblems: MathProblemEntityWithRenderable[], enemies: EnemyEntity[]): void {
+function checkLevelCompletion(ecs: GameEngine, mathProblems: MathProblemEntityWithRenderable[], enemies: EnemyEntity[]): void {
   const gameMode = gameEngine.getResource('gameMode');
   const currentLevel = gameEngine.getResource('currentLevel');
   
@@ -174,14 +166,12 @@ function checkLevelCompletion(mathProblems: MathProblemEntityWithRenderable[], e
     // Update level and show completion message
     gameEngine.setResource('currentLevel', nextLevel);
     
-    // Clear ALL math problems (consumed and non-consumed)
     mathProblems.forEach(problem => {
-      gameEngine.entityManager.removeEntity(problem.id);
+      ecs.commands.removeEntity(problem.id);
     });
-    
-    // Clear all enemies to start fresh for the new level
+
     enemies.forEach((enemy) => {
-      gameEngine.entityManager.removeEntity(enemy.id);
+      ecs.commands.removeEntity(enemy.id);
     });
     
     // Force immediate grid repopulation by resetting last spawn time
@@ -209,16 +199,15 @@ function updateLevelDisplay(): void {
 /**
  * Clean up consumed problems that are no longer visible
  */
-function cleanupConsumedProblems(mathProblems: MathProblemEntityWithRenderable[]): void {
-  const consumedProblems = mathProblems.filter(
-    problem => problem.components.mathProblem.consumed &&
-               problem.components.renderable.size === 0
-  );
-  
-  // Remove consumed problems if we have too many total problems
-  if (mathProblems.length > PROBLEM_CONFIG.TOTAL_PROBLEMS) {
-    consumedProblems.forEach(problem => {
-      gameEngine.entityManager.removeEntity(problem.id);
+function cleanupConsumedProblems(ecs: GameEngine, mathProblems: MathProblemEntityWithRenderable[]): void {
+  if (mathProblems.length <= PROBLEM_CONFIG.TOTAL_PROBLEMS) return;
+
+  mathProblems
+    .filter(problem =>
+      problem.components.mathProblem.consumed &&
+      problem.components.renderable.size === 0
+    )
+    .forEach(problem => {
+      ecs.commands.removeEntity(problem.id);
     });
-  }
 } 
