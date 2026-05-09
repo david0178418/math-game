@@ -8,10 +8,8 @@ import {
   initializeInputSystem,
   addInputSystemToEngine
 } from '../ecs/systems/InputSystem';
-import {
-  addMovementSystemToEngine,
-  gridToPixel
-} from '../ecs/systems/MovementSystem';
+import { addMovementSystemToEngine } from '../ecs/systems/MovementSystem';
+import { gridToPixel } from '../ecs/gameUtils';
 import {
   addAnimationSystemToEngine
 } from '../ecs/systems/AnimationSystem';

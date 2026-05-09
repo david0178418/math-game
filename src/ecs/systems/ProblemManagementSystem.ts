@@ -1,6 +1,6 @@
 import { gameEngine, EntityFactory, type GameEngine } from '../Engine';
 import { GAME_CONFIG, SCORE_THRESHOLDS } from '../../game/config';
-import { gridToPixel } from './MovementSystem';
+import { gridToPixel } from '../gameUtils';
 import { mathProblemGenerator } from '../../game/MathProblemGenerator';
 import {
   mathProblemWithRenderableQuery,

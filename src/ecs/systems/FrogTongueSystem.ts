@@ -1,7 +1,7 @@
 import { gameEngine } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { GAME_CONFIG } from '../../game/config';
-import { pixelToGrid } from './MovementSystem';
+import { pixelToGrid } from '../gameUtils';
 import { 
   enemyQuery, 
   playerQuery,

@@ -1,5 +1,5 @@
 import { gameEngine, type GameEngine } from '../Engine';
-import { pixelToGrid, gridToPixel } from './MovementSystem';
+import { pixelToGrid, gridToPixel } from '../gameUtils';
 import { GAME_CONFIG } from '../../game/config';
 import type { AIBehavior } from '../../types/shared';
 import { 
