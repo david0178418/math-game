@@ -174,7 +174,6 @@ let gameRunning = false;
  */
 export async function initializeEngine(): Promise<void> {
   setupEventHandlers();
-  setupComponentCallbacks();
 
   await gameEngine.initialize();
 
@@ -209,40 +208,6 @@ function setupEventHandlers(): void {
   });
 
   console.log('Event handlers initialized');
-}
-
-/**
- * Set up component callbacks for debugging and monitoring
- */
-function setupComponentCallbacks(): void {
-  // Monitor player component changes
-  gameEngine.onComponentAdded('player', ({ value, entity }) => {
-    console.log(`🎮 Player component added to entity ${entity.id}:`, value);
-  });
-
-  gameEngine.onComponentRemoved('player', ({ value, entity }) => {
-    console.log(`🎮 Player component removed from entity ${entity.id}:`, value);
-  });
-
-  // Monitor enemy spawning/despawning
-  gameEngine.onComponentAdded('enemy', ({ value, entity }) => {
-    console.log(`👾 Enemy spawned (entity ${entity.id}):`, value);
-  });
-
-  gameEngine.onComponentRemoved('enemy', ({ value, entity }) => {
-    console.log(`👾 Enemy despawned (entity ${entity.id}):`, value);
-  });
-
-  // Monitor math problem lifecycle
-  gameEngine.onComponentAdded('mathProblem', ({ value, entity }) => {
-    console.log(`🔢 Math problem created (entity ${entity.id}):`, value);
-  });
-
-  gameEngine.onComponentRemoved('mathProblem', ({ value, entity }) => {
-    console.log(`🔢 Math problem removed (entity ${entity.id}):`, value);
-  });
-
-  console.log('Component callbacks initialized');
 }
 
 /**
