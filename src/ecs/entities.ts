@@ -1,5 +1,5 @@
 import { gameEngine, type GameEngine } from './Engine';
-import { GAME_CONFIG } from '../game/config';
+import { GAME_CONFIG } from '../config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import type { AllComponents } from './types';
 import flyImage from '../assets/images/fly.svg';

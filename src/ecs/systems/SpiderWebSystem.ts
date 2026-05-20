@@ -1,6 +1,6 @@
 import { gameEngine, type GameEngine } from '../Engine';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
-import { GAME_CONFIG } from '../../game/config';
+import { GAME_CONFIG } from '../../config';
 import { gridToPixel } from '../gameUtils';
 
 const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.spider;

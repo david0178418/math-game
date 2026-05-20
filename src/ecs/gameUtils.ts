@@ -1,4 +1,4 @@
-import { GAME_CONFIG, SCORE_THRESHOLDS } from '../game/config';
+import { GAME_CONFIG, SCORE_THRESHOLDS } from '../config';
 import type { GameTimer } from './types';
 import type { PlayerEntity } from './queries';
 

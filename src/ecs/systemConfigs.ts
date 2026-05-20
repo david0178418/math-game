@@ -1,4 +1,4 @@
-import { GAME_CONFIG } from '../game/config';
+import { GAME_CONFIG } from '../config';
 
 /**
  * System Configuration Constants

@@ -13,7 +13,7 @@ import {
   type FrogTongueEntity
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { ANIMATION_CONFIG, GAME_CONFIG } from '../../game/config';
+import { ANIMATION_CONFIG, GAME_CONFIG } from '../../config';
 import { startShake, startDeathAnimation } from './AnimationSystem';
 
 const triggerGameOver = (player: PlayerEntityWithHealth, reason: string): void => {

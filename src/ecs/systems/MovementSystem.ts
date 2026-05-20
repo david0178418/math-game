@@ -1,6 +1,6 @@
 import { gameEngine } from '../Engine';
 import type { GameAction } from '../types';
-import { GAME_CONFIG } from '../../game/config';
+import { GAME_CONFIG } from '../../config';
 import { startGridMovement, isEntityAnimating } from './AnimationSystem';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { playerQuery } from '../queries';

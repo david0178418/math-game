@@ -1,7 +1,7 @@
 import { gameEngine, type GameEngine } from '../Engine';
 import { createTweenSequence } from 'ecspresso/plugins/scripting/tween';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { ANIMATION_CONFIG } from '../../game/config';
+import { ANIMATION_CONFIG } from '../../config';
 
 export { ANIMATION_CONFIG };
 

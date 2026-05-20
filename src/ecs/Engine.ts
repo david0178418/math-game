@@ -4,7 +4,7 @@ import { createTimerPlugin } from 'ecspresso/plugins/scripting/timers';
 import { createTweenPlugin } from 'ecspresso/plugins/scripting/tween';
 import { createCoroutinePlugin } from 'ecspresso/plugins/scripting/coroutine';
 import { SYSTEM_PRIORITIES } from './systemConfigs';
-import { GAME_CONFIG } from '../game/config';
+import { GAME_CONFIG } from '../config';
 import type {
   Components,
   Resources,

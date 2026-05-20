@@ -1,7 +1,7 @@
 import { gameEngine, type GameEngine } from '../Engine';
 import { createEnemy } from '../entities';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
-import { GAME_CONFIG } from '../../game/config';
+import { GAME_CONFIG } from '../../config';
 import { gridToPixel } from '../gameUtils';
 import {
   enemyQuery,

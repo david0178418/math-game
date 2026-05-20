@@ -1,5 +1,5 @@
 import { gameEngine } from '../Engine';
-import { updateGameplayUI } from '../../game/UIManager';
+import { updateGameplayUI } from '../../ui/UIManager';
 import { playerQuery } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { getPlayerDifficultyLevel } from '../gameUtils';

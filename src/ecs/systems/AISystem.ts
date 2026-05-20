@@ -2,7 +2,7 @@ import { gameEngine, type GameEngine } from '../Engine';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { createNavGrid, findPath, type NavGrid } from 'ecspresso/plugins/ai/pathfinding';
 import { pixelToGrid, gridToPixel } from '../gameUtils';
-import { GAME_CONFIG } from '../../game/config';
+import { GAME_CONFIG } from '../../config';
 import type { AIBehavior, EnemyType } from '../../types/shared';
 import {
   enemyQuery,

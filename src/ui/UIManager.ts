@@ -1,6 +1,6 @@
 import { gameEngine } from '../ecs/Engine';
 import type { GameMode } from '../ecs/types';
-import { GAME_CONFIG } from './config';
+import { GAME_CONFIG } from '../config';
 
 // UI-layer screen set. Includes UI-only screens (modeSelect, settings) that
 // have no ECS gameplay semantics. The ECS engine tracks its own narrower set
@@ -353,6 +353,11 @@ export const updateGameplayUI = (score: number, lives: number, level: string): v
 export const updateObjective = (level: number): void => {
   const el = document.getElementById('objective-display');
   if (el) el.textContent = `Find multiples of ${level}!`;
+};
+
+export const setFinalScore = (score: number): void => {
+  const el = document.getElementById('final-score');
+  if (el) el.textContent = `Final Score: ${score}`;
 };
 
 const escActions: Partial<Record<UIScreen, () => void>> = {

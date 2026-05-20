@@ -1,9 +1,9 @@
 import { gameEngine, type GameEngine } from '../Engine';
 import { createMathProblem } from '../entities';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
-import { GAME_CONFIG, SCORE_THRESHOLDS } from '../../game/config';
+import { GAME_CONFIG } from '../../config';
 import { gridToPixel } from '../gameUtils';
-import { mathProblemGenerator } from '../../game/MathProblemGenerator';
+import { generateMultiplesProblems } from '../../math/problems';
 import {
   mathProblemWithRenderableQuery,
   playerQuery,
@@ -33,7 +33,6 @@ export function addProblemManagementSystemToEngine(): void {
       );
 
       if (player && activeProblems.length === 0 && !player.components.timers.problemSpawn?.active) {
-        adjustDifficultyBasedOnScore(player.components.player.score);
         populateFullGrid(ecs, queries.allPositions);
         player.components.timers.problemSpawn = createTimer(GAME_CONFIG.TIMING.SHORT_DELAY / 1000);
       }
@@ -53,7 +52,7 @@ function populateFullGrid(ecs: GameEngine, allPositionEntities: PositionEntity[]
   if (gameMode !== 'multiples') return;
   
   // Get all problems needed for this level (30 problems for full grid)
-  const allProblems = mathProblemGenerator.generateMultiplesProblems(currentLevel, PROBLEM_CONFIG.TOTAL_PROBLEMS);
+  const allProblems = generateMultiplesProblems(currentLevel, PROBLEM_CONFIG.TOTAL_PROBLEMS);
   
   // Get ALL grid positions that don't already have math problems
   const availablePositions = getAllGridPositionsWithoutMathProblems(allPositionEntities);
@@ -113,24 +112,11 @@ function getAllGridPositionsWithoutMathProblems(allPositionEntities: PositionEnt
 }
 
 /**
- * Adjust difficulty based on player score
- */
-function adjustDifficultyBasedOnScore(score: number): void {
-  if (score < SCORE_THRESHOLDS.MEDIUM_DIFFICULTY_SCORE) {
-    mathProblemGenerator.setDifficulty('EASY');
-  } else if (score < SCORE_THRESHOLDS.HARD_DIFFICULTY_SCORE) {
-    mathProblemGenerator.setDifficulty('MEDIUM');
-  } else {
-    mathProblemGenerator.setDifficulty('HARD');
-  }
-}
-
-/**
  * Check if all correct answers have been consumed (level completion).
  *
  * Triggers a `setScreen('playing', { level: nextLevel })` round-trip — the
  * exit clears all `{ scope: 'playing' }` entities (problems, enemies, webs)
- * and the re-entry rebuilds the board via `GameInitializer`'s screen hook.
+ * and the re-entry rebuilds the board via `bootstrap.ts`'s screen hook.
  * The player entity is unscoped, so score and lives persist into the new level.
  */
 function checkLevelCompletion(player: PlayerEntity, mathProblems: MathProblemEntityWithRenderable[]): void {

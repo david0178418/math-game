@@ -71,24 +71,6 @@ export const GAME_CONFIG = {
 } as const;
 
 
-export const DIFFICULTY_CONFIG = {
-  EASY: {
-    level: 1,
-    maxNumber: 10,
-    operations: ['+', '-'] as const,
-  },
-  MEDIUM: {
-    level: 2,
-    maxNumber: 50,
-    operations: ['+', '-', '*'] as const,
-  },
-  HARD: {
-    level: 3,
-    maxNumber: 100,
-    operations: ['+', '-', '*', '/'] as const,
-  },
-} as const;
-
 export const ANIMATION_CONFIG = {
   MOVEMENT_DURATION: 750,
   ROTATION_DURATION_RATIO: 0.25,

@@ -1,5 +1,5 @@
 import { gameEngine, type GameEngine } from '../Engine';
-import { GAME_CONFIG } from '../../game/config';
+import { GAME_CONFIG } from '../../config';
 import { pixelToGrid } from '../gameUtils';
 import {
   createCoroutine,

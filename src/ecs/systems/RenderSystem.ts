@@ -1,5 +1,5 @@
 import { gameEngine } from '../Engine';
-import { GAME_CONFIG } from '../../game/config';
+import { GAME_CONFIG } from '../../config';
 import {
   renderableEntityQuery,
   playerQuery,
