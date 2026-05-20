@@ -175,41 +175,9 @@ let gameRunning = false;
  * Initialize the game engine with default configuration
  */
 export async function initializeEngine(): Promise<void> {
-  setupEventHandlers();
-
   await gameEngine.initialize();
 
   console.log('ECSpresso engine initialized');
-}
-
-/**
- * Set up event handlers for game events
- */
-function setupEventHandlers(): void {
-  // Handle player movement events
-  gameEngine.eventBus.subscribe('playerMoved', (event) => {
-    // Could be used for sound effects, particle effects, etc.
-    console.debug(`Player moved to (${event.x}, ${event.y})`);
-  });
-
-  // Handle problem solved events
-  gameEngine.eventBus.subscribe('problemSolved', (event) => {
-    if (event.correct) {
-      console.log(`✅ Correct answer: ${event.value}`);
-      // Could trigger positive sound effects, visual feedback, etc.
-    } else {
-      console.log(`❌ Wrong answer: ${event.value}`);
-      // Could trigger negative sound effects, screen shake, etc.
-    }
-  });
-
-  // Handle enemy collision events
-  gameEngine.eventBus.subscribe('enemyCollision', (event) => {
-    console.log(`💥 Player ${event.playerId} hit by enemy ${event.enemyId}`);
-    // Could trigger damage effects, screen flash, etc.
-  });
-
-  console.log('Event handlers initialized');
 }
 
 /**
