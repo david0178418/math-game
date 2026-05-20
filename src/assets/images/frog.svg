@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+	<!-- Back feet -->
+	<ellipse cx="18" cy="78" rx="11" ry="7" fill="#388e3c" stroke="#1b5e20" stroke-width="1.5" transform="rotate(20 18 78)"/>
+	<ellipse cx="82" cy="78" rx="11" ry="7" fill="#388e3c" stroke="#1b5e20" stroke-width="1.5" transform="rotate(-20 82 78)"/>
+
+	<!-- Back toes -->
+	<g stroke="#1b5e20" stroke-width="1.5" stroke-linecap="round" fill="none">
+		<path d="M9,80 L4,82"/>
+		<path d="M11,84 L8,89"/>
+		<path d="M15,87 L14,93"/>
+		<path d="M91,80 L96,82"/>
+		<path d="M89,84 L92,89"/>
+		<path d="M85,87 L86,93"/>
+	</g>
+
+	<!-- Front feet -->
+	<ellipse cx="24" cy="45" rx="8" ry="5" fill="#388e3c" stroke="#1b5e20" stroke-width="1.5" transform="rotate(-30 24 45)"/>
+	<ellipse cx="76" cy="45" rx="8" ry="5" fill="#388e3c" stroke="#1b5e20" stroke-width="1.5" transform="rotate(30 76 45)"/>
+
+	<!-- Body -->
+	<ellipse cx="50" cy="60" rx="33" ry="28" fill="#4caf50" stroke="#1b5e20" stroke-width="2"/>
+
+	<!-- Belly -->
+	<ellipse cx="50" cy="70" rx="22" ry="12" fill="#c5e1a5"/>
+
+	<!-- Back spots -->
+	<ellipse cx="34" cy="52" rx="4" ry="3" fill="#2e7d32" opacity="0.85"/>
+	<ellipse cx="66" cy="52" rx="4" ry="3" fill="#2e7d32" opacity="0.85"/>
+	<ellipse cx="50" cy="44" rx="3.5" ry="2.5" fill="#2e7d32" opacity="0.85"/>
+	<ellipse cx="42" cy="64" rx="3" ry="2.2" fill="#2e7d32" opacity="0.7"/>
+	<ellipse cx="58" cy="64" rx="3" ry="2.2" fill="#2e7d32" opacity="0.7"/>
+
+	<!-- Wide smile -->
+	<path d="M30,60 Q50,73 70,60" fill="none" stroke="#1b5e20" stroke-width="2.5" stroke-linecap="round"/>
+
+	<!-- Eye bulges -->
+	<circle cx="34" cy="32" r="14" fill="#4caf50" stroke="#1b5e20" stroke-width="2"/>
+	<circle cx="66" cy="32" r="14" fill="#4caf50" stroke="#1b5e20" stroke-width="2"/>
+
+	<!-- Eye whites -->
+	<circle cx="34" cy="28" r="10" fill="white" stroke="#222" stroke-width="1.5"/>
+	<circle cx="66" cy="28" r="10" fill="white" stroke="#222" stroke-width="1.5"/>
+
+	<!-- Pupils -->
+	<circle cx="34" cy="28" r="5.5" fill="#222"/>
+	<circle cx="66" cy="28" r="5.5" fill="#222"/>
+
+	<!-- Eye highlights -->
+	<circle cx="31" cy="25" r="2" fill="white"/>
+	<circle cx="63" cy="25" r="2" fill="white"/>
+
+	<!-- Nostrils -->
+	<circle cx="46" cy="50" r="1.2" fill="#1b5e20"/>
+	<circle cx="54" cy="50" r="1.2" fill="#1b5e20"/>
+</svg>

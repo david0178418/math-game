@@ -1,3 +1,7 @@
+import lizardImage from './assets/images/lizard.svg';
+import spiderImage from './assets/images/spider.svg';
+import frogImage from './assets/images/frog.svg';
+
 export const GAME_CONFIG = {
   GRID: {
     WIDTH: 6,
@@ -45,11 +49,13 @@ export const GAME_CONFIG = {
   ENEMY_TYPES: {
     lizard: {
       COLOR: 'red',
+      IMAGE: lizardImage,
       MOVE_SPEED_MULTIPLIER: 1.0,
       AI_BEHAVIORS: ['chase', 'patrol', 'random', 'guard'] as const,
     },
     spider: {
       COLOR: 'purple',
+      IMAGE: spiderImage,
       MOVE_SPEED_MULTIPLIER: 0.9,
       WEB_DURATION: 8000,
       WEB_PLACEMENT_CHANCE: 0.20,
@@ -59,6 +65,7 @@ export const GAME_CONFIG = {
     },
     frog: {
       COLOR: 'green',
+      IMAGE: frogImage,
       MOVE_SPEED_MULTIPLIER: 1.1,
       TONGUE_RANGE: 3,
       TONGUE_SPEED: 424,

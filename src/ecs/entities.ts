@@ -44,10 +44,11 @@ const enemyComponents = (
 ): Partial<AllComponents> => ({
   position: { x, y },
   renderable: {
-    shape: 'rectangle',
+    shape: 'image',
     color: GAME_CONFIG.ENEMY_TYPES[enemyType].COLOR,
     size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
-    layer: GAME_CONFIG.LAYERS.ENTITIES
+    layer: GAME_CONFIG.LAYERS.ENTITIES,
+    imageSrc: GAME_CONFIG.ENEMY_TYPES[enemyType].IMAGE,
   },
   enemy: {
     enemyType,

@@ -15,6 +15,11 @@ import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { timerProgress } from '../gameUtils';
 import flyImage from '../../assets/images/fly.svg';
 
+const PRELOAD_IMAGES: readonly string[] = [
+  flyImage,
+  ...Object.values(GAME_CONFIG.ENEMY_TYPES).map(t => t.IMAGE),
+];
+
 // Canvas context and configuration
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
@@ -39,13 +44,16 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-// Preload player image
-async function preloadPlayerImage(): Promise<void> {
-  try {
-    await loadImage(flyImage);
-    console.log('🖼️ Player image loaded successfully');
-  } catch (error) {
-    console.warn('⚠️ Failed to load player image:', error);
+async function preloadEntityImages(): Promise<void> {
+  const results = await Promise.allSettled(PRELOAD_IMAGES.map(loadImage));
+  const failures = results
+    .map((r, i) => (r.status === 'rejected' ? PRELOAD_IMAGES[i] : null))
+    .filter((src): src is string => src !== null);
+
+  if (failures.length === 0) {
+    console.log('🖼️ Entity images loaded successfully');
+  } else {
+    console.warn('⚠️ Failed to load some entity images:', failures);
   }
 }
 
@@ -64,7 +72,7 @@ export function initializeRenderSystem(canvasElement: HTMLCanvasElement): void {
 
   if (isFirstInit) {
     window.addEventListener('resize', resizeCanvas);
-    preloadPlayerImage();
+    preloadEntityImages();
     console.log('Render system initialized');
   }
 }
@@ -160,7 +168,7 @@ export function addRenderSystemToEngine(): void {
         const deathScale = playerComp?.deathScale ?? 1.0;
 
         const shake = gameEngine.entityManager.getComponent(entity.id, 'shake');
-        drawEntity(position, renderable, isInvulnerable, deathScale, entity.id, shake?.offsetX ?? 0, shake?.offsetY ?? 0);
+        drawEntity(position, renderable, isInvulnerable, deathScale, shake?.offsetX ?? 0, shake?.offsetY ?? 0);
       }
 
       // Draw enhanced frog tongues (after entities but before UI text)
@@ -280,7 +288,6 @@ function drawEntity(
   },
   isInvulnerable: boolean = false,
   deathScale: number = 1.0,
-  entityId?: number,
   shakeX: number = 0,
   shakeY: number = 0,
 ): void {
@@ -288,22 +295,13 @@ function drawEntity(
 
   const centerX = position.x + GAME_CONFIG.GRID.CELL_SIZE / 2 + shakeX;
   const centerY = position.y + GAME_CONFIG.GRID.CELL_SIZE / 2 + shakeY;
-  
+
   // Apply reduced opacity for invulnerable entities
   if (isInvulnerable) {
     ctx.save();
     ctx.globalAlpha = 0.5; // 50% opacity during invincibility
   }
-  
-  // Check if this is an enemy entity and get enemy type for special rendering
-  let enemyType: 'lizard' | 'spider' | 'frog' | null = null;
-  if (entityId) {
-    const enemyComponent = gameEngine.entityManager.getComponent(entityId, 'enemy');
-    if (enemyComponent) {
-      enemyType = enemyComponent.enemyType;
-    }
-  }
-  
+
   if (renderable.shape === 'image' && renderable.imageSrc) {
     // Draw image
     const img = imageCache.get(renderable.imageSrc);
@@ -351,177 +349,20 @@ function drawEntity(
     ctx.arc(centerX, centerY, (renderable.size / 2) * deathScale, 0, Math.PI * 2);
     ctx.fill();
   } else if (renderable.shape === 'rectangle') {
-    // Enhanced enemy rendering with distinctive shapes
-    if (enemyType) {
-      drawEnhancedEnemy(centerX, centerY, renderable, enemyType, deathScale);
-    } else {
-      // Default rectangle rendering for non-enemies
-      ctx.fillStyle = renderable.color;
-      const halfSize = (renderable.size / 2) * deathScale;
-      ctx.fillRect(
-        centerX - halfSize,
-        centerY - halfSize,
-        renderable.size * deathScale,
-        renderable.size * deathScale
-      );
-    }
+    ctx.fillStyle = renderable.color;
+    const halfSize = (renderable.size / 2) * deathScale;
+    ctx.fillRect(
+      centerX - halfSize,
+      centerY - halfSize,
+      renderable.size * deathScale,
+      renderable.size * deathScale
+    );
   }
   
   // Restore opacity for invulnerable entities
   if (isInvulnerable) {
     ctx.restore();
   }
-}
-
-/**
- * Draw enhanced enemy with type-specific visual patterns
- */
-function drawEnhancedEnemy(
-  centerX: number, 
-  centerY: number, 
-  renderable: { color: string; size: number }, 
-  enemyType: 'lizard' | 'spider' | 'frog',
-  deathScale: number
-): void {
-  if (!ctx) return;
-  
-  const size = renderable.size * deathScale;
-  const halfSize = size / 2;
-  const currentTime = performance.now();
-  
-  ctx.save();
-  
-  switch (enemyType) {
-    case 'lizard':
-      // Lizard: Diamond shape with scales pattern
-      ctx.fillStyle = renderable.color;
-      
-      // Draw diamond body
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY - halfSize);
-      ctx.lineTo(centerX + halfSize, centerY);
-      ctx.lineTo(centerX, centerY + halfSize);
-      ctx.lineTo(centerX - halfSize, centerY);
-      ctx.closePath();
-      ctx.fill();
-      
-      // Add scales pattern
-      ctx.strokeStyle = 'rgba(139, 0, 0, 0.6)'; // Dark red scales
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 3; i++) {
-        const scaleRadius = (halfSize * 0.3) + (i * halfSize * 0.2);
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, scaleRadius, 0, 2 * Math.PI);
-        ctx.stroke();
-      }
-      
-      // Add eyes
-      ctx.fillStyle = 'yellow';
-      ctx.beginPath();
-      ctx.arc(centerX - halfSize * 0.3, centerY - halfSize * 0.3, 3, 0, 2 * Math.PI);
-      ctx.arc(centerX + halfSize * 0.3, centerY - halfSize * 0.3, 3, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
-      
-    case 'spider':
-      // Spider: Oval body with 8 legs
-      ctx.fillStyle = renderable.color;
-      
-      // Draw spider body (oval)
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY, halfSize * 0.6, halfSize * 0.8, 0, 0, 2 * Math.PI);
-      ctx.fill();
-      
-      // Draw spider legs
-      ctx.strokeStyle = renderable.color;
-      ctx.lineWidth = 3;
-      
-      for (let i = 0; i < 8; i++) {
-        const angle = (i * Math.PI) / 4;
-        const legLength = halfSize * 1.2;
-        const legBend = halfSize * 0.7;
-        
-        // Joint position
-        const jointX = centerX + Math.cos(angle) * legBend;
-        const jointY = centerY + Math.sin(angle) * legBend;
-        
-        // Leg end position
-        const legEndX = centerX + Math.cos(angle) * legLength;
-        const legEndY = centerY + Math.sin(angle) * legLength;
-        
-        // Draw leg from body to joint to end
-        ctx.beginPath();
-        ctx.moveTo(centerX + Math.cos(angle) * halfSize * 0.6, centerY + Math.sin(angle) * halfSize * 0.6);
-        ctx.lineTo(jointX, jointY);
-        ctx.lineTo(legEndX, legEndY);
-        ctx.stroke();
-      }
-      
-      // Add spider pattern on body
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY, halfSize * 0.3, halfSize * 0.5, 0, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
-      
-    case 'frog': {
-      // Frog: Rounded rectangle with eyes on top
-      ctx.fillStyle = renderable.color;
-
-      // Draw frog body (rounded rectangle)
-      const cornerRadius = halfSize * 0.3;
-      ctx.beginPath();
-      ctx.roundRect(
-        centerX - halfSize,
-        centerY - halfSize,
-        size,
-        size,
-        cornerRadius
-      );
-      ctx.fill();
-
-      // Add frog belly
-      ctx.fillStyle = 'rgba(144, 238, 144, 0.7)'; // Light green belly
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY + halfSize * 0.2, halfSize * 0.6, halfSize * 0.4, 0, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Draw bulging eyes on top
-      const eyeRadius = halfSize * 0.25;
-      const eyeOffsetY = -halfSize * 0.7;
-      
-      // Eye backgrounds
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.beginPath();
-      ctx.arc(centerX - halfSize * 0.3, centerY + eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
-      ctx.arc(centerX + halfSize * 0.3, centerY + eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
-      ctx.fill();
-      
-      // Eye pupils
-      ctx.fillStyle = 'black';
-      ctx.beginPath();
-      ctx.arc(centerX - halfSize * 0.3, centerY + eyeOffsetY, eyeRadius * 0.6, 0, 2 * Math.PI);
-      ctx.arc(centerX + halfSize * 0.3, centerY + eyeOffsetY, eyeRadius * 0.6, 0, 2 * Math.PI);
-      ctx.fill();
-      
-      // Eye highlights
-      ctx.fillStyle = 'white';
-      ctx.beginPath();
-      ctx.arc(centerX - halfSize * 0.3 + 2, centerY + eyeOffsetY - 2, eyeRadius * 0.3, 0, 2 * Math.PI);
-      ctx.arc(centerX + halfSize * 0.3 + 2, centerY + eyeOffsetY - 2, eyeRadius * 0.3, 0, 2 * Math.PI);
-      ctx.fill();
-      
-      // Add subtle throat movement animation
-      const throatPulse = 0.9 + 0.1 * Math.sin(currentTime * 0.005);
-      ctx.fillStyle = `rgba(144, 238, 144, ${0.4 * throatPulse})`;
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY + halfSize * 0.5, halfSize * 0.4, halfSize * 0.2 * throatPulse, 0, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
-    }
-  }
-  
-  ctx.restore();
 }
 
 // Draw numbers on math problem tiles
