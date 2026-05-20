@@ -71,6 +71,18 @@ export const GAME_CONFIG = {
 } as const;
 
 
+export const MOVEMENT_CONFIG = {
+  // Player top speed in pixels/sec. CELL_SIZE / 0.18s ≈ 590.
+  MAX_SPEED: 300,
+  // Acceleration applied to ramp up from rest and to brake into the final cell.
+  ACCEL: 2000,
+  // Duration of the rotation-only tween triggered at corners.
+  ROTATION_TWEEN_MS: 100,
+  // Hard cap on queued breadcrumbs so a mash doesn't commit the fly to a
+  // long uncancelable path. Rewrite-on-reversal handles the common case.
+  MAX_QUEUE_LENGTH: 8,
+} as const;
+
 export const ANIMATION_CONFIG = {
   MOVEMENT_DURATION: 750,
   ROTATION_DURATION_RATIO: 0.25,

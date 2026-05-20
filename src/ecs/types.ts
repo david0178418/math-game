@@ -84,6 +84,14 @@ export interface Components {
     segments: Array<{ x: number; y: number }>;
     phase: 'idle' | 'extending' | 'holding' | 'retracting';
   };
+  pathFollower: {
+    // Grid cell the fly was last snapped to; the implicit "behind" waypoint
+    // that the fly returns to when the queue is truncated to empty mid-segment.
+    anchorGridX: number;
+    anchorGridY: number;
+    breadcrumbs: Array<{ x: number; y: number }>;
+    speed: number;
+  };
 }
 
 export type AllComponents = Components

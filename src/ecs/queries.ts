@@ -11,6 +11,11 @@ export const playerQuery = {
   with: ['position', 'player', 'timers'],
 } as const;
 
+export const playerMovementQuery = {
+  with: ['position', 'player', 'pathFollower', 'timers'],
+  mutates: ['position', 'pathFollower'],
+} as const;
+
 export const playerWithHealthQuery = {
   with: ['position', 'player', 'collider', 'health', 'timers'],
 } as const;

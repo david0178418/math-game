@@ -2,29 +2,39 @@ import { gameEngine, type GameEngine } from './Engine';
 import { GAME_CONFIG } from '../config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import type { AllComponents } from './types';
+import { pixelToGrid } from './gameUtils';
 import flyImage from '../assets/images/fly.svg';
 
-const playerComponents = (x: number, y: number): Partial<AllComponents> => ({
-  position: { x, y, rotation: 0 },
-  renderable: {
-    shape: 'image',
-    color: GAME_CONFIG.COLORS.PLAYER,
-    size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
-    layer: GAME_CONFIG.LAYERS.PLAYER,
-    imageSrc: flyImage
-  },
-  player: {
-    score: GAME_CONFIG.GAMEPLAY.STARTING_SCORE,
-    lives: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
-    gameOverPending: false,
-    deathScale: 1.0
-  },
-  collider: {
-    width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
-    height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
-    group: 'player'
-  }
-});
+const playerComponents = (x: number, y: number): Partial<AllComponents> => {
+  const grid = pixelToGrid(x, y);
+  return {
+    position: { x, y, rotation: 0 },
+    renderable: {
+      shape: 'image',
+      color: GAME_CONFIG.COLORS.PLAYER,
+      size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+      layer: GAME_CONFIG.LAYERS.PLAYER,
+      imageSrc: flyImage
+    },
+    player: {
+      score: GAME_CONFIG.GAMEPLAY.STARTING_SCORE,
+      lives: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
+      gameOverPending: false,
+      deathScale: 1.0
+    },
+    collider: {
+      width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+      height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
+      group: 'player'
+    },
+    pathFollower: {
+      anchorGridX: grid.x,
+      anchorGridY: grid.y,
+      breadcrumbs: [],
+      speed: 0,
+    }
+  };
+};
 
 const enemyComponents = (
   x: number,

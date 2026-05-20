@@ -16,6 +16,25 @@ export const isEntityAnimating = (ecs: GameEngine, entityId: number): boolean =>
   ecs.entityManager.getComponent(entityId, 'tween') !== undefined;
 
 /**
+ * Tween rotation only (no position). Used by the player at corners — position
+ * is driven by the path follower, not a tween.
+ */
+export const startRotationTween = (
+  ecs: GameEngine,
+  entityId: number,
+  toRotation: number,
+  durationMs: number,
+): void => {
+  ecs.addComponent(entityId, 'tween', createTweenSequence([
+    {
+      targets: [{ component: 'position' as const, field: 'rotation' as const, to: toRotation }],
+      duration: durationMs / 1000,
+      easing: easeOutQuad,
+    },
+  ]).tween);
+};
+
+/**
  * Start a grid movement animation, optionally with a simultaneous rotation.
  * Position and rotation share one tween step so the easing curve stays
  * continuous (a split sequence introduces a velocity discontinuity at the
