@@ -627,6 +627,24 @@ function drawEnhancedSpiderWebs(spiderWebs: SpiderWebEntity[]): void {
   }
 }
 
+type TonguePhase = FrogTongueEntity['components']['frogTongue']['phase'];
+type Tongue = FrogTongueEntity['components']['frogTongue'];
+interface TongueStyle { baseOpacity: number; lineWidth: number; tongueColor: string }
+
+const TONGUE_PHASE_STYLES: Record<TonguePhase, (currentTime: number, tongue: Tongue) => TongueStyle> = {
+  // Filtered out by the caller — included for exhaustiveness.
+  idle: () => ({ baseOpacity: 1.0, lineWidth: 8, tongueColor: 'rgba(255, 20, 147, 1.0)' }),
+  extending: (currentTime) => {
+    const pulse = 0.8 + 0.2 * Math.sin(currentTime * 0.01);
+    return { baseOpacity: pulse, lineWidth: 8 * pulse, tongueColor: 'rgba(255, 20, 147, 1.0)' };
+  },
+  holding: () => ({ baseOpacity: 1.0, lineWidth: 10, tongueColor: 'rgba(255, 50, 150, 1.0)' }),
+  retracting: (_, tongue) => {
+    const fade = Math.max(0.3, tongue.currentLength / (tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE));
+    return { baseOpacity: fade, lineWidth: 8, tongueColor: 'rgba(255, 20, 147, 1.0)' };
+  },
+};
+
 /**
  * Draw enhanced frog tongues with improved animation and visual feedback
  */
@@ -640,7 +658,7 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
     const frogPos = frog.components.position;
     
     // Only draw if tongue is extended and has segments
-    if (!tongue.isExtended || tongue.segments.length === 0) {
+    if (tongue.phase === 'idle' || tongue.segments.length === 0) {
       continue;
     }
     
@@ -649,32 +667,8 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
     const frogCenterY = frogPos.y + GAME_CONFIG.GRID.CELL_SIZE / 2;
     
     ctx.save();
-    
-    // Calculate animation effects based on tongue phase
-    let baseOpacity = 1.0;
-    let lineWidth = 8;
-    let tongueColor = 'rgba(255, 20, 147, 1.0)';
-    
-    switch (frog.components.stateMachine.current) {
-      case 'extending': {
-        // Pulsing effect during extension
-        const extendPulse = 0.8 + 0.2 * Math.sin(currentTime * 0.01);
-        baseOpacity = extendPulse;
-        lineWidth *= extendPulse;
-        break;
-      }
-      case 'holding':
-        // Steady glow during hold
-        tongueColor = 'rgba(255, 50, 150, 1.0)';
-        lineWidth = 10;
-        break;
-      case 'retracting': {
-        // Fading effect during retraction
-        const retractFade = Math.max(0.3, tongue.currentLength / (tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE));
-        baseOpacity = retractFade;
-        break;
-      }
-    }
+
+    const { baseOpacity, lineWidth, tongueColor } = TONGUE_PHASE_STYLES[tongue.phase](currentTime, tongue);
     
     // Draw tongue shadow for depth
     ctx.strokeStyle = `rgba(120, 10, 80, ${baseOpacity * 0.3})`;

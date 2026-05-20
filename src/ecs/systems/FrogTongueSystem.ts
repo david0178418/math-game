@@ -2,19 +2,15 @@ import { gameEngine, type GameEngine } from '../Engine';
 import { GAME_CONFIG } from '../../game/config';
 import { pixelToGrid } from '../gameUtils';
 import {
-  createStateMachine,
-  createStateMachineHelpers,
-  type StateMachine,
-} from 'ecspresso/plugins/scripting/state-machine';
+  createCoroutine,
+  waitSeconds,
+  waitUntil,
+  type CoroutineGenerator,
+} from 'ecspresso/plugins/scripting/coroutine';
 import type { AllComponents } from '../Engine';
-
-// Tongue lifecycle runs on the ecspresso state-machine plugin's system —
-// no per-frog system needed.
 
 const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.FROG;
 const CELL = GAME_CONFIG.GRID.CELL_SIZE;
-
-const { defineStateMachine } = createStateMachineHelpers<GameEngine>();
 
 const DIRECTIONS = [
   { x:  0, y: -1 },
@@ -28,100 +24,53 @@ const HOLD_SECONDS = FROG_CONFIG.TONGUE_HOLD_DURATION / 1000;
 // Preserve original feel: probability is per 60Hz frame, not per second.
 const PER_FRAME_ATTACK_CHANCE = FROG_CONFIG.TONGUE_ATTACK_PROBABILITY * (1 / 60);
 
-// `initializeFrogTongue` guarantees frogTongue + stateMachine are attached
-// together, so missing-component cases here would indicate a logic bug.
+// `initializeFrogTongue` guarantees the frogTongue component is attached
+// alongside the coroutine, so a missing component would indicate a logic bug.
 function getTongue(ecs: GameEngine, entityId: number): AllComponents['frogTongue'] {
   const c = ecs.entityManager.getComponent(entityId, 'frogTongue');
   if (!c) throw new Error(`frog ${entityId} missing frogTongue component`);
   return c;
 }
-function getStateMachine(ecs: GameEngine, entityId: number): StateMachine {
-  const c = ecs.entityManager.getComponent(entityId, 'stateMachine');
-  if (!c) throw new Error(`frog ${entityId} missing stateMachine component`);
-  return c;
+
+function* tongueLifecycle(frogId: number): CoroutineGenerator {
+  while (true) {
+    const tongue = getTongue(gameEngine, frogId);
+    tongue.phase = 'idle';
+    tongue.segments = [];
+    tongue.currentLength = 0;
+    tongue.direction = { x: 0, y: 0 };
+
+    yield* waitSeconds(COOLDOWN_SECONDS);
+    yield* waitUntil(() => Math.random() < PER_FRAME_ATTACK_CHANCE);
+
+    tongue.phase = 'extending';
+    tongue.direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+    console.log(`🐸 Frog ${frogId} starting tongue attack in direction (${tongue.direction.x}, ${tongue.direction.y})`);
+
+    const maxLength = tongue.maxRange * CELL;
+    while (tongue.currentLength < maxLength) {
+      const dt: number = yield;
+      tongue.currentLength = Math.min(tongue.currentLength + FROG_CONFIG.TONGUE_SPEED * dt, maxLength);
+      updateTongueSegments(frogId, tongue);
+      // Segments stopped growing despite remaining range — hit obstacle.
+      const expectedSegments = Math.floor(tongue.currentLength / CELL);
+      if (tongue.segments.length < expectedSegments && tongue.segments.length < tongue.maxRange) break;
+    }
+
+    tongue.phase = 'holding';
+    yield* waitSeconds(HOLD_SECONDS);
+
+    tongue.phase = 'retracting';
+    while (tongue.currentLength > 0) {
+      const dt: number = yield;
+      tongue.currentLength = Math.max(0, tongue.currentLength - FROG_CONFIG.TONGUE_SPEED * dt);
+      updateTongueSegments(frogId, tongue);
+    }
+  }
 }
 
-const frogTongueFSM = defineStateMachine('frogTongue', {
-  initial: 'idle',
-  states: {
-    idle: {
-      onEnter: ({ ecs, entityId }) => {
-        const tongue = getTongue(ecs, entityId);
-        tongue.isExtended = false;
-        tongue.segments = [];
-        tongue.currentLength = 0;
-        tongue.direction = { x: 0, y: 0 };
-      },
-      transitions: [{
-        target: 'extending',
-        guard: ({ ecs, entityId }): boolean => {
-          const sm = getStateMachine(ecs, entityId);
-          if (sm.stateTime < COOLDOWN_SECONDS) return false;
-          return Math.random() < PER_FRAME_ATTACK_CHANCE;
-        },
-      }],
-    },
-
-    extending: {
-      onEnter: ({ ecs, entityId }) => {
-        const tongue = getTongue(ecs, entityId);
-        tongue.isExtended = true;
-        tongue.direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
-        tongue.currentLength = 0;
-        tongue.segments = [];
-        console.log(`🐸 Frog ${entityId} starting tongue attack in direction (${tongue.direction.x}, ${tongue.direction.y})`);
-      },
-      onUpdate: ({ ecs, entityId, dt }) => {
-        const tongue = getTongue(ecs, entityId);
-        tongue.currentLength = Math.min(
-          tongue.currentLength + FROG_CONFIG.TONGUE_SPEED * dt,
-          tongue.maxRange * CELL,
-        );
-        updateTongueSegments(ecs, entityId);
-      },
-      transitions: [{
-        target: 'holding',
-        guard: ({ ecs, entityId }): boolean => {
-          const tongue = getTongue(ecs, entityId);
-          if (tongue.currentLength >= tongue.maxRange * CELL) return true;
-          // Segments stopped growing despite remaining range — hit obstacle.
-          const expectedSegments = Math.floor(tongue.currentLength / CELL);
-          return tongue.segments.length < expectedSegments
-              && tongue.segments.length < tongue.maxRange;
-        },
-      }],
-    },
-
-    holding: {
-      transitions: [{
-        target: 'retracting',
-        guard: ({ ecs, entityId }): boolean => {
-          const sm = getStateMachine(ecs, entityId);
-          return sm.stateTime >= HOLD_SECONDS;
-        },
-      }],
-    },
-
-    retracting: {
-      onUpdate: ({ ecs, entityId, dt }) => {
-        const tongue = getTongue(ecs, entityId);
-        tongue.currentLength = Math.max(0, tongue.currentLength - FROG_CONFIG.TONGUE_SPEED * dt);
-        updateTongueSegments(ecs, entityId);
-      },
-      transitions: [{
-        target: 'idle',
-        guard: ({ ecs, entityId }): boolean => {
-          const tongue = getTongue(ecs, entityId);
-          return tongue.currentLength <= 0;
-        },
-      }],
-    },
-  },
-});
-
-function updateTongueSegments(ecs: GameEngine, frogId: number): void {
-  const tongue = getTongue(ecs, frogId);
-  const frogPos = ecs.entityManager.getComponent(frogId, 'position');
+function updateTongueSegments(frogId: number, tongue: AllComponents['frogTongue']): void {
+  const frogPos = gameEngine.entityManager.getComponent(frogId, 'position');
   if (!frogPos) throw new Error(`frog ${frogId} missing position component`);
 
   tongue.segments = [];
@@ -132,7 +81,7 @@ function updateTongueSegments(ecs: GameEngine, frogId: number): void {
   if (tongueGridLength <= 0) return;
 
   const frogGrid = pixelToGrid(frogPos.x, frogPos.y);
-  const blockedCells = collectBlockedCells(ecs, frogId);
+  const blockedCells = collectBlockedCells(gameEngine, frogId);
 
   for (let i = 1; i <= tongueGridLength; i++) {
     const gx = frogGrid.x + tongue.direction.x * i;
@@ -168,14 +117,17 @@ function collectBlockedCells(ecs: GameEngine, frogId: number): Set<string> {
 
 export function initializeFrogTongue(frogId: number): void {
   gameEngine.entityManager.addComponent(frogId, 'frogTongue', {
-    isExtended: false,
     direction: { x: 0, y: 0 },
     maxRange: FROG_CONFIG.TONGUE_RANGE,
     currentLength: 0,
     segments: [],
+    phase: 'idle',
   });
-  const { stateMachine } = createStateMachine(frogTongueFSM);
-  gameEngine.entityManager.addComponent(frogId, 'stateMachine', stateMachine);
+  gameEngine.entityManager.addComponent(
+    frogId,
+    'coroutine',
+    createCoroutine(tongueLifecycle(frogId)).coroutine,
+  );
 
   console.log(`🐸 Initialized frog tongue for entity ${frogId}`);
 }

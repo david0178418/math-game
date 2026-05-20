@@ -3,16 +3,16 @@ import { createInputPlugin } from 'ecspresso/plugins/input/input';
 import { createTimerPlugin, createTimer, type Timer, type TimerComponentTypes } from 'ecspresso/plugins/scripting/timers';
 import { createTweenPlugin, type TweenComponentTypes } from 'ecspresso/plugins/scripting/tween';
 import {
-  createStateMachinePlugin,
-  type StateMachineComponentTypes,
-} from 'ecspresso/plugins/scripting/state-machine';
+  createCoroutinePlugin,
+  type CoroutineComponentTypes,
+} from 'ecspresso/plugins/scripting/coroutine';
 import { SYSTEM_PRIORITIES } from './systemConfigs';
 
 // Re-exported for query/spawn typing
 export type AllComponents = Components
   & TimerComponentTypes<TimerSlot>
   & TweenComponentTypes
-  & StateMachineComponentTypes;
+  & CoroutineComponentTypes;
 import { GAME_CONFIG } from '../game/config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import flyImage from '../assets/images/fly.svg';
@@ -46,7 +46,7 @@ const timerPlugin = createTimerPlugin<TimerSlot>();
 // Priority slots tween between movement and render so render reads the
 // just-interpolated values, not last frame's.
 const tweenPlugin = createTweenPlugin({ priority: SYSTEM_PRIORITIES.ANIMATION });
-const stateMachinePlugin = createStateMachinePlugin({ priority: SYSTEM_PRIORITIES.FROG_TONGUE });
+const coroutinePlugin = createCoroutinePlugin({ priority: SYSTEM_PRIORITIES.FROG_TONGUE });
 
 // Re-export for convenience
 export { GAME_CONFIG };
@@ -115,11 +115,11 @@ export interface Components {
     freezeTime: number;
   };
   frogTongue: {
-    isExtended: boolean;
     direction: { x: number; y: number };
     maxRange: number;          // Maximum tiles (3)
     currentLength: number;
     segments: Array<{ x: number; y: number }>;
+    phase: 'idle' | 'extending' | 'holding' | 'retracting';
   };
 }
 
@@ -147,7 +147,7 @@ export const gameEngine = ECSpresso.create()
   .withPlugin(inputPlugin)
   .withPlugin(timerPlugin)
   .withPlugin(tweenPlugin)
-  .withPlugin(stateMachinePlugin)
+  .withPlugin(coroutinePlugin)
   .withComponentTypes<Components>()
   .withEventTypes<Events>()
   .withResourceTypes<Resources>()

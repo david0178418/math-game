@@ -57,7 +57,7 @@ export function addCollisionSystemToEngine(): void {
       if (!invulnerable) {
         for (const frog of queries.frogTongues) {
           const tongue = frog.components.frogTongue;
-          if (tongue.isExtended && tongue.segments.length > 0 && checkPlayerTongueCollision(player, frog)) {
+          if (tongue.phase !== 'idle' && tongue.segments.length > 0 && checkPlayerTongueCollision(player, frog)) {
             handlePlayerTongueCollision(player, frog);
             break;
           }
@@ -221,7 +221,7 @@ function handlePlayerTongueCollision(
   const playerComp = player.components.player;
   const tongueComp = frog.components.frogTongue;
 
-  if (!tongueComp.isExtended || tongueComp.segments.length === 0) return;
+  if (tongueComp.phase === 'idle' || tongueComp.segments.length === 0) return;
   if (isInvulnerable(player)) {
     console.log(`🐸 Player hit by frog tongue but is invulnerable`);
     return;
@@ -262,7 +262,7 @@ function checkPlayerTongueCollision(
   const playerPos = player.components.position;
   const tongue = frog.components.frogTongue;
   
-  if (!tongue.isExtended || tongue.segments.length === 0) {
+  if (tongue.phase === 'idle' || tongue.segments.length === 0) {
     return false;
   }
   

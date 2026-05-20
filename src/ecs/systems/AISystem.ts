@@ -147,7 +147,7 @@ function handleFrogPrelude(enemyId: number): boolean {
     initializeFrogTongue(enemyId);
     return false;
   }
-  return frogTongue.isExtended;
+  return frogTongue.phase !== 'idle';
 }
 
 function calculateMoveInterval(behaviorType: AIBehavior, player: PlayerEntity, enemyType: EnemyType): number {
