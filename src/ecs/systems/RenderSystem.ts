@@ -159,7 +159,8 @@ export function addRenderSystemToEngine(): void {
         const playerComp = 'player' in entity.components ? entity.components.player : undefined;
         const deathScale = playerComp?.deathScale ?? 1.0;
 
-        drawEntity(position, renderable, isInvulnerable, deathScale, entity.id);
+        const shake = gameEngine.entityManager.getComponent(entity.id, 'shake');
+        drawEntity(position, renderable, isInvulnerable, deathScale, entity.id, shake?.offsetX ?? 0, shake?.offsetY ?? 0);
       }
 
       // Draw enhanced frog tongues (after entities but before UI text)
@@ -268,24 +269,23 @@ function calculateImageDimensions(
 
 // Draw an individual entity
 function drawEntity(
-  position: { x: number; y: number; rotation?: number; shakeOffsetX?: number; shakeOffsetY?: number }, 
-  renderable: { 
-    shape: 'circle' | 'rectangle' | 'image'; 
-    color: string; 
-    size: number; 
+  position: { x: number; y: number; rotation?: number },
+  renderable: {
+    shape: 'circle' | 'rectangle' | 'image';
+    color: string;
+    size: number;
     imageSrc?: string;
     imageWidth?: number;
     imageHeight?: number;
   },
   isInvulnerable: boolean = false,
   deathScale: number = 1.0,
-  entityId?: number // Add entity ID to determine enemy type
+  entityId?: number,
+  shakeX: number = 0,
+  shakeY: number = 0,
 ): void {
   if (!ctx) return;
-  
-  // Apply shake offset to position
-  const shakeX = position.shakeOffsetX || 0;
-  const shakeY = position.shakeOffsetY || 0;
+
   const centerX = position.x + GAME_CONFIG.GRID.CELL_SIZE / 2 + shakeX;
   const centerY = position.y + GAME_CONFIG.GRID.CELL_SIZE / 2 + shakeY;
   

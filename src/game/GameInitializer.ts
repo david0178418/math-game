@@ -6,9 +6,7 @@ import {
 } from '../ecs/Engine';
 import { addMovementSystemToEngine } from '../ecs/systems/MovementSystem';
 import { gridToPixel } from '../ecs/gameUtils';
-import {
-  addAnimationSystemToEngine
-} from '../ecs/systems/AnimationSystem';
+import { addShakeSystemToEngine } from '../ecs/systems/AnimationSystem';
 import {
   initializeRenderSystem,
   addRenderSystemToEngine
@@ -67,7 +65,7 @@ export class GameInitializer {
   private async initializeSystems(): Promise<void> {
     addAISystemToEngine();          // Priority 85  - AI behavior
     addMovementSystemToEngine();    // Priority 80  - Movement processing
-    addAnimationSystemToEngine();   // Priority 75  - Animation (after movement)
+    addShakeSystemToEngine();       // Priority 75  - Shake effect (tween plugin handles other animations)
     addCollisionSystemToEngine();   // Priority 70  - Collision detection
     addUISystemToEngine();          // Priority 50  - UI updates
     addEnemySpawnSystemToEngine();  // Priority 40  - Enemy spawning

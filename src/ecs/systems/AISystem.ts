@@ -9,7 +9,7 @@ import {
   type PlayerEntity
 } from '../queries';
 import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
-import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
+import { startGridMovement, isEntityAnimating } from './AnimationSystem';
 import { createSpiderWeb } from './SpiderWebSystem';
 import { initializeFrogTongue } from './FrogTongueSystem';
 
@@ -35,7 +35,7 @@ export function addAISystemToEngine(): void {
       if (!player) return;
 
       for (const enemy of enemies) {
-        if (isEntityAnimating(enemy.components.position)) continue;
+        if (isEntityAnimating(ecs, enemy.id)) continue;
         processEnemyAI(ecs, enemy, player, enemies);
       }
     });
@@ -82,7 +82,7 @@ function processEnemyAI(
   
   // Only animate if position actually changed
   if (newPixelPos.x !== enemyPos.x || newPixelPos.y !== enemyPos.y) {
-    startMovementAnimation(enemyPos, newPixelPos.x, newPixelPos.y);
+    startGridMovement(ecs, enemy.id, newPixelPos.x, newPixelPos.y);
   }
   
   // Spider-specific behavior: place web at previous position with some probability

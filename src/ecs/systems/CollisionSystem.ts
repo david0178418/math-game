@@ -14,15 +14,12 @@ import {
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG, GAME_CONFIG } from '../../game/config';
-import { startShakeAnimation } from './AnimationSystem';
+import { startShake, startDeathAnimation } from './AnimationSystem';
 
 const triggerGameOver = (player: PlayerEntityWithHealth, reason: string): void => {
   console.log(reason);
-  const playerComp = player.components.player;
-  playerComp.gameOverPending = true;
-  playerComp.deathAnimationActive = true;
-  playerComp.deathAnimationStartTime = Date.now();
-  playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
+  player.components.player.gameOverPending = true;
+  startDeathAnimation(gameEngine, player.id, player.components.position.rotation ?? 0);
   player.components.timers.deathDelay = createTimer(ANIMATION_CONFIG.DEATH.DURATION / 1000, {
     onComplete: () => { void gameEngine.setScreen('gameOver', {}); },
   });
@@ -145,9 +142,10 @@ function handlePlayerProblemCollision(
     console.log(`Wrong! -1 life. Lives remaining: ${playerComp.lives}`);
     
     // Shake the player for wrong answer
-    startShakeAnimation(
-      player.components.position, 
-      ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.INTENSITY, 
+    startShake(
+      gameEngine,
+      player.id,
+      ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.INTENSITY,
       ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.DURATION
     );
     
@@ -185,8 +183,9 @@ function handlePlayerEnemyCollision(
 
   console.log(`Lives remaining: ${playerComp.lives}`);
 
-  startShakeAnimation(
-    player.components.position,
+  startShake(
+    gameEngine,
+    player.id,
     ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY,
     ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
   );
@@ -236,8 +235,9 @@ function handlePlayerTongueCollision(
 
   startInvulnerability(player);
 
-  startShakeAnimation(
-    player.components.position,
+  startShake(
+    gameEngine,
+    player.id,
     ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY,
     ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
   );

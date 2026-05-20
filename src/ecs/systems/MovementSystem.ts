@@ -1,6 +1,6 @@
 import { gameEngine, type GameAction } from '../Engine';
 import { GAME_CONFIG } from '../../game/config';
-import { startMovementAnimation, isEntityAnimating, startRotationAnimation } from './AnimationSystem';
+import { startGridMovement, isEntityAnimating } from './AnimationSystem';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { playerQuery } from '../queries';
 import { clamp } from '../gameUtils';
@@ -15,8 +15,6 @@ const DIRECTION_DELTAS = {
   down:  { dx:  0, dy:  1, rotation: 180 },
   left:  { dx: -1, dy:  0, rotation: 270 },
 } as const satisfies Record<Direction, { dx: number; dy: number; rotation: number }>;
-
-const ROTATION_DURATION_MS = 750 * 0.25;
 
 const shortestRotation = (current: number, target: number): number => {
   if (Math.abs(target - current) <= 180) return target;
@@ -33,7 +31,7 @@ export function addMovementSystemToEngine(): void {
 
       if (player.gameOverPending) return;
       if (entity.components.timers.freeze?.active) return;
-      if (isEntityAnimating(position)) return;
+      if (isEntityAnimating(ecs, entity.id)) return;
 
       const pressed = DIRECTIONS.filter(d => inputState.actions.justActivated(d));
       if (pressed.length !== 1) return;
@@ -50,8 +48,7 @@ export function addMovementSystemToEngine(): void {
 
       const targetRotation = shortestRotation(position.rotation ?? 0, delta.rotation);
 
-      startMovementAnimation(position, newPixelX, newPixelY);
-      startRotationAnimation(position, targetRotation, ROTATION_DURATION_MS);
+      startGridMovement(ecs, entity.id, newPixelX, newPixelY, targetRotation);
 
       ecs.eventBus.publish('playerMoved', { x: newPixelX, y: newPixelY });
     });

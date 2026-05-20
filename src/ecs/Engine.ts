@@ -1,9 +1,11 @@
 import ECSpresso from 'ecspresso';
 import { createInputPlugin } from 'ecspresso/plugins/input/input';
 import { createTimerPlugin, createTimer, type Timer, type TimerComponentTypes } from 'ecspresso/plugins/scripting/timers';
+import { createTweenPlugin, type TweenComponentTypes } from 'ecspresso/plugins/scripting/tween';
+import { SYSTEM_PRIORITIES } from './systemConfigs';
 
 // Re-exported for query/spawn typing
-export type AllComponents = Components & TimerComponentTypes<TimerSlot>;
+export type AllComponents = Components & TimerComponentTypes<TimerSlot> & TweenComponentTypes;
 import { GAME_CONFIG } from '../game/config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import flyImage from '../assets/images/fly.svg';
@@ -35,6 +37,9 @@ const inputPlugin = createInputPlugin<GameAction>({
 });
 
 const timerPlugin = createTimerPlugin<TimerSlot>();
+// Priority slots tween between movement and render so render reads the
+// just-interpolated values, not last frame's.
+const tweenPlugin = createTweenPlugin({ priority: SYSTEM_PRIORITIES.ANIMATION });
 
 // Re-export for convenience
 export { GAME_CONFIG };
@@ -44,26 +49,15 @@ export interface Components {
   position: {
     x: number;
     y: number;
-    // Animation properties for smooth grid movement
-    targetX?: number;
-    targetY?: number;
-    isAnimating?: boolean;
-    animationStartTime?: number;
-    animationDuration?: number;
-    animationStartX?: number;
-    animationStartY?: number;
-    // Rotation properties for directional sprites
-    rotation?: number; // Current rotation in degrees (0 = up, 90 = right, 180 = down, 270 = left)
-    targetRotation?: number;
-    rotationStartTime?: number;
-    rotationDuration?: number;
-    startRotation?: number;
-    // Shake properties for damage/error feedback
-    shakeIntensity?: number;
-    shakeDuration?: number;
-    shakeStartTime?: number;
-    shakeOffsetX?: number;
-    shakeOffsetY?: number;
+    // 0 = up, 90 = right, 180 = down, 270 = left
+    rotation?: number;
+  };
+  shake: {
+    intensity: number;
+    duration: number;  // seconds
+    elapsed: number;   // seconds
+    offsetX: number;
+    offsetY: number;
   };
   renderable: { 
     shape: 'circle' | 'rectangle' | 'image'; 
@@ -79,11 +73,7 @@ export interface Components {
     score: number;
     lives: number;
     gameOverPending?: boolean; // Flag to disable controls during game over delay
-    // Death animation properties
-    deathAnimationActive?: boolean;
-    deathAnimationStartTime?: number;
-    deathAnimationDuration?: number;
-    deathScale?: number; // Scale factor for shrinking effect
+    deathScale: number;
   };
   enemy: {
     enemyType: EnemyType;
@@ -137,7 +127,6 @@ export interface Events {
   livesChanged: { newLives: number; oldLives: number };
   enemyKilled: { x: number; y: number };
   difficultyChanged: { newDifficulty: string };
-  animationComplete: { entityId: number; x: number; y: number };
 }
 
 export interface Resources {
@@ -149,6 +138,7 @@ export interface Resources {
 export const gameEngine = ECSpresso.create()
   .withPlugin(inputPlugin)
   .withPlugin(timerPlugin)
+  .withPlugin(tweenPlugin)
   .withComponentTypes<Components>()
   .withEventTypes<Events>()
   .withResourceTypes<Resources>()
@@ -306,7 +296,6 @@ const playerComponents = (x: number, y: number): Partial<AllComponents> => ({
     score: GAME_CONFIG.GAMEPLAY.STARTING_SCORE,
     lives: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
     gameOverPending: false,
-    deathAnimationActive: false,
     deathScale: 1.0
   },
   collider: {
