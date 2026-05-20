@@ -35,6 +35,8 @@ const enterPlayingScreen = ({ level, isFreshGame }: PlayingScreenConfig): void =
 
     const playerPixelPos = gridToPixel(3, 2);
     createPlayer(playerPixelPos.x, playerPixelPos.y);
+
+    gameEngine.setResource('enemySpawn', { index: 0 });
   }
 };
 

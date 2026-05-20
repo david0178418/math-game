@@ -100,4 +100,5 @@ export type GameMode = 'multiples';
 export interface Resources {
   gameMode: GameMode;
   currentLevel: number;
+  enemySpawn: { index: number };
 }
