@@ -14,6 +14,7 @@ import {
 } from '../ecs/systems/RenderSystem';
 import { addCollisionSystemToEngine } from '../ecs/systems/CollisionSystem';
 import { gameplayPlugin } from '../ecs/gameplayPlugin';
+import { playerQuery } from '../ecs/queries';
 import { uiManager } from './UIManager';
 
 /**
@@ -49,7 +50,7 @@ export class GameInitializer {
     });
 
     gameEngine.onScreenEnter('gameOver', () => {
-      const player = gameEngine.entityManager.getEntitiesWithQuery(['player']).at(0);
+      const player = gameEngine.tryGetSingleton(playerQuery.with);
       const finalScore = player?.components.player.score ?? 0;
       const finalScoreElement = document.getElementById('final-score');
       if (finalScoreElement) {
@@ -92,9 +93,8 @@ export class GameInitializer {
     gameEngine.setResource('currentLevel', level);
 
     if (isFreshGame) {
-      gameEngine.entityManager
-        .getEntitiesWithQuery(['player'])
-        .forEach(player => gameEngine.removeEntity(player.id));
+      const existingPlayer = gameEngine.tryGetSingleton(playerQuery.with);
+      if (existingPlayer) gameEngine.removeEntity(existingPlayer.id);
 
       const playerPixelPos = gridToPixel(3, 2);
       EntityFactory.createPlayer(playerPixelPos.x, playerPixelPos.y);
