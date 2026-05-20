@@ -36,6 +36,16 @@ export function gridToPixel(gridX: number, gridY: number): { x: number; y: numbe
   return { x: gridX * cell, y: gridY * cell };
 }
 
+export const cellCenter = (pos: { x: number; y: number }): { x: number; y: number } => {
+  const half = GAME_CONFIG.GRID.CELL_SIZE / 2;
+  return { x: pos.x + half, y: pos.y + half };
+};
+
+export const gridCellCenter = (gridX: number, gridY: number): { x: number; y: number } => {
+  const cell = GAME_CONFIG.GRID.CELL_SIZE;
+  return { x: gridX * cell + cell / 2, y: gridY * cell + cell / 2 };
+};
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
