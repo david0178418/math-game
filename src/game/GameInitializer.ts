@@ -87,9 +87,6 @@ export class GameInitializer {
    * On level transition: leave the existing player so score and lives persist.
    */
   private enterPlayingScreen({ level, isFreshGame }: PlayingScreenConfig): void {
-    if (isFreshGame) {
-      gameEngine.setResource('score', { value: 0 });
-    }
     gameEngine.setResource('currentLevel', level);
 
     if (isFreshGame) {

@@ -129,12 +129,6 @@ function handlePlayerProblemCollision(
     playerComp.score += pointsEarned;
     
     console.log(`Correct! +${pointsEarned} points. Total score: ${playerComp.score}`);
-    
-    // Update global score resource
-    const scoreResource = gameEngine.getResource('score');
-    if (scoreResource) {
-      scoreResource.value = playerComp.score;
-    }
   } else {
     // Wrong answer: lose a life
     playerComp.lives -= 1;

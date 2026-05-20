@@ -138,7 +138,6 @@ export interface Events {
 export type PlayingScreenConfig = { level: number; isFreshGame: boolean };
 
 export interface Resources {
-  score: { value: number };
   gameMode: string;
   currentLevel: number;
 }
@@ -151,7 +150,6 @@ export const gameEngine = ECSpresso.create()
   .withComponentTypes<Components>()
   .withEventTypes<Events>()
   .withResourceTypes<Resources>()
-  .withResource('score', { value: GAME_CONFIG.GAMEPLAY.STARTING_SCORE })
   .withResource('gameMode', 'multiples')
   .withResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL)
   .withRequired('player', 'timers', () => ({}))
