@@ -1,5 +1,5 @@
 import { type QueryResultEntity } from 'ecspresso';
-import type { AllComponents } from './Engine';
+import type { AllComponents } from './types';
 
 /**
  * Centralized Query Definitions

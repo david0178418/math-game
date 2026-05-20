@@ -1,4 +1,5 @@
-import { gameEngine, createTimer } from '../Engine';
+import { gameEngine } from '../Engine';
+import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { sameGridPosition } from '../gameUtils';
 import {
   playerWithHealthQuery,

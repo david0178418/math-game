@@ -1,8 +1,9 @@
-import { gameEngine, type GameEngine, createTimer } from '../Engine';
+import { gameEngine, type GameEngine } from '../Engine';
+import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG } from '../../game/config';
 import { gridToPixel } from '../gameUtils';
 
-const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
+const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.spider;
 
 export function createSpiderWeb(ecs: GameEngine, gridX: number, gridY: number): void {
   if (gridX < 0 || gridX >= GAME_CONFIG.GRID.WIDTH || gridY < 0 || gridY >= GAME_CONFIG.GRID.HEIGHT) {

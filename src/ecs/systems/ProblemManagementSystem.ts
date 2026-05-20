@@ -1,4 +1,6 @@
-import { gameEngine, EntityFactory, createTimer, type GameEngine } from '../Engine';
+import { gameEngine, type GameEngine } from '../Engine';
+import { createMathProblem } from '../entities';
+import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG, SCORE_THRESHOLDS } from '../../game/config';
 import { gridToPixel } from '../gameUtils';
 import { mathProblemGenerator } from '../../game/MathProblemGenerator';
@@ -64,7 +66,7 @@ function populateFullGrid(ecs: GameEngine, allPositionEntities: PositionEntity[]
     const gridPos = availablePositions[i];
     const pixelPos = gridToPixel(gridPos.x, gridPos.y);
     
-    EntityFactory.createMathProblem(
+    createMathProblem(
       ecs.commands,
       pixelPos.x,
       pixelPos.y,

@@ -43,12 +43,12 @@ export const GAME_CONFIG = {
   },
 
   ENEMY_TYPES: {
-    LIZARD: {
+    lizard: {
       COLOR: 'red',
       MOVE_SPEED_MULTIPLIER: 1.0,
       AI_BEHAVIORS: ['chase', 'patrol', 'random', 'guard'] as const,
     },
-    SPIDER: {
+    spider: {
       COLOR: 'purple',
       MOVE_SPEED_MULTIPLIER: 0.9,
       WEB_DURATION: 8000,
@@ -57,7 +57,7 @@ export const GAME_CONFIG = {
       FREEZE_DURATION: 2000,
       AI_BEHAVIORS: ['random', 'patrol'] as const,
     },
-    FROG: {
+    frog: {
       COLOR: 'green',
       MOVE_SPEED_MULTIPLIER: 1.1,
       TONGUE_RANGE: 3,

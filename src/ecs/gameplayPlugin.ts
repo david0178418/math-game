@@ -4,7 +4,7 @@ import { addEnemySpawnSystemToEngine } from './systems/EnemySpawnSystem';
 import { addProblemManagementSystemToEngine } from './systems/ProblemManagementSystem';
 import { addUISystemToEngine } from './systems/UISystem';
 import { registerFrogTongueInit } from './systems/FrogTongueSystem';
-import type { PlayingScreenConfig } from './Engine';
+import type { PlayingScreenConfig } from './types';
 
 type RequiresPlayingScreen = WithScreens<EmptyConfig, {
   playing: ScreenDefinition<PlayingScreenConfig, PlayingScreenConfig>;

@@ -7,9 +7,9 @@ import {
   waitUntil,
   type CoroutineGenerator,
 } from 'ecspresso/plugins/scripting/coroutine';
-import type { AllComponents } from '../Engine';
+import type { AllComponents } from '../types';
 
-const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.FROG;
+const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.frog;
 const CELL = GAME_CONFIG.GRID.CELL_SIZE;
 
 const DIRECTIONS = [

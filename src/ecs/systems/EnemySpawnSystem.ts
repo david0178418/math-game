@@ -1,4 +1,6 @@
-import { gameEngine, EntityFactory, createTimer, type GameEngine } from '../Engine';
+import { gameEngine, type GameEngine } from '../Engine';
+import { createEnemy } from '../entities';
+import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG } from '../../game/config';
 import { gridToPixel } from '../gameUtils';
 import {
@@ -114,7 +116,7 @@ function spawnEnemyFromEdge(ecs: GameEngine, enemyType: 'lizard' | 'spider' | 'f
   const behaviorTypes: Array<'chase' | 'patrol' | 'random' | 'guard'> = ['chase', 'random', 'patrol', 'guard'];
   const randomBehavior = behaviorTypes[Math.floor(Math.random() * behaviorTypes.length)];
 
-  EntityFactory.createEnemy(ecs.commands, pixelPos.x, pixelPos.y, enemyType, randomBehavior);
+  createEnemy(ecs.commands, pixelPos.x, pixelPos.y, enemyType, randomBehavior);
 
   console.log(`Spawned ${enemyType} (#${totalEnemiesSpawned + 1}/3) with ${randomBehavior} behavior at edge position (${edgePosition.x}, ${edgePosition.y})`);
 }

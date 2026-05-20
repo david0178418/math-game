@@ -1,10 +1,6 @@
-import {
-  initializeEngine,
-  startGameLoop,
-  EntityFactory,
-  gameEngine,
-  type PlayingScreenConfig
-} from '../ecs/Engine';
+import { initializeEngine, startGameLoop, gameEngine } from '../ecs/Engine';
+import { createPlayer } from '../ecs/entities';
+import type { PlayingScreenConfig } from '../ecs/types';
 import { addMovementSystemToEngine } from '../ecs/systems/MovementSystem';
 import { gridToPixel } from '../ecs/gameUtils';
 import { addShakeSystemToEngine } from '../ecs/systems/AnimationSystem';
@@ -94,7 +90,7 @@ export class GameInitializer {
       if (existingPlayer) gameEngine.removeEntity(existingPlayer.id);
 
       const playerPixelPos = gridToPixel(3, 2);
-      EntityFactory.createPlayer(playerPixelPos.x, playerPixelPos.y);
+      createPlayer(playerPixelPos.x, playerPixelPos.y);
     }
   }
 }

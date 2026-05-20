@@ -1,4 +1,5 @@
-import { gameEngine, type GameEngine, createTimer } from '../Engine';
+import { gameEngine, type GameEngine } from '../Engine';
+import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { createNavGrid, findPath, type NavGrid } from 'ecspresso/plugins/ai/pathfinding';
 import { pixelToGrid, gridToPixel } from '../gameUtils';
 import { GAME_CONFIG } from '../../game/config';
@@ -14,7 +15,7 @@ import { startGridMovement, isEntityAnimating } from './AnimationSystem';
 import { createSpiderWeb } from './SpiderWebSystem';
 import { isFrogAttacking } from './FrogTongueSystem';
 
-const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
+const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.spider;
 
 const navGrid: NavGrid = createNavGrid({
   width: GAME_CONFIG.GRID.WIDTH,
@@ -38,9 +39,9 @@ const BEHAVIOR_MULTIPLIERS: Record<AIBehavior, number> = {
 };
 
 const ENEMY_TYPE_MULTIPLIERS: Record<EnemyType, number> = {
-  lizard: AI_CONFIG.ENEMY_SPEED_MULTIPLIERS.LIZARD,
-  spider: AI_CONFIG.ENEMY_SPEED_MULTIPLIERS.SPIDER,
-  frog: AI_CONFIG.ENEMY_SPEED_MULTIPLIERS.FROG,
+  lizard: AI_CONFIG.ENEMY_SPEED_MULTIPLIERS.lizard,
+  spider: AI_CONFIG.ENEMY_SPEED_MULTIPLIERS.spider,
+  frog: AI_CONFIG.ENEMY_SPEED_MULTIPLIERS.frog,
 };
 
 const GUARD_RADIUS = 2;

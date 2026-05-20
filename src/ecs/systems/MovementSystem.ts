@@ -1,4 +1,5 @@
-import { gameEngine, type GameAction } from '../Engine';
+import { gameEngine } from '../Engine';
+import type { GameAction } from '../types';
 import { GAME_CONFIG } from '../../game/config';
 import { startGridMovement, isEntityAnimating } from './AnimationSystem';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';

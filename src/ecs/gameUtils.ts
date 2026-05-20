@@ -1,5 +1,5 @@
 import { GAME_CONFIG, SCORE_THRESHOLDS } from '../game/config';
-import type { GameTimer } from './Engine';
+import type { GameTimer } from './types';
 import type { PlayerEntity } from './queries';
 
 /**
