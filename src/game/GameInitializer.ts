@@ -11,7 +11,7 @@ import {
 import { addCollisionSystemToEngine } from '../ecs/systems/CollisionSystem';
 import { gameplayPlugin } from '../ecs/gameplayPlugin';
 import { playerQuery } from '../ecs/queries';
-import { uiManager } from './UIManager';
+import { showScreen, updateObjective } from './UIManager';
 
 /**
  * Game Initializer
@@ -30,19 +30,19 @@ export class GameInitializer {
    */
   private setupScreenHooks(): void {
     gameEngine.onScreenEnter('menu', () => {
-      uiManager.showScreen('menu');
+      showScreen('menu');
     });
 
     gameEngine.onScreenEnter('playing', ({ config }) => {
-      uiManager.showScreen('playing');
+      showScreen('playing');
       this.setupCanvas();
       this.enterPlayingScreen(config);
-      uiManager.updateObjective(config.level);
+      updateObjective(config.level);
       startGameLoop();
     });
 
     gameEngine.onScreenEnter('paused', () => {
-      uiManager.showScreen('paused');
+      showScreen('paused');
     });
 
     gameEngine.onScreenEnter('gameOver', () => {
@@ -52,7 +52,7 @@ export class GameInitializer {
       if (finalScoreElement) {
         finalScoreElement.textContent = `Final Score: ${finalScore}`;
       }
-      uiManager.showScreen('gameOver');
+      showScreen('gameOver');
     });
   }
 
