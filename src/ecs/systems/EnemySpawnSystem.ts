@@ -67,7 +67,6 @@ function shouldResetCycle(currentEnemyCount: number): boolean {
 export function addEnemySpawnSystemToEngine(): void {
   gameEngine.addSystem('enemySpawnSystem')
     .setPriority(SYSTEM_PRIORITIES.ENEMY_SPAWN)
-    .inScreens(['playing'])
     .addQuery('enemies', enemyQuery)
     .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {

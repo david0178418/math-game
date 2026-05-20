@@ -84,7 +84,6 @@ const AI_PROCESSORS: Record<AIBehavior, (ctx: AIContext) => { x: number; y: numb
 export function addAISystemToEngine(): void {
   gameEngine.addSystem('aiSystem')
     .setPriority(SYSTEM_PRIORITIES.AI)
-    .inScreens(['playing'])
     .addQuery('enemies', enemyQuery)
     .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {

@@ -135,6 +135,8 @@ export interface Events {
   difficultyChanged: { newDifficulty: string };
 }
 
+export type PlayingScreenConfig = { level: number; isFreshGame: boolean };
+
 export interface Resources {
   score: { value: number };
   gameMode: string;
@@ -158,7 +160,7 @@ export const gameEngine = ECSpresso.create()
   .withRequired('enemy', 'health', () => ({ current: 1, max: 1 }))
   .withScreens(screens => screens
     .add('menu', { initialState: () => ({}) })
-    .add('playing', { initialState: (config: { level: number; isFreshGame: boolean }) => ({ level: config.level, isFreshGame: config.isFreshGame }) })
+    .add('playing', { initialState: (config: PlayingScreenConfig) => ({ ...config }) })
     .add('paused', { initialState: () => ({}) })
     .add('gameOver', { initialState: () => ({}) }))
   .build();

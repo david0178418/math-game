@@ -21,7 +21,6 @@ import { PROBLEM_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 export function addProblemManagementSystemToEngine(): void {
   gameEngine.addSystem('problemManagementSystem')
     .setPriority(SYSTEM_PRIORITIES.PROBLEM_MANAGEMENT)
-    .inScreens(['playing'])
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
     .addSingleton('player', playerQuery)
     .addQuery('allPositions', positionEntityQuery)

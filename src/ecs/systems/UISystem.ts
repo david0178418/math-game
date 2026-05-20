@@ -12,7 +12,6 @@ import { getPlayerDifficultyLevel } from '../gameUtils';
 export function addUISystemToEngine(): void {
   gameEngine.addSystem('uiSystem')
     .setPriority(SYSTEM_PRIORITIES.UI)
-    .inScreens(['playing'])
     .setProcessEach(playerQuery, ({ entity }) => {
       const playerComp = entity.components.player;
       const level = getPlayerDifficultyLevel(entity);

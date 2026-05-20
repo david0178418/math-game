@@ -2,7 +2,8 @@ import {
   initializeEngine,
   startGameLoop,
   EntityFactory,
-  gameEngine
+  gameEngine,
+  type PlayingScreenConfig
 } from '../ecs/Engine';
 import { addMovementSystemToEngine } from '../ecs/systems/MovementSystem';
 import { gridToPixel } from '../ecs/gameUtils';
@@ -12,10 +13,7 @@ import {
   addRenderSystemToEngine
 } from '../ecs/systems/RenderSystem';
 import { addCollisionSystemToEngine } from '../ecs/systems/CollisionSystem';
-import { addUISystemToEngine } from '../ecs/systems/UISystem';
-import { addProblemManagementSystemToEngine } from '../ecs/systems/ProblemManagementSystem';
-import { addAISystemToEngine } from '../ecs/systems/AISystem';
-import { addEnemySpawnSystemToEngine } from '../ecs/systems/EnemySpawnSystem';
+import { gameplayPlugin } from '../ecs/gameplayPlugin';
 import { uiManager } from './UIManager';
 
 /**
@@ -62,13 +60,11 @@ export class GameInitializer {
   }
 
   private async initializeSystems(): Promise<void> {
-    addAISystemToEngine();          // Priority 85  - AI behavior
+    gameEngine.installPlugin(gameplayPlugin);
+
     addMovementSystemToEngine();    // Priority 80  - Movement processing
     addShakeSystemToEngine();       // Priority 75  - Shake effect (tween plugin handles other animations)
     addCollisionSystemToEngine();   // Priority 70  - Collision detection
-    addUISystemToEngine();          // Priority 50  - UI updates
-    addEnemySpawnSystemToEngine();  // Priority 40  - Enemy spawning
-    addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
     // Frog tongue lifecycle is driven by the state-machine plugin (priority 22).
     addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
 
@@ -90,7 +86,7 @@ export class GameInitializer {
    * and create a new one — the player is unscoped so it survives screen exits.
    * On level transition: leave the existing player so score and lives persist.
    */
-  private enterPlayingScreen({ level, isFreshGame }: { level: number; isFreshGame: boolean }): void {
+  private enterPlayingScreen({ level, isFreshGame }: PlayingScreenConfig): void {
     if (isFreshGame) {
       gameEngine.setResource('score', { value: 0 });
     }
