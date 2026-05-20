@@ -22,7 +22,7 @@ export function addProblemManagementSystemToEngine(): void {
   gameEngine.addSystem('problemManagementSystem')
     .setPriority(SYSTEM_PRIORITIES.PROBLEM_MANAGEMENT)
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
-    .addSingleton('player', playerQuery)
+    .addSingleton('player', { ...playerQuery, mutates: ['timers'] } as const)
     .addQuery('allPositions', positionEntityQuery)
     .setProcess(({ queries, ecs }) => {
       const player = queries.player;

@@ -41,8 +41,8 @@ const startInvulnerability = (player: PlayerEntityWithHealth): void => {
 export function addCollisionSystemToEngine(): void {
   gameEngine.addSystem('collisionSystem')
     .setPriority(SYSTEM_PRIORITIES.COLLISION)
-    .addSingleton('player', playerWithHealthQuery)
-    .addQuery('mathProblems', mathProblemWithRenderableQuery)
+    .addSingleton('player', { ...playerWithHealthQuery, mutates: ['player', 'health', 'timers'] } as const)
+    .addQuery('mathProblems', { ...mathProblemWithRenderableQuery, mutates: ['mathProblem', 'renderable'] } as const)
     .addQuery('enemies', enemyWithColliderQuery)
     .addQuery('spiderWebs', spiderWebWithRenderableQuery)
     .addQuery('frogTongues', frogTongueQuery)

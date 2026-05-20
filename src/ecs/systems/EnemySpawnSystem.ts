@@ -68,7 +68,7 @@ export function addEnemySpawnSystemToEngine(): void {
   gameEngine.addSystem('enemySpawnSystem')
     .setPriority(SYSTEM_PRIORITIES.ENEMY_SPAWN)
     .addQuery('enemies', enemyQuery)
-    .addSingleton('player', playerQuery)
+    .addSingleton('player', { ...playerQuery, mutates: ['timers'] } as const)
     .setProcess(({ queries, ecs }) => {
       const player = queries.player;
       if (!player) return;
