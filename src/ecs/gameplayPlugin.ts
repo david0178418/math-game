@@ -3,6 +3,7 @@ import { addAISystemToEngine } from './systems/AISystem';
 import { addEnemySpawnSystemToEngine } from './systems/EnemySpawnSystem';
 import { addProblemManagementSystemToEngine } from './systems/ProblemManagementSystem';
 import { addUISystemToEngine } from './systems/UISystem';
+import { registerFrogTongueInit } from './systems/FrogTongueSystem';
 import type { PlayingScreenConfig } from './Engine';
 
 type RequiresPlayingScreen = WithScreens<EmptyConfig, {
@@ -22,4 +23,5 @@ export const gameplayPlugin = definePlugin('gameplay')
     addEnemySpawnSystemToEngine();
     addProblemManagementSystemToEngine();
     addUISystemToEngine();
+    registerFrogTongueInit();
   });

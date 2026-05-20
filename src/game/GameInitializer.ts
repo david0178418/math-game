@@ -65,7 +65,6 @@ export class GameInitializer {
     addMovementSystemToEngine();    // Priority 80  - Movement processing
     addShakeSystemToEngine();       // Priority 75  - Shake effect (tween plugin handles other animations)
     addCollisionSystemToEngine();   // Priority 70  - Collision detection
-    // Frog tongue lifecycle is driven by the state-machine plugin (priority 22).
     addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
 
     await initializeEngine();

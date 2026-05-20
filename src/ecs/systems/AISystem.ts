@@ -12,7 +12,7 @@ import {
 import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 import { startGridMovement, isEntityAnimating } from './AnimationSystem';
 import { createSpiderWeb } from './SpiderWebSystem';
-import { initializeFrogTongue } from './FrogTongueSystem';
+import { isFrogAttacking } from './FrogTongueSystem';
 
 const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
 
@@ -84,7 +84,7 @@ const AI_PROCESSORS: Record<AIBehavior, (ctx: AIContext) => { x: number; y: numb
 export function addAISystemToEngine(): void {
   gameEngine.addSystem('aiSystem')
     .setPriority(SYSTEM_PRIORITIES.AI)
-    .addQuery('enemies', { ...enemyQuery, mutates: ['enemy', 'timers'] } as const)
+    .addQuery('enemies', { ...enemyQuery, optional: ['frogTongue'], mutates: ['enemy', 'timers'] } as const)
     .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {
       const { enemies, player } = queries;
@@ -96,6 +96,7 @@ export function addAISystemToEngine(): void {
 
       for (const enemy of enemies) {
         if (isEntityAnimating(ecs, enemy.id)) continue;
+        if (isFrogAttacking(enemy.components.frogTongue)) continue;
         processEnemyAI(ecs, enemy, player, blocked);
       }
     });
@@ -111,7 +112,6 @@ function processEnemyAI(
   const enemyData = enemy.components.enemy;
   const timers = enemy.components.timers;
 
-  if (enemyData.enemyType === 'frog' && handleFrogPrelude(enemy.id)) return;
   if (timers.enemyMove?.active) return;
 
   const currentGrid = pixelToGrid(enemyPos.x, enemyPos.y);
@@ -138,16 +138,6 @@ function processEnemyAI(
   const moveInterval = calculateMoveInterval(enemyData.behaviorType, player, enemyData.enemyType);
   const variation = (Math.random() - 0.5) * moveInterval * 0.2;
   timers.enemyMove = createTimer((moveInterval + variation) / 1000);
-}
-
-/** Returns true if the frog is mid-tongue and should skip its AI tick. */
-function handleFrogPrelude(enemyId: number): boolean {
-  const frogTongue = gameEngine.entityManager.getComponent(enemyId, 'frogTongue');
-  if (!frogTongue) {
-    initializeFrogTongue(enemyId);
-    return false;
-  }
-  return frogTongue.phase !== 'idle';
 }
 
 function calculateMoveInterval(behaviorType: AIBehavior, player: PlayerEntity, enemyType: EnemyType): number {

@@ -115,7 +115,7 @@ function collectBlockedCells(ecs: GameEngine, frogId: number): Set<string> {
   return blocked;
 }
 
-export function initializeFrogTongue(frogId: number): void {
+function initializeFrogTongue(frogId: number): void {
   gameEngine.entityManager.addComponent(frogId, 'frogTongue', {
     direction: { x: 0, y: 0 },
     maxRange: FROG_CONFIG.TONGUE_RANGE,
@@ -130,4 +130,23 @@ export function initializeFrogTongue(frogId: number): void {
   );
 
   console.log(`🐸 Initialized frog tongue for entity ${frogId}`);
+}
+
+/** True while the frog is mid-tongue (any non-idle phase). */
+export const isFrogAttacking = (tongue: AllComponents['frogTongue'] | undefined): boolean =>
+  tongue !== undefined && tongue.phase !== 'idle';
+
+/**
+ * Register a reactive query that wires up the tongue coroutine for any
+ * frog-type enemy as soon as it spawns.
+ */
+export function registerFrogTongueInit(): void {
+  gameEngine.addReactiveQuery('frog-init', {
+    with: ['enemy'],
+    onEnter: (entity) => {
+      if (entity.components.enemy.enemyType === 'frog') {
+        initializeFrogTongue(entity.id);
+      }
+    },
+  });
 }
