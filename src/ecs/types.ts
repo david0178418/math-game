@@ -95,7 +95,9 @@ export type AllComponents = Components
 // `Record<string, unknown>` screen-config constraint.
 export type PlayingScreenConfig = { level: number; isFreshGame: boolean };
 
+export type GameMode = 'multiples';
+
 export interface Resources {
-  gameMode: string;
+  gameMode: GameMode;
   currentLevel: number;
 }

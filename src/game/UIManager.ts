@@ -1,7 +1,11 @@
 import { gameEngine } from '../ecs/Engine';
+import type { GameMode } from '../ecs/types';
 import { GAME_CONFIG } from './config';
 
-type GameScreen = 'menu' | 'modeSelect' | 'playing' | 'settings' | 'gameOver' | 'paused';
+// UI-layer screen set. Includes UI-only screens (modeSelect, settings) that
+// have no ECS gameplay semantics. The ECS engine tracks its own narrower set
+// ('menu' | 'playing' | 'paused' | 'gameOver') in Engine.ts.
+type UIScreen = 'menu' | 'modeSelect' | 'playing' | 'settings' | 'gameOver' | 'paused';
 
 const OVERLAY_BASE =
   'absolute inset-0 flex flex-col items-center justify-center text-white z-50';
@@ -27,12 +31,7 @@ const $ = <T extends HTMLElement = HTMLElement>(root: HTMLElement, sel: string):
   return el;
 };
 
-const startGame = (mode: string): void => {
-  // Subsequent start: reload for clean state — canvas/entity teardown is not yet supported.
-  if (document.querySelector('canvas')) {
-    window.location.reload();
-    return;
-  }
+const startGame = (mode: GameMode): void => {
   gameEngine.setResource('gameMode', mode);
   void gameEngine.setScreen('playing', {
     level: GAME_CONFIG.GAMEPLAY.STARTING_LEVEL,
@@ -55,7 +54,7 @@ const gameplayHud: {
   lastLevel: '',
 };
 
-const SCREENS: Record<GameScreen, ScreenSpec> = {
+const SCREENS: Record<UIScreen, ScreenSpec> = {
   menu: {
     id: 'main-menu',
     className: `${OVERLAY_BASE} app-background`,
@@ -271,7 +270,7 @@ const SCREENS: Record<GameScreen, ScreenSpec> = {
       </div>
     `,
     wire: (root) => {
-      $(root, '#play-again-btn').addEventListener('click', () => { window.location.reload(); });
+      $(root, '#play-again-btn').addEventListener('click', () => { startGame(gameEngine.getResource('gameMode')); });
       $(root, '#main-menu-btn').addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
     },
   },
@@ -314,10 +313,10 @@ const gameContainer = ((): HTMLElement => {
   return container;
 })();
 
-const screenElements = new Map<GameScreen, HTMLElement>();
-let currentScreen: GameScreen = 'menu';
+const screenElements = new Map<UIScreen, HTMLElement>();
+let currentScreen: UIScreen = 'menu';
 
-const createScreen = (screen: GameScreen): HTMLElement => {
+const createScreen = (screen: UIScreen): HTMLElement => {
   const spec = SCREENS[screen];
   const root = document.createElement('div');
   root.id = spec.id;
@@ -329,7 +328,7 @@ const createScreen = (screen: GameScreen): HTMLElement => {
   return root;
 };
 
-export const showScreen = (screen: GameScreen): void => {
+export const showScreen = (screen: UIScreen): void => {
   screenElements.get(currentScreen)?.style.setProperty('display', 'none');
   const root = screenElements.get(screen) ?? createScreen(screen);
   root.style.display = 'flex';
@@ -356,7 +355,7 @@ export const updateObjective = (level: number): void => {
   if (el) el.textContent = `Find multiples of ${level}!`;
 };
 
-const escActions: Partial<Record<GameScreen, () => void>> = {
+const escActions: Partial<Record<UIScreen, () => void>> = {
   playing: () => { void gameEngine.pushScreen('paused', {}); },
   paused:  () => { void gameEngine.popScreen(); },
 };
