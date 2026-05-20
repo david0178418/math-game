@@ -68,37 +68,3 @@ export type PositionEntity = QueryResultEntity<AllComponents, typeof positionEnt
 export type SpiderWebEntity = QueryResultEntity<AllComponents, typeof spiderWebQuery>;
 export type SpiderWebEntityWithRenderable = QueryResultEntity<AllComponents, typeof spiderWebWithRenderableQuery>;
 export type FrogTongueEntity = QueryResultEntity<AllComponents, typeof frogTongueQuery>;
-
-/**
- * Query Utilities
- * Helper functions for common query operations
- */
-
-export function isEntityAtGridPosition(
-  entity: { components: { position: { x: number; y: number } } },
-  gridX: number,
-  gridY: number,
-  cellSize: number
-): boolean {
-  const entityGridX = Math.round(entity.components.position.x / cellSize);
-  const entityGridY = Math.round(entity.components.position.y / cellSize);
-  return entityGridX === gridX && entityGridY === gridY;
-}
-
-export function getEntitiesAtGridPosition<T extends { components: { position: { x: number; y: number } } }>(
-  entities: T[],
-  gridX: number,
-  gridY: number,
-  cellSize: number
-): T[] {
-  return entities.filter(entity => isEntityAtGridPosition(entity, gridX, gridY, cellSize));
-}
-
-export function getDistanceBetweenEntities(
-  entity1: { components: { position: { x: number; y: number } } },
-  entity2: { components: { position: { x: number; y: number } } }
-): number {
-  const dx = entity1.components.position.x - entity2.components.position.x;
-  const dy = entity1.components.position.y - entity2.components.position.y;
-  return Math.sqrt(dx * dx + dy * dy);
-} 

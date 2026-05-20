@@ -123,18 +123,6 @@ export interface Components {
   };
 }
 
-// Define event types for type safety
-export interface Events {
-  playerMoved: { x: number; y: number };
-  problemSolved: { value: number; correct: boolean };
-  enemyCollision: { playerId: number; enemyId: number };
-  tongueCollision: { playerId: number; tongueId: number };
-  scoreChanged: { newScore: number; oldScore: number };
-  livesChanged: { newLives: number; oldLives: number };
-  enemyKilled: { x: number; y: number };
-  difficultyChanged: { newDifficulty: string };
-}
-
 export type PlayingScreenConfig = { level: number; isFreshGame: boolean };
 
 export interface Resources {
@@ -148,7 +136,6 @@ export const gameEngine = ECSpresso.create()
   .withPlugin(tweenPlugin)
   .withPlugin(coroutinePlugin)
   .withComponentTypes<Components>()
-  .withEventTypes<Events>()
   .withResourceTypes<Resources>()
   .withResource('gameMode', 'multiples')
   .withResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL)
@@ -191,14 +178,6 @@ export function startGameLoop(): void {
 }
 
 /**
- * Stop the game loop
- */
-export function stopGameLoop(): void {
-  gameRunning = false;
-  console.log('Game loop stopped');
-}
-
-/**
  * Main game loop using requestAnimationFrame
  */
 function gameLoop(currentTime: number): void {
@@ -212,13 +191,6 @@ function gameLoop(currentTime: number): void {
 
   // Continue the loop
   requestAnimationFrame(gameLoop);
-}
-
-/**
- * Get the game engine instance
- */
-export function getEngine(): GameEngine {
-  return gameEngine;
 }
 
 type Commands = GameEngine['commands'];

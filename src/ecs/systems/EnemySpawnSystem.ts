@@ -7,7 +7,6 @@ import {
   type PlayerEntity
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { calculateDifficultyInterval } from '../gameUtils';
 
 /**
  * Enemy Spawn System
@@ -90,6 +89,9 @@ export function addEnemySpawnSystemToEngine(): void {
     });
 }
 
+const DIFFICULTY_SCALE_SCORE = 100;
+const SPAWN_REDUCTION_PER_LEVEL = 500;
+
 /**
  * Calculate spawn interval based on player score (difficulty scaling)
  */
@@ -97,14 +99,9 @@ function calculateSpawnInterval(player: PlayerEntity | undefined): number {
   if (!player) return GAME_CONFIG.TIMING.BASE_SPAWN_INTERVAL;
 
   const score = player.components.player.score;
-  
-  return calculateDifficultyInterval(
-    GAME_CONFIG.TIMING.BASE_SPAWN_INTERVAL,
-    GAME_CONFIG.TIMING.MIN_SPAWN_INTERVAL,
-    100,
-    500, // Reduction per level
-    score
-  );
+  const difficultyLevel = Math.floor(score / DIFFICULTY_SCALE_SCORE);
+  const adjusted = GAME_CONFIG.TIMING.BASE_SPAWN_INTERVAL - difficultyLevel * SPAWN_REDUCTION_PER_LEVEL;
+  return Math.max(adjusted, GAME_CONFIG.TIMING.MIN_SPAWN_INTERVAL);
 }
 
 /**

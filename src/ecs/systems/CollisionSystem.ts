@@ -8,7 +8,6 @@ import {
   frogTongueQuery,
   type PlayerEntityWithHealth,
   type MathProblemEntityWithRenderable,
-  type EnemyEntityWithCollider,
   type SpiderWebEntityWithRenderable,
   type FrogTongueEntity
 } from '../queries';
@@ -93,7 +92,7 @@ export function addCollisionSystemToEngine(): void {
       if (!invulnerable) {
         for (const enemy of queries.enemies) {
           if (sameGridPosition(player.components.position, enemy.components.position)) {
-            handlePlayerEnemyCollision(player, enemy);
+            handlePlayerEnemyCollision(player);
           }
         }
       }
@@ -115,13 +114,7 @@ function handlePlayerProblemCollision(
   
   // Mark problem as consumed
   mathProblemComp.consumed = true;
-  
-  // Publish problem solved event
-  gameEngine.eventBus.publish('problemSolved', {
-    value: mathProblemComp.value,
-    correct: mathProblemComp.isCorrect
-  });
-  
+
   // Update score based on correctness
   if (mathProblemComp.isCorrect) {
     // Correct answer: increase score
@@ -156,21 +149,13 @@ function handlePlayerProblemCollision(
 /**
  * Handle collision between player and enemy
  */
-function handlePlayerEnemyCollision(
-  player: PlayerEntityWithHealth,
-  enemy: EnemyEntityWithCollider
-): void {
+function handlePlayerEnemyCollision(player: PlayerEntityWithHealth): void {
   if (isInvulnerable(player)) return;
 
   const playerComp = player.components.player;
   const healthComp = player.components.health;
 
   console.log('Player hit by enemy!');
-
-  gameEngine.eventBus.publish('enemyCollision', {
-    playerId: player.id,
-    enemyId: enemy.id
-  });
 
   playerComp.lives -= 1;
   healthComp.current -= 1;
@@ -235,11 +220,6 @@ function handlePlayerTongueCollision(
     ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY,
     ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
   );
-
-  gameEngine.eventBus.publish('tongueCollision', {
-    playerId: player.id,
-    tongueId: frog.id
-  });
 
   if (playerComp.lives <= 0) {
     triggerGameOver(player, '💀 Game Over due to frog tongue attack!');

@@ -49,7 +49,5 @@ export function addMovementSystemToEngine(): void {
       const targetRotation = shortestRotation(position.rotation ?? 0, delta.rotation);
 
       startGridMovement(ecs, entity.id, newPixelX, newPixelY, targetRotation);
-
-      ecs.eventBus.publish('playerMoved', { x: newPixelX, y: newPixelY });
     });
 }
