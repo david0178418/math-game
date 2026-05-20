@@ -655,7 +655,7 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
     let lineWidth = 8;
     let tongueColor = 'rgba(255, 20, 147, 1.0)';
     
-    switch (tongue.phase) {
+    switch (frog.components.stateMachine.current) {
       case 'extending': {
         // Pulsing effect during extension
         const extendPulse = 0.8 + 0.2 * Math.sin(currentTime * 0.01);

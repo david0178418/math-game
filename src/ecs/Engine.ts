@@ -2,10 +2,17 @@ import ECSpresso from 'ecspresso';
 import { createInputPlugin } from 'ecspresso/plugins/input/input';
 import { createTimerPlugin, createTimer, type Timer, type TimerComponentTypes } from 'ecspresso/plugins/scripting/timers';
 import { createTweenPlugin, type TweenComponentTypes } from 'ecspresso/plugins/scripting/tween';
+import {
+  createStateMachinePlugin,
+  type StateMachineComponentTypes,
+} from 'ecspresso/plugins/scripting/state-machine';
 import { SYSTEM_PRIORITIES } from './systemConfigs';
 
 // Re-exported for query/spawn typing
-export type AllComponents = Components & TimerComponentTypes<TimerSlot> & TweenComponentTypes;
+export type AllComponents = Components
+  & TimerComponentTypes<TimerSlot>
+  & TweenComponentTypes
+  & StateMachineComponentTypes;
 import { GAME_CONFIG } from '../game/config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import flyImage from '../assets/images/fly.svg';
@@ -19,8 +26,7 @@ export type TimerSlot =
   | 'deathDelay'
   | 'enemyMove'
   | 'enemySpawn'
-  | 'problemSpawn'
-  | 'tonguePhase';
+  | 'problemSpawn';
 
 export type GameTimer = Timer<TimerSlot>;
 export { createTimer };
@@ -40,6 +46,7 @@ const timerPlugin = createTimerPlugin<TimerSlot>();
 // Priority slots tween between movement and render so render reads the
 // just-interpolated values, not last frame's.
 const tweenPlugin = createTweenPlugin({ priority: SYSTEM_PRIORITIES.ANIMATION });
+const stateMachinePlugin = createStateMachinePlugin({ priority: SYSTEM_PRIORITIES.FROG_TONGUE });
 
 // Re-export for convenience
 export { GAME_CONFIG };
@@ -112,7 +119,6 @@ export interface Components {
     direction: { x: number; y: number };
     maxRange: number;          // Maximum tiles (3)
     currentLength: number;
-    phase: 'extending' | 'holding' | 'retracting' | 'idle';
     segments: Array<{ x: number; y: number }>;
   };
 }
@@ -139,6 +145,7 @@ export const gameEngine = ECSpresso.create()
   .withPlugin(inputPlugin)
   .withPlugin(timerPlugin)
   .withPlugin(tweenPlugin)
+  .withPlugin(stateMachinePlugin)
   .withComponentTypes<Components>()
   .withEventTypes<Events>()
   .withResourceTypes<Resources>()
