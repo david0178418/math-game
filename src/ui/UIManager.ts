@@ -360,17 +360,12 @@ export const setFinalScore = (score: number): void => {
   if (el) el.textContent = `Final Score: ${score}`;
 };
 
-const escActions: Partial<Record<UIScreen, () => void>> = {
-  playing: () => { void gameEngine.pushScreen('paused', {}); },
-  paused:  () => { void gameEngine.popScreen(); },
-};
-
+// UI-only shortcuts. Gameplay input (movement, eat, pause) lives in the ECS input plugin.
 const keyActions: Record<string, (event: KeyboardEvent) => void> = {
   F1: (event) => {
     event.preventDefault();
     showScreen('settings');
   },
-  Escape: () => { escActions[currentScreen]?.(); },
 };
 
 document.addEventListener('keydown', (event) => {

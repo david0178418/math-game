@@ -1,5 +1,5 @@
 import ECSpresso from 'ecspresso';
-import { createInputPlugin } from 'ecspresso/plugins/input/input';
+import { createInputPlugin, gamepadAxisOn, gamepadButtonsOn } from 'ecspresso/plugins/input/input';
 import { createTimerPlugin } from 'ecspresso/plugins/scripting/timers';
 import { createTweenPlugin } from 'ecspresso/plugins/scripting/tween';
 import { createCoroutinePlugin } from 'ecspresso/plugins/scripting/coroutine';
@@ -13,13 +13,17 @@ import type {
   PlayingScreenConfig,
 } from './types';
 
+// Gamepad button indices follow the Standard Gamepad mapping
+// (https://www.w3.org/TR/gamepad/#dfn-standard-gamepad). Button 9 = Start,
+// buttons 12-15 = D-pad up/down/left/right, axes 0/1 = left stick X/Y.
 const inputPlugin = createInputPlugin<GameAction>({
   actions: {
-    up:    { keys: ['ArrowUp',    'w', 'W'] },
-    down:  { keys: ['ArrowDown',  's', 'S'] },
-    left:  { keys: ['ArrowLeft',  'a', 'A'] },
-    right: { keys: ['ArrowRight', 'd', 'D'] },
-    eat:   { keys: [' ', 'Enter'] },
+    up:    { keys: ['ArrowUp',    'w', 'W'], gamepadButtons: gamepadButtonsOn(0, 12), gamepadAxes: [gamepadAxisOn(0, 1, -1)] },
+    down:  { keys: ['ArrowDown',  's', 'S'], gamepadButtons: gamepadButtonsOn(0, 13), gamepadAxes: [gamepadAxisOn(0, 1,  1)] },
+    left:  { keys: ['ArrowLeft',  'a', 'A'], gamepadButtons: gamepadButtonsOn(0, 14), gamepadAxes: [gamepadAxisOn(0, 0, -1)] },
+    right: { keys: ['ArrowRight', 'd', 'D'], gamepadButtons: gamepadButtonsOn(0, 15), gamepadAxes: [gamepadAxisOn(0, 0,  1)] },
+    eat:   { keys: [' ', 'Enter'],           gamepadButtons: gamepadButtonsOn(0, 0) },
+    pause: { keys: ['Escape'],               gamepadButtons: gamepadButtonsOn(0, 9) },
   },
   preventDefaultKeys: ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '],
 });

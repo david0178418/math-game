@@ -3,7 +3,7 @@ import type { TweenComponentTypes } from 'ecspresso/plugins/scripting/tween';
 import type { CoroutineComponentTypes } from 'ecspresso/plugins/scripting/coroutine';
 import type { AIBehavior, EnemyType } from '../types/shared';
 
-export type GameAction = 'up' | 'down' | 'left' | 'right' | 'eat';
+export type GameAction = 'up' | 'down' | 'left' | 'right' | 'eat' | 'pause';
 
 export type TimerSlot =
   | 'webExpiry'
