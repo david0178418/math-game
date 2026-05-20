@@ -1,5 +1,4 @@
 import { GAME_CONFIG, SCORE_THRESHOLDS } from '../game/config';
-import type { Components } from './Engine';
 import type { PlayerEntity } from './queries';
 
 // Simple caches for expensive calculations
@@ -103,17 +102,6 @@ export function gridToPixel(gridX: number, gridY: number): { x: number; y: numbe
   }
   
   return result;
-}
-
-/**
- * Clear directional input flags. `eat` is intentionally untouched since
- * it's consumed by CollisionSystem after movement has resolved.
- */
-export function clearDirectionalInput(input: Components['player']['inputState']): void {
-  input.up = false;
-  input.down = false;
-  input.left = false;
-  input.right = false;
 }
 
 /**

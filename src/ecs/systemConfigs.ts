@@ -31,7 +31,6 @@ export const AI_CONFIG = {
 
 // System Priorities (for consistent ordering)
 export const SYSTEM_PRIORITIES = {
-  INPUT: 100,                   // Input handling
   AI: 85,                       // AI behavior
   MOVEMENT: 80,                 // Movement processing
   ANIMATION: 75,                // Animation interpolation (after movement, before collision)

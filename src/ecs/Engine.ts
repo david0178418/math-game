@@ -1,7 +1,21 @@
 import ECSpresso from 'ecspresso';
+import { createInputPlugin } from 'ecspresso/plugins/input/input';
 import { GAME_CONFIG } from '../game/config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import flyImage from '../assets/images/fly.svg';
+
+export type GameAction = 'up' | 'down' | 'left' | 'right' | 'eat';
+
+const inputPlugin = createInputPlugin<GameAction>({
+  actions: {
+    up:    { keys: ['ArrowUp',    'w', 'W'] },
+    down:  { keys: ['ArrowDown',  's', 'S'] },
+    left:  { keys: ['ArrowLeft',  'a', 'A'] },
+    right: { keys: ['ArrowRight', 'd', 'D'] },
+    eat:   { keys: [' ', 'Enter'] },
+  },
+  preventDefaultKeys: ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '],
+});
 
 // Re-export for convenience
 export { GAME_CONFIG };
@@ -42,10 +56,9 @@ export interface Components {
     imageWidth?: number;
     imageHeight?: number;
   };
-  player: { 
-    score: number; 
-    lives: number; 
-    inputState: { up: boolean; down: boolean; left: boolean; right: boolean; eat: boolean };
+  player: {
+    score: number;
+    lives: number;
     gameOverPending?: boolean; // Flag to disable controls during game over delay
     // Death animation properties
     deathAnimationActive?: boolean;
@@ -128,6 +141,7 @@ export interface Resources {
 }
 
 export const gameEngine = ECSpresso.create()
+  .withPlugin(inputPlugin)
   .withComponentTypes<Components>()
   .withEventTypes<Events>()
   .withResourceTypes<Resources>()
@@ -284,7 +298,6 @@ const playerComponents = (x: number, y: number): Partial<Components> => ({
   player: {
     score: GAME_CONFIG.GAMEPLAY.STARTING_SCORE,
     lives: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
-    inputState: { up: false, down: false, left: false, right: false, eat: false },
     gameOverPending: false,
     deathAnimationActive: false,
     deathScale: 1.0

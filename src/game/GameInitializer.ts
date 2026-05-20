@@ -4,10 +4,6 @@ import {
   EntityFactory,
   gameEngine
 } from '../ecs/Engine';
-import {
-  initializeInputSystem,
-  addInputSystemToEngine
-} from '../ecs/systems/InputSystem';
 import { addMovementSystemToEngine } from '../ecs/systems/MovementSystem';
 import { gridToPixel } from '../ecs/gameUtils';
 import {
@@ -70,7 +66,6 @@ export class GameInitializer {
   }
 
   private async initializeSystems(): Promise<void> {
-    addInputSystemToEngine();       // Priority 100 - Input handling
     addAISystemToEngine();          // Priority 85  - AI behavior
     addMovementSystemToEngine();    // Priority 80  - Movement processing
     addAnimationSystemToEngine();   // Priority 75  - Animation (after movement)
@@ -83,8 +78,6 @@ export class GameInitializer {
     addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
 
     await initializeEngine();
-
-    initializeInputSystem();
   }
 
   private setupCanvas(): void {

@@ -1,82 +1,61 @@
-import { gameEngine } from '../Engine';
+import { gameEngine, type GameAction } from '../Engine';
 import { GAME_CONFIG } from '../../game/config';
-import { startMovementAnimation, isEntityAnimating } from './AnimationSystem';
+import { startMovementAnimation, isEntityAnimating, startRotationAnimation } from './AnimationSystem';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { startRotationAnimation } from './AnimationSystem';
 import { playerQuery } from '../queries';
-import { clearDirectionalInput } from '../gameUtils';
+import { clamp } from '../gameUtils';
 
-// Add the movement system to ECSpresso
+type Direction = Extract<GameAction, 'up' | 'down' | 'left' | 'right'>;
+
+const DIRECTIONS = ['up', 'down', 'left', 'right'] as const satisfies readonly Direction[];
+
+const DIRECTION_DELTAS = {
+  up:    { dx:  0, dy: -1, rotation:   0 },
+  right: { dx:  1, dy:  0, rotation:  90 },
+  down:  { dx:  0, dy:  1, rotation: 180 },
+  left:  { dx: -1, dy:  0, rotation: 270 },
+} as const satisfies Record<Direction, { dx: number; dy: number; rotation: number }>;
+
+const ROTATION_DURATION_MS = 750 * 0.25;
+
+const shortestRotation = (current: number, target: number): number => {
+  if (Math.abs(target - current) <= 180) return target;
+  return target > current ? target - 360 : target + 360;
+};
+
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
     .setPriority(SYSTEM_PRIORITIES.MOVEMENT)
-    .setProcessEach(playerQuery, ({ entity, ecs }) => {
+    .withResources(['inputState'])
+    .setProcessEach(playerQuery, ({ entity, ecs, resources: { inputState } }) => {
       const position = entity.components.position;
       const player = entity.components.player;
 
+      if (player.gameOverPending) return;
+
       const freezeEffect = ecs.getComponent(entity.id, 'freezeEffect');
-      if (freezeEffect && freezeEffect.isActive) {
-        clearDirectionalInput(player.inputState);
-        console.log('❄️ Player movement blocked - frozen by spider web');
-        return;
-      }
+      if (freezeEffect && freezeEffect.isActive) return;
 
-      if (isEntityAnimating(position)) {
-        clearDirectionalInput(player.inputState);
-        return;
-      }
+      if (isEntityAnimating(position)) return;
 
+      const pressed = DIRECTIONS.filter(d => inputState.actions.justActivated(d));
+      if (pressed.length !== 1) return;
+
+      const delta = DIRECTION_DELTAS[pressed[0]];
       const currentGridX = Math.round(position.x / GAME_CONFIG.GRID.CELL_SIZE);
       const currentGridY = Math.round(position.y / GAME_CONFIG.GRID.CELL_SIZE);
-
-      let newGridX = currentGridX;
-      let newGridY = currentGridY;
-
-      if (player.inputState.left && !player.inputState.right && !player.inputState.up && !player.inputState.down) {
-        newGridX = Math.max(0, currentGridX - 1);
-      } else if (player.inputState.right && !player.inputState.left && !player.inputState.up && !player.inputState.down) {
-        newGridX = Math.min(GAME_CONFIG.GRID.WIDTH - 1, currentGridX + 1);
-      } else if (player.inputState.up && !player.inputState.down && !player.inputState.left && !player.inputState.right) {
-        newGridY = Math.max(0, currentGridY - 1);
-      } else if (player.inputState.down && !player.inputState.up && !player.inputState.left && !player.inputState.right) {
-        newGridY = Math.min(GAME_CONFIG.GRID.HEIGHT - 1, currentGridY + 1);
-      }
-
+      const newGridX = clamp(currentGridX + delta.dx, 0, GAME_CONFIG.GRID.WIDTH - 1);
+      const newGridY = clamp(currentGridY + delta.dy, 0, GAME_CONFIG.GRID.HEIGHT - 1);
       const newPixelX = newGridX * GAME_CONFIG.GRID.CELL_SIZE;
       const newPixelY = newGridY * GAME_CONFIG.GRID.CELL_SIZE;
 
-      if (newPixelX !== position.x || newPixelY !== position.y) {
-        let targetRotation = position.rotation || 0;
+      if (newPixelX === position.x && newPixelY === position.y) return;
 
-        if (player.inputState.up) {
-          targetRotation = 0;
-        } else if (player.inputState.right) {
-          targetRotation = 90;
-        } else if (player.inputState.down) {
-          targetRotation = 180;
-        } else if (player.inputState.left) {
-          targetRotation = 270;
-        }
+      const targetRotation = shortestRotation(position.rotation ?? 0, delta.rotation);
 
-        const currentRotation = position.rotation || 0;
-        if (Math.abs(targetRotation - currentRotation) > 180) {
-          if (targetRotation > currentRotation) {
-            targetRotation -= 360;
-          } else {
-            targetRotation += 360;
-          }
-        }
+      startMovementAnimation(position, newPixelX, newPixelY);
+      startRotationAnimation(position, targetRotation, ROTATION_DURATION_MS);
 
-        const rotationDuration = 750 * 0.25;
-        startMovementAnimation(position, newPixelX, newPixelY);
-        startRotationAnimation(position, targetRotation, rotationDuration);
-
-        ecs.eventBus.publish('playerMoved', {
-          x: newPixelX,
-          y: newPixelY,
-        });
-      }
-
-      clearDirectionalInput(player.inputState);
+      ecs.eventBus.publish('playerMoved', { x: newPixelX, y: newPixelY });
     });
 }

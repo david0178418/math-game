@@ -42,7 +42,8 @@ export function addCollisionSystemToEngine(): void {
     .addQuery('enemies', enemyWithColliderQuery)
     .addQuery('spiderWebs', spiderWebWithRenderableQuery)
     .addQuery('frogTongues', frogTongueQuery)
-    .setProcess(({ queries, ecs }) => {
+    .withResources(['inputState'])
+    .setProcess(({ queries, ecs, resources: { inputState } }) => {
       const player = queries.player;
       if (!player) return;
 
@@ -100,11 +101,8 @@ export function addCollisionSystemToEngine(): void {
 
         // Check if player is on the same grid position as a math problem
         if (sameGridPosition(player.components.position, problem.components.position)) {
-          // Only consume if player presses the eat button
-          if (player.components.player.inputState.eat) {
+          if (inputState.actions.justActivated('eat')) {
             handlePlayerProblemCollision(player, problem);
-            // Clear eat input after processing to prevent multiple consumption
-            player.components.player.inputState.eat = false;
           }
         }
       }
