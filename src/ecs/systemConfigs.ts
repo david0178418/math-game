@@ -38,8 +38,7 @@ export const SYSTEM_PRIORITIES = {
   UI: 50,                       // UI updates
   ENEMY_SPAWN: 40,              // Enemy spawning
   PROBLEM_MANAGEMENT: 30,       // Problem lifecycle
-  FROG_TONGUE: 22,              // Frog Tongue system (before spider web, after problem management)
-  SPIDER_WEB: 20,               // Spider Web system (before render, after frog tongue)
+  FROG_TONGUE: 22,              // Frog Tongue system (before render, after problem management)
   RENDER: 10,                   // Rendering (should be last)
 } as const;
 

@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import { gameEngine, createTimer } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { GAME_CONFIG } from '../../game/config';
 import { pixelToGrid } from '../gameUtils';
@@ -27,15 +27,12 @@ export function addFrogTongueSystemToEngine(): void {
     .addQuery('enemies', enemyQuery)
     .addSingleton('player', playerQuery)
     .setProcess(({ queries, dt }) => {
-      const currentTime = performance.now();
-
       // Store entities for obstacle checking
       currentEnemies = queries.enemies;
       currentPlayer = queries.player;
 
-      // Process each frog's tongue behavior
       for (const frog of queries.frogs) {
-        processFrogTongue(frog, currentTime, dt);
+        processFrogTongue(frog, dt);
       }
     });
 }
@@ -44,151 +41,86 @@ export function addFrogTongueSystemToEngine(): void {
 let currentEnemies: EnemyEntity[] = [];
 let currentPlayer: PlayerEntity | undefined;
 
-/**
- * Process a single frog's tongue behavior
- */
-function processFrogTongue(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
+function processFrogTongue(frog: FrogTongueEntity, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
-  
-  // Validate tongue phase (meaningful game state validation)
-  const validPhases = ['idle', 'extending', 'holding', 'retracting'];
-  if (!validPhases.includes(tongue.phase)) {
-    console.warn(`🐸 WARNING: Invalid tongue phase '${tongue.phase}' for frog ${frog.id}, resetting to idle`);
-    tongue.phase = 'idle';
-    tongue.isExtended = false;
-    tongue.currentLength = 0;
-    tongue.segments = [];
-  }
-  
-  // Validate meaningful data bounds
-  if (tongue.isExtended && (Math.abs(tongue.direction.x) > 1 || Math.abs(tongue.direction.y) > 1)) {
-    console.warn(`🐸 WARNING: Invalid direction vector (${tongue.direction.x}, ${tongue.direction.y}) for frog ${frog.id}, resetting`);
-    tongue.direction = { x: 0, y: 0 };
-  }
-  
-  if (tongue.currentLength < 0 || tongue.currentLength > tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE) {
-    tongue.currentLength = Math.max(0, Math.min(tongue.currentLength, tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE));
-  }
-  
+
   switch (tongue.phase) {
     case 'idle':
-      processIdlePhase(frog, currentTime);
+      processIdlePhase(frog);
       break;
     case 'extending':
-      processExtendingPhase(frog, currentTime, deltaTime);
+      processExtendingPhase(frog, deltaTime);
       break;
     case 'holding':
-      processHoldingPhase(frog, currentTime);
+      processHoldingPhase(frog);
       break;
     case 'retracting':
-      processRetractingPhase(frog, currentTime, deltaTime);
+      processRetractingPhase(frog, deltaTime);
       break;
   }
 }
 
-/**
- * Process idle phase - randomly decide to attack
- */
-function processIdlePhase(frog: FrogTongueEntity, currentTime: number): void {
-  const tongue = frog.components.frogTongue;
-  
-  // Check if enough time has passed since last attack
-  const timeSinceLastAttack = currentTime - tongue.startTime;
-  if (timeSinceLastAttack < FROG_CONFIG.TONGUE_COOLDOWN) {
-    return;
-  }
-  
-  // Random chance to start tongue attack
-  const attackChance = FROG_CONFIG.TONGUE_ATTACK_PROBABILITY * (1/60); // Per frame probability
+function processIdlePhase(frog: FrogTongueEntity): void {
+  // tonguePhase timer holds the post-attack cooldown
+  if (frog.components.timers.tonguePhase?.active) return;
+
+  const attackChance = FROG_CONFIG.TONGUE_ATTACK_PROBABILITY * (1 / 60);
   if (Math.random() < attackChance) {
-    startTongueAttack(frog, currentTime);
+    startTongueAttack(frog);
   }
 }
 
-/**
- * Process extending phase - extend tongue towards target
- */
-function processExtendingPhase(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
+function processExtendingPhase(frog: FrogTongueEntity, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
   const extensionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime;
-  
-  // Calculate how far the tongue should extend
+
   tongue.currentLength = Math.min(tongue.currentLength + extensionSpeed, tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE);
-  
-  // Update tongue segments
   updateTongueSegments(frog);
-  
-  // Check if we hit an obstacle (segments stopped growing despite having range left)
-  const segmentCount = tongue.segments.length;
+
+  // Hit an obstacle: segments stopped growing despite remaining range
   const expectedSegments = Math.floor(tongue.currentLength / GAME_CONFIG.GRID.CELL_SIZE);
-  const hitObstacle = segmentCount < expectedSegments && segmentCount < tongue.maxRange;
-  
-  // Check if fully extended or hit an obstacle
+  const hitObstacle = tongue.segments.length < expectedSegments && tongue.segments.length < tongue.maxRange;
+
   if (tongue.currentLength >= tongue.maxRange * GAME_CONFIG.GRID.CELL_SIZE || hitObstacle) {
     tongue.phase = 'holding';
-    tongue.startTime = currentTime;
+    frog.components.timers.tonguePhase = createTimer(FROG_CONFIG.TONGUE_HOLD_DURATION / 1000);
   }
 }
 
-/**
- * Process holding phase - keep tongue extended for 1 second
- */
-function processHoldingPhase(frog: FrogTongueEntity, currentTime: number): void {
-  const tongue = frog.components.frogTongue;
-  const timeHeld = currentTime - tongue.startTime;
-  
-  if (timeHeld >= FROG_CONFIG.TONGUE_HOLD_DURATION) {
-    tongue.phase = 'retracting';
-    tongue.startTime = currentTime;
-  }
+function processHoldingPhase(frog: FrogTongueEntity): void {
+  if (frog.components.timers.tonguePhase?.active) return;
+  frog.components.frogTongue.phase = 'retracting';
 }
 
-/**
- * Process retracting phase - retract tongue back to frog
- */
-function processRetractingPhase(frog: FrogTongueEntity, currentTime: number, deltaTime: number): void {
+function processRetractingPhase(frog: FrogTongueEntity, deltaTime: number): void {
   const tongue = frog.components.frogTongue;
-  const retractionSpeed = FROG_CONFIG.TONGUE_SPEED * deltaTime; // Same speed as extension
-  
-  // Retract the tongue
-  tongue.currentLength = Math.max(0, tongue.currentLength - retractionSpeed);
-
-  // Update tongue segments
+  tongue.currentLength = Math.max(0, tongue.currentLength - FROG_CONFIG.TONGUE_SPEED * deltaTime);
   updateTongueSegments(frog);
 
-  // Check if fully retracted
   if (tongue.currentLength <= 0) {
     tongue.phase = 'idle';
     tongue.isExtended = false;
     tongue.segments = [];
-    tongue.startTime = currentTime;
+    frog.components.timers.tonguePhase = createTimer(FROG_CONFIG.TONGUE_COOLDOWN / 1000);
   }
 }
 
-/**
- * Start a tongue attack in a random direction
- */
-function startTongueAttack(frog: FrogTongueEntity, currentTime: number): void {
+function startTongueAttack(frog: FrogTongueEntity): void {
   const tongue = frog.components.frogTongue;
-  
-  // Choose a random direction (up, down, left, right)
   const directions = [
-    { x: 0, y: -1 },  // Up
-    { x: 0, y: 1 },   // Down
-    { x: -1, y: 0 },  // Left
-    { x: 1, y: 0 }    // Right
+    { x: 0, y: -1 },
+    { x: 0, y: 1 },
+    { x: -1, y: 0 },
+    { x: 1, y: 0 },
   ];
-  
   const randomDirection = directions[Math.floor(Math.random() * directions.length)];
-  
-  // Initialize tongue attack
+
   tongue.isExtended = true;
   tongue.direction = randomDirection;
   tongue.currentLength = 0;
   tongue.phase = 'extending';
-  tongue.startTime = currentTime;
   tongue.segments = [];
-  
+
   console.log(`🐸 Frog starting tongue attack in direction (${randomDirection.x}, ${randomDirection.y})`);
 }
 
@@ -272,17 +204,14 @@ function isPositionBlockedForTongue(gridX: number, gridY: number, frogId: number
  * Initialize frog tongue component for a frog entity
  */
 export function initializeFrogTongue(frogId: number): void {
-  const currentTime = performance.now();
-  
   gameEngine.entityManager.addComponent(frogId, 'frogTongue', {
     isExtended: false,
     direction: { x: 0, y: 0 },
     maxRange: FROG_CONFIG.TONGUE_RANGE,
     currentLength: 0,
-    startTime: currentTime,
     phase: 'idle',
-    segments: []
+    segments: [],
   });
-  
+
   console.log(`🐸 Initialized frog tongue for entity ${frogId}`);
 } 

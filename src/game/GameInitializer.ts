@@ -18,7 +18,6 @@ import { addUISystemToEngine } from '../ecs/systems/UISystem';
 import { addProblemManagementSystemToEngine } from '../ecs/systems/ProblemManagementSystem';
 import { addAISystemToEngine } from '../ecs/systems/AISystem';
 import { addEnemySpawnSystemToEngine } from '../ecs/systems/EnemySpawnSystem';
-import { addSpiderWebSystemToEngine } from '../ecs/systems/SpiderWebSystem';
 import { addFrogTongueSystemToEngine } from '../ecs/systems/FrogTongueSystem';
 import { uiManager } from './UIManager';
 
@@ -74,7 +73,6 @@ export class GameInitializer {
     addEnemySpawnSystemToEngine();  // Priority 40  - Enemy spawning
     addProblemManagementSystemToEngine(); // Priority 30  - Problem spawning
     addFrogTongueSystemToEngine();  // Priority 22  - Frog Tongue system
-    addSpiderWebSystemToEngine();   // Priority 20  - Spider Web system
     addRenderSystemToEngine();      // Priority 10  - Rendering (lowest)
 
     await initializeEngine();

@@ -1,10 +1,27 @@
 import ECSpresso from 'ecspresso';
 import { createInputPlugin } from 'ecspresso/plugins/input/input';
+import { createTimerPlugin, createTimer, type Timer, type TimerComponentTypes } from 'ecspresso/plugins/scripting/timers';
+
+// Re-exported for query/spawn typing
+export type AllComponents = Components & TimerComponentTypes<TimerSlot>;
 import { GAME_CONFIG } from '../game/config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import flyImage from '../assets/images/fly.svg';
 
 export type GameAction = 'up' | 'down' | 'left' | 'right' | 'eat';
+
+export type TimerSlot =
+  | 'webExpiry'
+  | 'freeze'
+  | 'invulnerability'
+  | 'deathDelay'
+  | 'enemyMove'
+  | 'enemySpawn'
+  | 'problemSpawn'
+  | 'tonguePhase';
+
+export type GameTimer = Timer<TimerSlot>;
+export { createTimer };
 
 const inputPlugin = createInputPlugin<GameAction>({
   actions: {
@@ -16,6 +33,8 @@ const inputPlugin = createInputPlugin<GameAction>({
   },
   preventDefaultKeys: ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '],
 });
+
+const timerPlugin = createTimerPlugin<TimerSlot>();
 
 // Re-export for convenience
 export { GAME_CONFIG };
@@ -66,10 +85,9 @@ export interface Components {
     deathAnimationDuration?: number;
     deathScale?: number; // Scale factor for shrinking effect
   };
-  enemy: { 
+  enemy: {
     enemyType: EnemyType;
     behaviorType: AIBehavior;
-    nextMoveTime: number;
     aiState?: {
       targetGridX: number;
       targetGridY: number;
@@ -92,32 +110,20 @@ export interface Components {
     height: number; 
     group: string;
   };
-  health: { 
-    current: number; 
-    max: number; 
-    invulnerable: boolean; 
-    invulnerabilityTime: number;
+  health: {
+    current: number;
+    max: number;
   };
   spiderWeb: {
-    duration: number;        // Time until web disappears (8000ms)
-    freezeTime: number;      // Time player is frozen when caught (2000ms)
-    createdTime: number;  // When the web was created (timestamp)
-    isActive: boolean;       // Whether the web is still active
-  };
-  freezeEffect: {
-    startTime: number;    // When freeze started
-    duration: number;        // How long to freeze (2000ms)
-    isActive: boolean;       // Whether player is currently frozen
-    sourceWebId?: number;  // ID of the spider web that caused this freeze
+    freezeTime: number;
   };
   frogTongue: {
-    isExtended: boolean;                    // Whether tongue is currently out
-    direction: { x: number; y: number };    // Direction tongue extends
-    maxRange: number;                       // Maximum tiles (3)
-    currentLength: number;                  // Current extension distance
-    startTime: number;                      // When tongue action started
+    isExtended: boolean;
+    direction: { x: number; y: number };
+    maxRange: number;          // Maximum tiles (3)
+    currentLength: number;
     phase: 'extending' | 'holding' | 'retracting' | 'idle';
-    segments: Array<{ x: number; y: number }>; // Tongue path for collision
+    segments: Array<{ x: number; y: number }>;
   };
 }
 
@@ -142,6 +148,7 @@ export interface Resources {
 
 export const gameEngine = ECSpresso.create()
   .withPlugin(inputPlugin)
+  .withPlugin(timerPlugin)
   .withComponentTypes<Components>()
   .withEventTypes<Events>()
   .withResourceTypes<Resources>()
@@ -286,7 +293,7 @@ const enemyColorFor = (enemyType: EnemyType): string =>
   GAME_CONFIG.ENEMY_TYPES[enemyType.toUpperCase() as keyof typeof GAME_CONFIG.ENEMY_TYPES]?.COLOR
   ?? GAME_CONFIG.COLORS.ENEMY;
 
-const playerComponents = (x: number, y: number): Partial<Components> => ({
+const playerComponents = (x: number, y: number): Partial<AllComponents> => ({
   position: { x, y, rotation: 0 },
   renderable: {
     shape: 'image',
@@ -309,10 +316,9 @@ const playerComponents = (x: number, y: number): Partial<Components> => ({
   },
   health: {
     current: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
-    max: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
-    invulnerable: false,
-    invulnerabilityTime: 0
-  }
+    max: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES
+  },
+  timers: {}
 });
 
 const enemyComponents = (
@@ -320,7 +326,7 @@ const enemyComponents = (
   y: number,
   enemyType: EnemyType,
   behaviorType: AIBehavior
-): Partial<Components> => ({
+): Partial<AllComponents> => ({
   position: { x, y },
   renderable: {
     shape: 'rectangle',
@@ -330,8 +336,7 @@ const enemyComponents = (
   },
   enemy: {
     enemyType,
-    behaviorType,
-    nextMoveTime: 0
+    behaviorType
   },
   collider: {
     width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
@@ -340,10 +345,9 @@ const enemyComponents = (
   },
   health: {
     current: 1,
-    max: 1,
-    invulnerable: false,
-    invulnerabilityTime: 0
-  }
+    max: 1
+  },
+  timers: {}
 });
 
 const mathProblemComponents = (
@@ -352,7 +356,7 @@ const mathProblemComponents = (
   value: number,
   isCorrect: boolean,
   difficulty: number
-): Partial<Components> => ({
+): Partial<AllComponents> => ({
   position: { x, y },
   renderable: {
     shape: 'rectangle',

@@ -1,5 +1,5 @@
 import { type QueryResultEntity } from 'ecspresso';
-import type { Components } from './Engine';
+import type { AllComponents } from './Engine';
 
 /**
  * Centralized Query Definitions
@@ -8,11 +8,11 @@ import type { Components } from './Engine';
 
 // Common entity queries
 export const playerQuery = {
-  with: ['position', 'player'],
+  with: ['position', 'player', 'timers'],
 } as const;
 
 export const playerWithHealthQuery = {
-  with: ['position', 'player', 'collider', 'health'],
+  with: ['position', 'player', 'collider', 'health', 'timers'],
 } as const;
 
 export const mathProblemQuery = {
@@ -24,11 +24,11 @@ export const mathProblemWithRenderableQuery = {
 } as const;
 
 export const enemyQuery = {
-  with: ['position', 'enemy'],
+  with: ['position', 'enemy', 'timers'],
 } as const;
 
 export const enemyWithColliderQuery = {
-  with: ['position', 'enemy', 'collider'],
+  with: ['position', 'enemy', 'collider', 'timers'],
 } as const;
 
 export const renderableEntityQuery = {
@@ -40,19 +40,15 @@ export const positionEntityQuery = {
 } as const;
 
 export const spiderWebQuery = {
-  with: ['position', 'spiderWeb'],
+  with: ['position', 'spiderWeb', 'timers'],
 } as const;
 
 export const spiderWebWithRenderableQuery = {
-  with: ['position', 'spiderWeb', 'renderable', 'collider'],
+  with: ['position', 'spiderWeb', 'renderable', 'collider', 'timers'],
 } as const;
 
 export const frogTongueQuery = {
-  with: ['position', 'enemy', 'frogTongue'],
-} as const;
-
-export const frozenPlayerQuery = {
-  with: ['position', 'player', 'freezeEffect'],
+  with: ['position', 'enemy', 'frogTongue', 'timers'],
 } as const;
 
 /**
@@ -60,19 +56,18 @@ export const frozenPlayerQuery = {
  * Type-safe entity types derived from query definitions
  */
 
-export type PlayerEntity = QueryResultEntity<Components, typeof playerQuery>;
-export type PlayerEntityWithHealth = QueryResultEntity<Components, typeof playerWithHealthQuery>;
-export type MathProblemEntity = QueryResultEntity<Components, typeof mathProblemQuery>;
-export type MathProblemEntityWithRenderable = QueryResultEntity<Components, typeof mathProblemWithRenderableQuery>;
-export type EnemyEntity = QueryResultEntity<Components, typeof enemyQuery>;
-export type EnemyEntityWithCollider = QueryResultEntity<Components, typeof enemyWithColliderQuery>;
-export type RenderableEntity = QueryResultEntity<Components, typeof renderableEntityQuery>;
-export type PositionEntity = QueryResultEntity<Components, typeof positionEntityQuery>;
+export type PlayerEntity = QueryResultEntity<AllComponents, typeof playerQuery>;
+export type PlayerEntityWithHealth = QueryResultEntity<AllComponents, typeof playerWithHealthQuery>;
+export type MathProblemEntity = QueryResultEntity<AllComponents, typeof mathProblemQuery>;
+export type MathProblemEntityWithRenderable = QueryResultEntity<AllComponents, typeof mathProblemWithRenderableQuery>;
+export type EnemyEntity = QueryResultEntity<AllComponents, typeof enemyQuery>;
+export type EnemyEntityWithCollider = QueryResultEntity<AllComponents, typeof enemyWithColliderQuery>;
+export type RenderableEntity = QueryResultEntity<AllComponents, typeof renderableEntityQuery>;
+export type PositionEntity = QueryResultEntity<AllComponents, typeof positionEntityQuery>;
 
-export type SpiderWebEntity = QueryResultEntity<Components, typeof spiderWebQuery>;
-export type SpiderWebEntityWithRenderable = QueryResultEntity<Components, typeof spiderWebWithRenderableQuery>;
-export type FrogTongueEntity = QueryResultEntity<Components, typeof frogTongueQuery>;
-export type FrozenPlayerEntity = QueryResultEntity<Components, typeof frozenPlayerQuery>;
+export type SpiderWebEntity = QueryResultEntity<AllComponents, typeof spiderWebQuery>;
+export type SpiderWebEntityWithRenderable = QueryResultEntity<AllComponents, typeof spiderWebWithRenderableQuery>;
+export type FrogTongueEntity = QueryResultEntity<AllComponents, typeof frogTongueQuery>;
 
 /**
  * Query Utilities

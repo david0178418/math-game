@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import { gameEngine, type GameEngine, createTimer } from '../Engine';
 import { pixelToGrid, gridToPixel } from '../gameUtils';
 import { GAME_CONFIG } from '../../game/config';
 import type { AIBehavior } from '../../types/shared';
@@ -29,18 +29,14 @@ export function addAISystemToEngine(): void {
     .addQuery('enemies', enemyQuery)
     .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {
-      const currentTime = Date.now();
       const enemies = queries.enemies;
       const player = queries.player;
 
       if (!player) return;
 
       for (const enemy of enemies) {
-        if (isEntityAnimating(enemy.components.position)) {
-          continue;
-        }
-
-        processEnemyAI(ecs, enemy, player, enemies, currentTime);
+        if (isEntityAnimating(enemy.components.position)) continue;
+        processEnemyAI(ecs, enemy, player, enemies);
       }
     });
 }
@@ -52,29 +48,23 @@ function processEnemyAI(
   ecs: GameEngine,
   enemy: EnemyEntity,
   player: PlayerEntity,
-  allEnemies: EnemyEntity[],
-  currentTime: number
+  allEnemies: EnemyEntity[]
 ): void {
   const enemyPos = enemy.components.position;
   const enemyData = enemy.components.enemy;
-  
-  // Frog-specific behavior: Don't move if tongue is extended
+  const timers = enemy.components.timers;
+
   if (enemyData.enemyType === 'frog') {
     const frogTongue = gameEngine.entityManager.getComponent(enemy.id, 'frogTongue');
-    
-    // Initialize frog tongue if it doesn't exist
+
     if (!frogTongue) {
       initializeFrogTongue(enemy.id);
     } else if (frogTongue.isExtended) {
-      // Frog can't move while tongue is out
-      console.log(`🐸 Frog ${enemy.id} cannot move - tongue is extended`);
       return;
     }
   }
-  
-  if (currentTime < enemyData.nextMoveTime) {
-    return;
-  }
+
+  if (timers.enemyMove?.active) return;
 
   const moveInterval: number = calculateMoveInterval(enemyData.behaviorType, player, enemyData.enemyType);
 
@@ -112,11 +102,8 @@ function processEnemyAI(
     }
   }
   
-  // Set next move time with some randomization
-  const baseInterval = moveInterval;
-  const randomVariation = baseInterval * 0.2; // ±20% variation
-  const variation = (Math.random() - 0.5) * randomVariation;
-  enemyData.nextMoveTime = currentTime + baseInterval + variation;
+  const variation = (Math.random() - 0.5) * moveInterval * 0.2;
+  timers.enemyMove = createTimer((moveInterval + variation) / 1000);
 }
 
 /**

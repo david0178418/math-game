@@ -32,10 +32,7 @@ export function addMovementSystemToEngine(): void {
       const player = entity.components.player;
 
       if (player.gameOverPending) return;
-
-      const freezeEffect = ecs.getComponent(entity.id, 'freezeEffect');
-      if (freezeEffect && freezeEffect.isActive) return;
-
+      if (entity.components.timers.freeze?.active) return;
       if (isEntityAnimating(position)) return;
 
       const pressed = DIRECTIONS.filter(d => inputState.actions.justActivated(d));

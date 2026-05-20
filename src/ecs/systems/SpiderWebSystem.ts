@@ -1,70 +1,8 @@
-import { gameEngine, type GameEngine } from '../Engine';
-import { SYSTEM_PRIORITIES } from '../systemConfigs';
+import { gameEngine, type GameEngine, createTimer } from '../Engine';
 import { GAME_CONFIG } from '../../game/config';
 import { gridToPixel } from '../gameUtils';
-import {
-  spiderWebQuery,
-  frozenPlayerQuery,
-  type SpiderWebEntity,
-  type FrozenPlayerEntity
-} from '../queries';
 
 const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.SPIDER;
-
-export function addSpiderWebSystemToEngine(): void {
-  gameEngine.addSystem('spiderWebSystem')
-    .setPriority(SYSTEM_PRIORITIES.SPIDER_WEB)
-    .addQuery('spiderWebs', spiderWebQuery)
-    .addQuery('frozenPlayers', frozenPlayerQuery)
-    .setProcess(({ queries, ecs }) => {
-      const currentTime = performance.now();
-
-      processSpiderWebLifecycle(ecs, queries.spiderWebs, currentTime);
-      processFreezeEffects(ecs, queries.frozenPlayers, currentTime);
-    });
-}
-
-function processSpiderWebLifecycle(ecs: GameEngine, spiderWebs: SpiderWebEntity[], currentTime: number): void {
-  for (const webEntity of spiderWebs) {
-    const web = webEntity.components.spiderWeb;
-
-    if (web.duration <= 0) {
-      console.warn(`🕸️ WARNING: Invalid duration ${web.duration} for web ${webEntity.id}, using default`);
-      web.duration = SPIDER_CONFIG.WEB_DURATION;
-    }
-
-    const timeSinceCreated = currentTime - web.createdTime;
-
-    if (timeSinceCreated >= web.duration && web.isActive) {
-      console.log(`🕸️ Spider web expired after ${web.duration}ms without catching a player`);
-      ecs.commands.removeEntity(webEntity.id);
-    }
-  }
-}
-
-function processFreezeEffects(ecs: GameEngine, frozenPlayers: FrozenPlayerEntity[], currentTime: number): void {
-  for (const playerEntity of frozenPlayers) {
-    const freezeEffect = playerEntity.components.freezeEffect;
-
-    if (freezeEffect.duration <= 0) {
-      console.warn(`🧊 WARNING: Invalid duration ${freezeEffect.duration} for freeze effect ${playerEntity.id}, using default`);
-      freezeEffect.duration = SPIDER_CONFIG.FREEZE_DURATION;
-    }
-
-    const timeFrozen = currentTime - freezeEffect.startTime;
-
-    if (timeFrozen >= freezeEffect.duration && freezeEffect.isActive) {
-      console.log(`🧊 Player freeze effect expired after ${freezeEffect.duration}ms`);
-
-      if (freezeEffect.sourceWebId) {
-        console.log(`🕸️ Cleaning up spider web #${freezeEffect.sourceWebId} that caught the player`);
-        ecs.commands.removeEntity(freezeEffect.sourceWebId);
-      }
-
-      ecs.commands.removeComponent(playerEntity.id, 'freezeEffect');
-    }
-  }
-}
 
 export function createSpiderWeb(ecs: GameEngine, gridX: number, gridY: number): void {
   if (gridX < 0 || gridX >= GAME_CONFIG.GRID.WIDTH || gridY < 0 || gridY >= GAME_CONFIG.GRID.HEIGHT) {
@@ -72,29 +10,32 @@ export function createSpiderWeb(ecs: GameEngine, gridX: number, gridY: number): 
     return;
   }
 
-  const currentTime = performance.now();
   const { x: pixelX, y: pixelY } = gridToPixel(gridX, gridY);
 
   ecs.commands.spawn({
     position: { x: pixelX, y: pixelY },
-    spiderWeb: {
-      duration: SPIDER_CONFIG.WEB_DURATION,
-      freezeTime: SPIDER_CONFIG.FREEZE_DURATION,
-      createdTime: currentTime,
-      isActive: true
-    },
+    spiderWeb: { freezeTime: SPIDER_CONFIG.FREEZE_DURATION },
     renderable: {
       shape: 'rectangle',
       color: 'rgba(128, 0, 128, 0.3)',
       size: GAME_CONFIG.GRID.CELL_SIZE * 0.8,
-      layer: 1
+      layer: 1,
     },
     collider: {
       width: GAME_CONFIG.GRID.CELL_SIZE,
       height: GAME_CONFIG.GRID.CELL_SIZE,
-      group: 'spiderWeb'
-    }
+      group: 'spiderWeb',
+    },
+    timers: {
+      webExpiry: createTimer(SPIDER_CONFIG.WEB_DURATION / 1000, {
+        onComplete: ({ entityId }) => {
+          console.log(`🕸️ Spider web expired without catching a player`);
+          gameEngine.commands.removeEntity(entityId);
+        },
+      }),
+    },
   }, { scope: 'playing' });
 
   console.log(`🕸️ Created spider web at grid (${gridX}, ${gridY})`);
 }
+

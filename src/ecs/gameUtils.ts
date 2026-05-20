@@ -1,5 +1,14 @@
 import { GAME_CONFIG, SCORE_THRESHOLDS } from '../game/config';
+import type { GameTimer } from './Engine';
 import type { PlayerEntity } from './queries';
+
+/**
+ * Fraction of a timer's duration still remaining, in [0, 1].
+ * Returns 1 when the timer is absent — useful for entities that haven't been
+ * given the slot yet.
+ */
+export const timerProgress = (timer: GameTimer | undefined): number =>
+  timer ? Math.max(0, 1 - timer.elapsed / timer.duration) : 1;
 
 // Simple caches for expensive calculations
 const gridToPixelCache = new Map<string, { x: number; y: number }>();

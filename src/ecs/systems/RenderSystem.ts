@@ -6,14 +6,13 @@ import {
   mathProblemQuery,
   frogTongueQuery,
   spiderWebQuery,
-  frozenPlayerQuery,
   type PlayerEntity,
   type MathProblemEntity,
   type FrogTongueEntity,
-  type SpiderWebEntity,
-  type FrozenPlayerEntity
+  type SpiderWebEntity
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
+import { timerProgress } from '../gameUtils';
 import flyImage from '../../assets/images/fly.svg';
 
 // Canvas context and configuration
@@ -120,7 +119,6 @@ export function addRenderSystemToEngine(): void {
     .addQuery('mathProblems', mathProblemQuery)
     .addQuery('frogTongues', frogTongueQuery)
     .addQuery('spiderWebs', spiderWebQuery)
-    .addQuery('frozenPlayers', frozenPlayerQuery)
 
     .setOnInitialize(() => {
       console.log('🎨 Render system initialized');
@@ -153,23 +151,22 @@ export function addRenderSystemToEngine(): void {
       for (const entity of sortedEntities) {
         const position = entity.components.position;
         const renderable = entity.components.renderable;
-        
-        // Check if entity has health component for invincibility
-        const healthComp = 'health' in entity.components ? entity.components.health : undefined;
-        const isInvulnerable = healthComp?.invulnerable || false;
-        
+
+        const timers = 'timers' in entity.components ? entity.components.timers : undefined;
+        const isInvulnerable = timers?.invulnerability?.active === true;
+
         // Check if entity has player component for death scaling
         const playerComp = 'player' in entity.components ? entity.components.player : undefined;
         const deathScale = playerComp?.deathScale ?? 1.0;
-        
+
         drawEntity(position, renderable, isInvulnerable, deathScale, entity.id);
       }
-      
+
       // Draw enhanced frog tongues (after entities but before UI text)
       drawEnhancedFrogTongues(queries.frogTongues as FrogTongueEntity[]);
-      
-      // Draw frozen player visual effects
-      drawFrozenPlayerEffects(queries.frozenPlayers as FrozenPlayerEntity[]);
+
+      // Draw frozen player visual effects (player held via singleton query)
+      if (queries.player) drawFrozenPlayerEffect(queries.player as PlayerEntity);
       
       // Draw numbers on math problem tiles (after drawing the entities)
       drawMathProblemNumbers(queries.mathProblems);
@@ -568,16 +565,8 @@ function drawEnhancedSpiderWebs(spiderWebs: SpiderWebEntity[]): void {
   const currentTime = performance.now();
   
   for (const webEntity of spiderWebs) {
-    const web = webEntity.components.spiderWeb;
     const pos = webEntity.components.position;
-    
-    // Skip inactive webs
-    if (!web.isActive) continue;
-    
-    // Calculate fade effect based on remaining lifetime
-    const timeElapsed = currentTime - web.createdTime;
-    const timeRemaining = web.duration - timeElapsed;
-    const fadeProgress = Math.max(0, timeRemaining / web.duration);
+    const fadeProgress = timerProgress(webEntity.components.timers.webExpiry);
     
     // Base opacity that fades over time
     const baseOpacity = 0.6 * fadeProgress;
@@ -754,98 +743,84 @@ function drawEnhancedFrogTongues(frogs: FrogTongueEntity[]): void {
 }
 
 /**
- * Draw visual effects for frozen players
+ * Draw visual effects for a frozen player
  */
-function drawFrozenPlayerEffects(frozenPlayers: FrozenPlayerEntity[]): void {
+function drawFrozenPlayerEffect(player: PlayerEntity): void {
   if (!ctx) return;
-  
+
+  const freeze = player.components.timers.freeze;
+  if (!freeze?.active) return;
+
   const currentTime = performance.now();
-  
-  for (const playerEntity of frozenPlayers) {
-    const pos = playerEntity.components.position;
-    const freezeEffect = playerEntity.components.freezeEffect;
-    
-    // Skip inactive freeze effects
-    if (!freezeEffect.isActive) continue;
-    
-    // Calculate freeze effect intensity based on remaining time
-    const timeElapsed = currentTime - freezeEffect.startTime;
-    const timeRemaining = freezeEffect.duration - timeElapsed;
-    const freezeProgress = Math.max(0, timeRemaining / freezeEffect.duration);
-    
-    ctx.save();
-    
-    // Ice crystal overlay
-    const centerX = pos.x + GAME_CONFIG.GRID.CELL_SIZE / 2;
-    const centerY = pos.y + GAME_CONFIG.GRID.CELL_SIZE / 2;
-    
-    // Draw ice effect background
-    const iceOpacity = 0.4 * freezeProgress;
-    ctx.fillStyle = `rgba(173, 216, 230, ${iceOpacity})`;
-    ctx.fillRect(pos.x, pos.y, GAME_CONFIG.GRID.CELL_SIZE, GAME_CONFIG.GRID.CELL_SIZE);
-    
-    // Draw ice crystals
-    ctx.strokeStyle = `rgba(135, 206, 250, ${freezeProgress})`;
-    ctx.lineWidth = 2;
-    
-    // Draw 6 ice crystal spikes
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI) / 3;
-      const crystalLength = 20 * freezeProgress;
-      
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(
-        centerX + Math.cos(angle) * crystalLength,
-        centerY + Math.sin(angle) * crystalLength
-      );
-      ctx.stroke();
-      
-      // Draw smaller side spikes
-      const sideLength = crystalLength * 0.4;
-      const sideAngle1 = angle + Math.PI / 6;
-      const sideAngle2 = angle - Math.PI / 6;
-      
-      ctx.beginPath();
-      ctx.moveTo(
-        centerX + Math.cos(angle) * crystalLength * 0.7,
-        centerY + Math.sin(angle) * crystalLength * 0.7
-      );
-      ctx.lineTo(
-        centerX + Math.cos(angle) * crystalLength * 0.7 + Math.cos(sideAngle1) * sideLength,
-        centerY + Math.sin(angle) * crystalLength * 0.7 + Math.sin(sideAngle1) * sideLength
-      );
-      ctx.stroke();
-      
-      ctx.beginPath();
-      ctx.moveTo(
-        centerX + Math.cos(angle) * crystalLength * 0.7,
-        centerY + Math.sin(angle) * crystalLength * 0.7
-      );
-      ctx.lineTo(
-        centerX + Math.cos(angle) * crystalLength * 0.7 + Math.cos(sideAngle2) * sideLength,
-        centerY + Math.sin(angle) * crystalLength * 0.7 + Math.sin(sideAngle2) * sideLength
-      );
-      ctx.stroke();
-    }
-    
-    // Add sparkling ice particles
-    const sparkleCount = Math.floor(8 * freezeProgress);
-    ctx.fillStyle = `rgba(255, 255, 255, ${freezeProgress * 0.8})`;
-    
-    for (let i = 0; i < sparkleCount; i++) {
-      const sparkleAngle = (i * 2 * Math.PI) / sparkleCount + currentTime * 0.002;
-      const sparkleRadius = 25 + 10 * Math.sin(currentTime * 0.003 + i);
-      const sparkleX = centerX + Math.cos(sparkleAngle) * sparkleRadius;
-      const sparkleY = centerY + Math.sin(sparkleAngle) * sparkleRadius;
-      
-      ctx.beginPath();
-      ctx.arc(sparkleX, sparkleY, 1.5, 0, 2 * Math.PI);
-      ctx.fill();
-    }
-    
-    ctx.restore();
+  const pos = player.components.position;
+  const freezeProgress = timerProgress(freeze);
+
+  ctx.save();
+
+  const centerX = pos.x + GAME_CONFIG.GRID.CELL_SIZE / 2;
+  const centerY = pos.y + GAME_CONFIG.GRID.CELL_SIZE / 2;
+
+  const iceOpacity = 0.4 * freezeProgress;
+  ctx.fillStyle = `rgba(173, 216, 230, ${iceOpacity})`;
+  ctx.fillRect(pos.x, pos.y, GAME_CONFIG.GRID.CELL_SIZE, GAME_CONFIG.GRID.CELL_SIZE);
+
+  ctx.strokeStyle = `rgba(135, 206, 250, ${freezeProgress})`;
+  ctx.lineWidth = 2;
+
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * Math.PI) / 3;
+    const crystalLength = 20 * freezeProgress;
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(
+      centerX + Math.cos(angle) * crystalLength,
+      centerY + Math.sin(angle) * crystalLength
+    );
+    ctx.stroke();
+
+    const sideLength = crystalLength * 0.4;
+    const sideAngle1 = angle + Math.PI / 6;
+    const sideAngle2 = angle - Math.PI / 6;
+
+    ctx.beginPath();
+    ctx.moveTo(
+      centerX + Math.cos(angle) * crystalLength * 0.7,
+      centerY + Math.sin(angle) * crystalLength * 0.7
+    );
+    ctx.lineTo(
+      centerX + Math.cos(angle) * crystalLength * 0.7 + Math.cos(sideAngle1) * sideLength,
+      centerY + Math.sin(angle) * crystalLength * 0.7 + Math.sin(sideAngle1) * sideLength
+    );
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(
+      centerX + Math.cos(angle) * crystalLength * 0.7,
+      centerY + Math.sin(angle) * crystalLength * 0.7
+    );
+    ctx.lineTo(
+      centerX + Math.cos(angle) * crystalLength * 0.7 + Math.cos(sideAngle2) * sideLength,
+      centerY + Math.sin(angle) * crystalLength * 0.7 + Math.sin(sideAngle2) * sideLength
+    );
+    ctx.stroke();
   }
+
+  const sparkleCount = Math.floor(8 * freezeProgress);
+  ctx.fillStyle = `rgba(255, 255, 255, ${freezeProgress * 0.8})`;
+
+  for (let i = 0; i < sparkleCount; i++) {
+    const sparkleAngle = (i * 2 * Math.PI) / sparkleCount + currentTime * 0.002;
+    const sparkleRadius = 25 + 10 * Math.sin(currentTime * 0.003 + i);
+    const sparkleX = centerX + Math.cos(sparkleAngle) * sparkleRadius;
+    const sparkleY = centerY + Math.sin(sparkleAngle) * sparkleRadius;
+
+    ctx.beginPath();
+    ctx.arc(sparkleX, sparkleY, 1.5, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+
+  ctx.restore();
 }
 
 // Get canvas element (for external use)

@@ -1,4 +1,4 @@
-import { gameEngine, EntityFactory, type GameEngine } from '../Engine';
+import { gameEngine, EntityFactory, createTimer, type GameEngine } from '../Engine';
 import { GAME_CONFIG } from '../../game/config';
 import { gridToPixel } from '../gameUtils';
 import {
@@ -15,7 +15,6 @@ import { calculateDifficultyInterval } from '../gameUtils';
  */
 
 // Spawn state tracking variables
-let lastSpawnTime = 0;
 let currentSpawnIndex = 0;           // Track which enemy type to spawn next (0=lizard, 1=spider, 2=frog)
 let totalEnemiesSpawned = 0;         // Track total spawned this cycle
 let spawnCycleComplete = false;      // Track if all 3 enemies have been spawned
@@ -72,27 +71,23 @@ export function addEnemySpawnSystemToEngine(): void {
     .addQuery('enemies', enemyQuery)
     .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {
-      const currentTime = performance.now();
-      const currentEnemyCount = queries.enemies.length;
+      const player = queries.player;
+      if (!player) return;
 
-      // Check if we should reset the spawn cycle (all enemies defeated)
+      const currentEnemyCount = queries.enemies.length;
       if (shouldResetCycle(currentEnemyCount)) {
         resetSpawnCycle();
       }
 
-      // Only spawn if cycle is not complete and enough time has passed
-      if (!spawnCycleComplete && currentEnemyCount < GAME_CONFIG.ENEMY_SPAWN.MAX_ENEMIES) {
-        const spawnInterval = calculateSpawnInterval(queries.player);
+      if (spawnCycleComplete || currentEnemyCount >= GAME_CONFIG.ENEMY_SPAWN.MAX_ENEMIES) return;
+      if (player.components.timers.enemySpawn?.active) return;
 
-        if (currentTime - lastSpawnTime > spawnInterval) {
-          const nextEnemyType = getNextEnemyType();
-          if (nextEnemyType) {
-            spawnEnemyFromEdge(ecs, nextEnemyType);
-            incrementSpawnIndex();
-            lastSpawnTime = currentTime;
-          }
-        }
-      }
+      const nextEnemyType = getNextEnemyType();
+      if (!nextEnemyType) return;
+
+      spawnEnemyFromEdge(ecs, nextEnemyType);
+      incrementSpawnIndex();
+      player.components.timers.enemySpawn = createTimer(calculateSpawnInterval(player) / 1000);
     });
 }
 

@@ -1,8 +1,8 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import { gameEngine, createTimer } from '../Engine';
 import { sameGridPosition } from '../gameUtils';
-import { 
-  playerWithHealthQuery, 
-  mathProblemWithRenderableQuery, 
+import {
+  playerWithHealthQuery,
+  mathProblemWithRenderableQuery,
   enemyWithColliderQuery,
   spiderWebWithRenderableQuery,
   frogTongueQuery,
@@ -15,17 +15,24 @@ import {
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG, GAME_CONFIG } from '../../game/config';
 import { startShakeAnimation } from './AnimationSystem';
-import type { Components } from '../Engine';
 
-const triggerGameOver = (playerComp: Components['player'], reason: string): void => {
+const triggerGameOver = (player: PlayerEntityWithHealth, reason: string): void => {
   console.log(reason);
+  const playerComp = player.components.player;
   playerComp.gameOverPending = true;
   playerComp.deathAnimationActive = true;
   playerComp.deathAnimationStartTime = Date.now();
   playerComp.deathAnimationDuration = ANIMATION_CONFIG.DEATH.DURATION;
-  setTimeout(() => {
-    gameEngine.setScreen('gameOver', {});
-  }, ANIMATION_CONFIG.DEATH.DURATION);
+  player.components.timers.deathDelay = createTimer(ANIMATION_CONFIG.DEATH.DURATION / 1000, {
+    onComplete: () => { void gameEngine.setScreen('gameOver', {}); },
+  });
+};
+
+const isInvulnerable = (player: PlayerEntityWithHealth): boolean =>
+  player.components.timers.invulnerability?.active === true;
+
+const startInvulnerability = (player: PlayerEntityWithHealth): void => {
+  player.components.timers.invulnerability = createTimer(GAME_CONFIG.TIMING.INVULNERABILITY / 1000);
 };
 
 /**
@@ -43,49 +50,28 @@ export function addCollisionSystemToEngine(): void {
     .addQuery('spiderWebs', spiderWebWithRenderableQuery)
     .addQuery('frogTongues', frogTongueQuery)
     .withResources(['inputState'])
-    .setProcess(({ queries, ecs, resources: { inputState } }) => {
+    .setProcess(({ queries, resources: { inputState } }) => {
       const player = queries.player;
       if (!player) return;
 
-      const currentTime = performance.now();
-      const healthComp = player.components.health;
+      const invulnerable = isInvulnerable(player);
+      const frozen = player.components.timers.freeze?.active === true;
 
-      // Update invulnerability timer
-      if (healthComp.invulnerable && currentTime > healthComp.invulnerabilityTime) {
-        healthComp.invulnerable = false;
-        console.log('Player invulnerability ended');
-      }
-
-      // Check for frog tongue collisions (only if not invulnerable)
-      if (!healthComp.invulnerable) {
+      if (!invulnerable) {
         for (const frog of queries.frogTongues) {
           const tongue = frog.components.frogTongue;
-
-          // Only check collision if tongue is extended
-          if (tongue.isExtended && tongue.segments.length > 0) {
-            if (checkPlayerTongueCollision(player, frog)) {
-              handlePlayerTongueCollision(player, frog);
-              break; // Only one tongue can hit the player at a time
-            }
+          if (tongue.isExtended && tongue.segments.length > 0 && checkPlayerTongueCollision(player, frog)) {
+            handlePlayerTongueCollision(player, frog);
+            break;
           }
         }
       }
 
-      // Check for spider web collisions (only if not already frozen)
-      const freezeEffect = gameEngine.entityManager.getComponent(player.id, 'freezeEffect');
-      if (!freezeEffect || !freezeEffect.isActive) {
+      if (!frozen) {
         for (const spiderWeb of queries.spiderWebs) {
-          const webComp = spiderWeb.components.spiderWeb;
-
-          // Skip inactive webs
-          if (!webComp.isActive) {
-            continue;
-          }
-
-          // Check if player is on the same grid position as a spider web
           if (sameGridPosition(player.components.position, spiderWeb.components.position)) {
-            handlePlayerSpiderWebCollision(ecs, player, spiderWeb, currentTime);
-            break; // Only one web can catch the player at a time
+            handlePlayerSpiderWebCollision(player, spiderWeb);
+            break;
           }
         }
       }
@@ -107,8 +93,7 @@ export function addCollisionSystemToEngine(): void {
         }
       }
 
-      // Check collisions with enemies (only if not invulnerable)
-      if (!healthComp.invulnerable) {
+      if (!invulnerable) {
         for (const enemy of queries.enemies) {
           if (sameGridPosition(player.components.position, enemy.components.position)) {
             handlePlayerEnemyCollision(player, enemy);
@@ -167,7 +152,7 @@ function handlePlayerProblemCollision(
     );
     
     if (playerComp.lives <= 0) {
-      triggerGameOver(playerComp, 'Game Over!');
+      triggerGameOver(player, 'Game Over!');
     }
   }
 
@@ -180,44 +165,36 @@ function handlePlayerProblemCollision(
  * Handle collision between player and enemy
  */
 function handlePlayerEnemyCollision(
-  player: PlayerEntityWithHealth, 
+  player: PlayerEntityWithHealth,
   enemy: EnemyEntityWithCollider
 ): void {
+  if (isInvulnerable(player)) return;
+
   const playerComp = player.components.player;
   const healthComp = player.components.health;
-  
-  // Check if player is invulnerable
-  if (healthComp.invulnerable) {
-    return;
-  }
-  
+
   console.log('Player hit by enemy!');
-  
-  // Publish enemy collision event
+
   gameEngine.eventBus.publish('enemyCollision', {
     playerId: player.id,
     enemyId: enemy.id
   });
-  
-  // Lose a life
+
   playerComp.lives -= 1;
   healthComp.current -= 1;
-  
+
   console.log(`Lives remaining: ${playerComp.lives}`);
-  
-  // Shake the player for damage taken
+
   startShakeAnimation(
-    player.components.position, 
-    ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY, 
+    player.components.position,
+    ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY,
     ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
   );
-  
-  // Set invulnerability period using centralized config
-  healthComp.invulnerable = true;
-  healthComp.invulnerabilityTime = performance.now() + GAME_CONFIG.TIMING.INVULNERABILITY;
-  
+
+  startInvulnerability(player);
+
   if (playerComp.lives <= 0) {
-    triggerGameOver(playerComp, 'Game Over!');
+    triggerGameOver(player, 'Game Over!');
   }
 }
 
@@ -225,92 +202,53 @@ function handlePlayerEnemyCollision(
  * Handle collision between player and spider web
  */
 function handlePlayerSpiderWebCollision(
-  ecs: GameEngine,
   player: PlayerEntityWithHealth,
-  spiderWeb: SpiderWebEntityWithRenderable,
-  currentTime: number
+  spiderWeb: SpiderWebEntityWithRenderable
 ): void {
-  const webComp = spiderWeb.components.spiderWeb;
+  const freezeTime = spiderWeb.components.spiderWeb.freezeTime;
+  console.log(`🕸️ Player caught in spider web! Freezing for ${freezeTime}ms`);
 
-  if (!webComp.isActive) {
-    console.warn(`🕸️ WARNING: Attempting to handle collision with inactive web ${spiderWeb.id}`);
-    return;
-  }
-
-  if (webComp.freezeTime <= 0) {
-    console.warn(`🕸️ WARNING: Invalid freeze time ${webComp.freezeTime} for web ${spiderWeb.id}, using default`);
-    webComp.freezeTime = GAME_CONFIG.TIMING.MEDIUM_DELAY;
-  }
-
-  console.log(`🕸️ Player caught in spider web! Freezing for ${webComp.freezeTime}ms`);
-
-  ecs.commands.addComponent(player.id, 'freezeEffect', {
-    startTime: currentTime,
-    duration: webComp.freezeTime,
-    isActive: true,
-    sourceWebId: spiderWeb.id
-  });
-
-  webComp.isActive = false;
+  player.components.timers.freeze = createTimer(freezeTime / 1000);
+  gameEngine.commands.removeEntity(spiderWeb.id);
 }
 
 /**
  * Handle collision between player and frog tongue
  */
 function handlePlayerTongueCollision(
-  player: PlayerEntityWithHealth, 
+  player: PlayerEntityWithHealth,
   frog: FrogTongueEntity
 ): void {
   const playerComp = player.components.player;
-  const healthComp = player.components.health;
   const tongueComp = frog.components.frogTongue;
-  
-  // Validate meaningful game state
-  if (!tongueComp.isExtended) {
-    console.warn(`🐸 WARNING: Collision detected with retracted tongue from frog ${frog.id}`);
-    return;
-  }
-  
-  if (tongueComp.segments.length === 0) {
-    console.warn(`🐸 WARNING: Collision detected with tongue that has no segments from frog ${frog.id}`);
-    return;
-  }
-  
-  if (healthComp.invulnerable) {
+
+  if (!tongueComp.isExtended || tongueComp.segments.length === 0) return;
+  if (isInvulnerable(player)) {
     console.log(`🐸 Player hit by frog tongue but is invulnerable`);
     return;
   }
-  
-  if (playerComp.lives <= 0) {
-    console.warn(`🐸 WARNING: Attempted to damage player who already has 0 lives`);
-    return;
-  }
-  
+  if (playerComp.lives <= 0) return;
+
   console.log(`🐸 Player hit by frog tongue! Taking damage.`);
-  
-  try {
-    playerComp.lives -= 1;
-    console.log(`💔 Player loses 1 life. Lives remaining: ${playerComp.lives}`);
-    
-    healthComp.invulnerable = true;
-    healthComp.invulnerabilityTime = performance.now() + GAME_CONFIG.TIMING.INVULNERABILITY;
-    
-    startShakeAnimation(
-      player.components.position, 
-      ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY, 
-      ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
-    );
-    
-    gameEngine.eventBus.publish('tongueCollision', {
-      playerId: player.id,
-      tongueId: frog.id
-    });
-    
-    if (playerComp.lives <= 0) {
-      triggerGameOver(playerComp, '💀 Game Over due to frog tongue attack!');
-    }
-  } catch (error) {
-    console.error(`🐸 ERROR: Failed to handle tongue collision for player ${player.id}:`, error);
+
+  playerComp.lives -= 1;
+  console.log(`💔 Player loses 1 life. Lives remaining: ${playerComp.lives}`);
+
+  startInvulnerability(player);
+
+  startShakeAnimation(
+    player.components.position,
+    ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY,
+    ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
+  );
+
+  gameEngine.eventBus.publish('tongueCollision', {
+    playerId: player.id,
+    tongueId: frog.id
+  });
+
+  if (playerComp.lives <= 0) {
+    triggerGameOver(player, '💀 Game Over due to frog tongue attack!');
   }
 }
 

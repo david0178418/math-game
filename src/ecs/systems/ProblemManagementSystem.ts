@@ -1,4 +1,4 @@
-import { gameEngine, EntityFactory, type GameEngine } from '../Engine';
+import { gameEngine, EntityFactory, createTimer, type GameEngine } from '../Engine';
 import { GAME_CONFIG, SCORE_THRESHOLDS } from '../../game/config';
 import { gridToPixel } from '../gameUtils';
 import { mathProblemGenerator } from '../../game/MathProblemGenerator';
@@ -7,6 +7,7 @@ import {
   playerQuery,
   positionEntityQuery,
   type MathProblemEntityWithRenderable,
+  type PlayerEntity,
   type PositionEntity
 } from '../queries';
 import { PROBLEM_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
@@ -15,8 +16,6 @@ import { PROBLEM_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
  * Problem Management System
  * Manages the lifecycle of math problems: spawning, tracking, and replacing consumed ones
  */
-
-let lastSpawnTime = 0;
 
 // Add the problem management system to ECSpresso
 export function addProblemManagementSystemToEngine(): void {
@@ -27,24 +26,18 @@ export function addProblemManagementSystemToEngine(): void {
     .addSingleton('player', playerQuery)
     .addQuery('allPositions', positionEntityQuery)
     .setProcess(({ queries, ecs }) => {
+      const player = queries.player;
       const activeProblems = queries.mathProblems.filter(
         problem => !problem.components.mathProblem.consumed
       );
 
-      const currentTime = performance.now();
-      if (activeProblems.length === 0 &&
-          currentTime - lastSpawnTime > GAME_CONFIG.TIMING.SHORT_DELAY) {
-        const player = queries.player;
-        if (player) {
-          adjustDifficultyBasedOnScore(player.components.player.score);
-        }
-
+      if (player && activeProblems.length === 0 && !player.components.timers.problemSpawn?.active) {
+        adjustDifficultyBasedOnScore(player.components.player.score);
         populateFullGrid(ecs, queries.allPositions);
-
-        lastSpawnTime = currentTime;
+        player.components.timers.problemSpawn = createTimer(GAME_CONFIG.TIMING.SHORT_DELAY / 1000);
       }
 
-      checkLevelCompletion(queries.mathProblems);
+      if (player) checkLevelCompletion(player, queries.mathProblems);
       cleanupConsumedProblems(ecs, queries.mathProblems);
     });
 }
@@ -139,7 +132,7 @@ function adjustDifficultyBasedOnScore(score: number): void {
  * and the re-entry rebuilds the board via `GameInitializer`'s screen hook.
  * The player entity is unscoped, so score and lives persist into the new level.
  */
-function checkLevelCompletion(mathProblems: MathProblemEntityWithRenderable[]): void {
+function checkLevelCompletion(player: PlayerEntity, mathProblems: MathProblemEntityWithRenderable[]): void {
   const gameMode = gameEngine.getResource('gameMode');
   const currentLevel = gameEngine.getResource('currentLevel');
 
@@ -164,9 +157,8 @@ function checkLevelCompletion(mathProblems: MathProblemEntityWithRenderable[]): 
 
     console.log(`🎉 Level ${currentLevel} completed! Advancing to multiples of ${nextLevel}`);
 
-    // Force the next ProblemManagementSystem tick (after re-entry) to repopulate
-    // immediately rather than waiting for SHORT_DELAY.
-    lastSpawnTime = 0;
+    // Skip the SHORT_DELAY debounce so the next tick repopulates immediately on re-entry.
+    delete player.components.timers.problemSpawn;
 
     void gameEngine.setScreen('playing', { level: nextLevel, isFreshGame: false });
   }
