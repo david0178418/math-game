@@ -152,6 +152,10 @@ export const gameEngine = ECSpresso.create()
   .withResource('score', { value: GAME_CONFIG.GAMEPLAY.STARTING_SCORE })
   .withResource('gameMode', 'multiples')
   .withResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL)
+  .withRequired('player', 'timers', () => ({}))
+  .withRequired('player', 'health', (p) => ({ current: p.lives, max: p.lives }))
+  .withRequired('enemy', 'timers', () => ({}))
+  .withRequired('enemy', 'health', () => ({ current: 1, max: 1 }))
   .withScreens(screens => screens
     .add('menu', { initialState: () => ({}) })
     .add('playing', { initialState: (config: { level: number; isFreshGame: boolean }) => ({ level: config.level, isFreshGame: config.isFreshGame }) })
@@ -309,12 +313,7 @@ const playerComponents = (x: number, y: number): Partial<AllComponents> => ({
     width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
     height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
     group: 'player'
-  },
-  health: {
-    current: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
-    max: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES
-  },
-  timers: {}
+  }
 });
 
 const enemyComponents = (
@@ -338,12 +337,7 @@ const enemyComponents = (
     width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
     height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
     group: 'enemy'
-  },
-  health: {
-    current: 1,
-    max: 1
-  },
-  timers: {}
+  }
 });
 
 const mathProblemComponents = (
