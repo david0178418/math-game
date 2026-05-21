@@ -2,28 +2,29 @@ import { GAME_CONFIG } from '../../../config';
 import { gridToPixel } from '../../gameUtils';
 import type { PlayerEntity } from '../../queries';
 
-const DASH = [4, 3];
-
 export const drawTargetHighlight = (
   ctx: CanvasRenderingContext2D,
   player: PlayerEntity | undefined,
-  currentTime: number,
 ): void => {
   if (!player) return;
 
-  const target = player.components.pathFollower.breadcrumbs.at(-1);
-  if (!target) return;
+  const breadcrumbs = player.components.pathFollower.breadcrumbs;
+  if (breadcrumbs.length === 0) return;
 
-  const { x, y } = gridToPixel(target.x, target.y);
   const cell = GAME_CONFIG.GRID.CELL_SIZE;
-  const alpha = 0.3 + 0.15 * Math.sin(currentTime / 350);
 
   ctx.save();
-  ctx.fillStyle = `rgba(255, 80, 80, ${alpha})`;
+  ctx.fillStyle = 'rgba(255, 80, 80, 0.22)';
+
+  breadcrumbs.slice(0, -1).forEach((crumb) => {
+    const { x, y } = gridToPixel(crumb.x, crumb.y);
+    ctx.fillRect(x, y, cell, cell);
+  });
+
+  const target = breadcrumbs[breadcrumbs.length - 1];
+  const { x, y } = gridToPixel(target.x, target.y);
+  ctx.fillStyle = 'rgba(255, 80, 80, 0.55)';
   ctx.fillRect(x, y, cell, cell);
-  ctx.strokeStyle = 'rgba(255, 60, 60, 0.85)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash(DASH);
-  ctx.strokeRect(x + 1, y + 1, cell - 2, cell - 2);
+
   ctx.restore();
 };

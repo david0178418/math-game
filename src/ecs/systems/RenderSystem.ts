@@ -43,7 +43,6 @@ export const addRenderSystemToEngine = (): void => {
       );
 
       drawGrid(ctx);
-      drawTargetHighlight(ctx, queries.player, currentTime);
       drawPlayerHighlight(ctx, queries.player, queries.mathProblems);
       drawEnhancedSpiderWebs(ctx, queries.spiderWebs, currentTime);
 
@@ -68,6 +67,7 @@ export const addRenderSystemToEngine = (): void => {
 
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime);
       if (queries.player) drawFrozenPlayerEffect(ctx, queries.player, currentTime);
+      drawTargetHighlight(ctx, queries.player);
       drawMathProblemNumbers(ctx, queries.mathProblems);
     });
 };
