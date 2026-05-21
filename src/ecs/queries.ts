@@ -8,7 +8,7 @@ import type { AllComponents } from './types';
 
 // Common entity queries
 export const playerQuery = {
-  with: ['position', 'player', 'timers'],
+  with: ['position', 'player', 'pathFollower', 'timers'],
 } as const;
 
 export const playerMovementQuery = {

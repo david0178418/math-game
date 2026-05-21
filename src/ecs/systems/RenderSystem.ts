@@ -15,6 +15,7 @@ import { drawPlayerHighlight, drawMathProblemNumbers } from './render/mathProble
 import { drawEnhancedSpiderWebs } from './render/spiderWebs';
 import { drawEnhancedFrogTongues } from './render/frogTongues';
 import { drawFrozenPlayerEffect } from './render/frozenPlayer';
+import { drawTargetHighlight } from './render/targetHighlight';
 
 export { initializeRenderSystem } from './render/context';
 
@@ -41,6 +42,7 @@ export const addRenderSystemToEngine = (): void => {
       );
 
       drawGrid(ctx);
+      drawTargetHighlight(ctx, queries.player, currentTime);
       drawPlayerHighlight(ctx, queries.player, queries.mathProblems);
       drawEnhancedSpiderWebs(ctx, queries.spiderWebs, currentTime);
 
