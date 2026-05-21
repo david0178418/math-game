@@ -87,6 +87,20 @@ const resumePlay = (): void => {
 
 const goToMenu = (): void => { void gameEngine.setScreen('menu', {}); };
 
+// Settings is a UI-only screen — the ECS screen stack still reflects where
+// the player came from (menu or paused), so use that to route "back".
+const openSettings = (): void => {
+  showScreen('settings');
+  const backBtn = document.getElementById('back-to-menu-btn');
+  if (!backBtn) return;
+  backBtn.textContent = gameEngine.getCurrentScreen() === 'paused' ? '← Back to Game' : '← Back to Menu';
+};
+
+const exitSettings = (): void => {
+  if (gameEngine.getCurrentScreen() === 'paused') return showScreen('paused');
+  goToMenu();
+};
+
 // HUD element refs + last-written values. Populated when the playing screen
 // mounts; `updateGameplayUI` runs every frame and skips writes when unchanged.
 const gameplayHud: {
@@ -133,7 +147,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     `,
     wire: (root) => {
       $(root, '#start-game-btn').addEventListener('click', () => showScreen('modeSelect'));
-      $(root, '#settings-btn').addEventListener('click', () => showScreen('settings'));
+      $(root, '#settings-btn').addEventListener('click', openSettings);
       $(root, '#high-scores-btn').addEventListener('click', () => alert('High Scores feature coming soon!'));
     },
   },
@@ -308,10 +322,10 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       </div>
     `,
     wire: (root) => {
-      $(root, '#back-to-menu-btn').addEventListener('click', goToMenu);
+      $(root, '#back-to-menu-btn').addEventListener('click', exitSettings);
       wireTouchControlsSetting(root);
     },
-    onCancel: goToMenu,
+    onCancel: exitSettings,
   },
 
   gameOver: {
@@ -368,7 +382,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     `,
     wire: (root) => {
       $(root, '#resume-btn').addEventListener('click', resumePlay);
-      $(root, '#pause-settings-btn').addEventListener('click', () => showScreen('settings'));
+      $(root, '#pause-settings-btn').addEventListener('click', openSettings);
       $(root, '#quit-to-menu-btn').addEventListener('click', goToMenu);
     },
     onCancel: resumePlay,
@@ -490,7 +504,7 @@ export const setFinalScore = (score: number): void => {
 const keyActions: Record<string, (event: KeyboardEvent) => void> = {
   F1: (event) => {
     event.preventDefault();
-    showScreen('settings');
+    openSettings();
   },
 };
 
