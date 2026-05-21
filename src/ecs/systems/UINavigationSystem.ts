@@ -1,0 +1,18 @@
+import { gameEngine } from '../Engine';
+import { navigateFocus, activateFocus, triggerCancel } from '../../ui/UIManager';
+
+// Drives DOM focus on non-gameplay screens from the unified input state, so
+// keyboard arrows, d-pad, left stick, A button, and Start/B all work in
+// menus without bespoke event listeners per screen.
+export function addUINavigationSystemToEngine(): void {
+  gameEngine.addSystem('uiNavigationSystem')
+    .inScreens(['menu', 'paused', 'gameOver'])
+    .withResources(['inputState'])
+    .setProcess(({ resources: { inputState } }) => {
+      const a = inputState.actions;
+      if (a.justActivated('up') || a.justActivated('left')) navigateFocus('prev');
+      if (a.justActivated('down') || a.justActivated('right')) navigateFocus('next');
+      if (a.justActivated('eat')) activateFocus();
+      if (a.justActivated('pause')) triggerCancel();
+    });
+}

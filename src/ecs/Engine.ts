@@ -25,7 +25,7 @@ const inputPlugin = createInputPlugin<GameAction>({
     eat:   { keys: [' ', 'Enter'],           gamepadButtons: gamepadButtonsOn(0, 0) },
     pause: { keys: ['Escape'],               gamepadButtons: gamepadButtonsOn(0, 9) },
   },
-  preventDefaultKeys: ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '],
+  preventDefaultKeys: ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Enter'],
 });
 
 const timerPlugin = createTimerPlugin<TimerSlot>();

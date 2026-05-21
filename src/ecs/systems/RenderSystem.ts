@@ -22,6 +22,7 @@ export { initializeRenderSystem } from './render/context';
 export const addRenderSystemToEngine = (): void => {
   gameEngine.addSystem('renderSystem')
     .setPriority(SYSTEM_PRIORITIES.RENDER)
+    .inScreens(['playing'])
     .addQuery('renderableEntities', renderableEntityQuery)
     .addSingleton('player', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)

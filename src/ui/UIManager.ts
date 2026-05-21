@@ -23,7 +23,11 @@ type ScreenSpec = {
   className: string;
   html: string;
   wire?: (root: HTMLElement) => void;
+  focusSelector?: string;
+  onCancel?: () => void;
 };
+
+const DEFAULT_FOCUS_SELECTOR = 'button:not(:disabled), [data-focusable]:not(.disabled)';
 
 const $ = <T extends HTMLElement = HTMLElement>(root: HTMLElement, sel: string): T => {
   const el = root.querySelector<T>(sel);
@@ -38,6 +42,15 @@ const startGame = (mode: GameMode): void => {
     isFreshGame: true,
   });
 };
+
+// popScreen doesn't fire onScreenEnter on the screen now at the top, so
+// resuming play needs to explicitly re-show the gameplay UI.
+const resumePlay = (): void => {
+  void gameEngine.popScreen();
+  showScreen('playing');
+};
+
+const goToMenu = (): void => { void gameEngine.setScreen('menu', {}); };
 
 // HUD element refs + last-written values. Populated when the playing screen
 // mounts; `updateGameplayUI` runs every frame and skips writes when unchanged.
@@ -82,8 +95,9 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
 
         <div class="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-white/30">
           <div class="text-xs md:text-sm opacity-70 space-y-1">
-            <p>🎯 Controls: Use WASD or Arrow Keys to move</p>
-            <p>⏸️ ESC to pause • ⚙️ F1 for settings</p>
+            <p>🎯 Move: WASD / Arrow Keys / D-pad / Left Stick</p>
+            <p>✅ Select: Enter / Space / A • ↩️ Back: Esc / Start</p>
+            <p>⏸️ ESC or Start to pause • ⚙️ F1 for settings</p>
           </div>
         </div>
       </div>
@@ -109,7 +123,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
         </p>
 
         <div class="flex flex-col gap-4 md:gap-6 items-center">
-          <div id="multiples-mode" class="mode-card text-white border-none p-4 md:p-6 rounded-xl shadow-lg cursor-pointer w-full max-w-md md:max-w-lg text-left">
+          <div id="multiples-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-4 md:p-6 rounded-xl shadow-lg cursor-pointer w-full max-w-md md:max-w-lg text-left">
             <h3 class="text-xl md:text-2xl font-bold mb-2 md:mb-3">🔢 Multiples</h3>
             <p class="text-sm md:text-base opacity-90 mb-2 md:mb-3">
               Find all multiples of the given number! Start with multiples of 2 and work your way up.
@@ -147,8 +161,9 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     `,
     wire: (root) => {
       $(root, '#multiples-mode').addEventListener('click', () => startGame('multiples'));
-      $(root, '#back-to-main-btn').addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
+      $(root, '#back-to-main-btn').addEventListener('click', goToMenu);
     },
+    onCancel: goToMenu,
   },
 
   playing: {
@@ -181,8 +196,8 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
 
       <div id="bottom-hud" class="hud-bottom absolute bottom-0 inset-x-0 p-3 md:p-4 lg:p-5 flex justify-center items-center text-white pointer-events-auto">
         <div id="hints-display" class="text-xs md:text-sm lg:text-base text-center opacity-80 max-w-xs md:max-w-md lg:max-w-lg px-2">
-          <span class="hidden md:inline">Move with WASD or Arrow Keys • Press SPACE to eat tiles • Avoid red enemies</span>
-          <span class="md:hidden">WASD to move • SPACE to eat • Avoid enemies</span>
+          <span class="hidden md:inline">Move: WASD / Arrows / D-pad • Eat: Space / A • Pause: Esc / Start</span>
+          <span class="md:hidden">WASD/D-pad to move • Space/A to eat • Avoid enemies</span>
         </div>
       </div>
     `,
@@ -228,10 +243,10 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           <div class="bg-white/10 p-4 md:p-6 rounded-xl backdrop-blur-sm">
             <h3 class="text-lg md:text-xl font-semibold mb-3 md:mb-4">🎮 Controls</h3>
             <div class="text-sm md:text-base space-y-1 opacity-90">
-              <p>🔤 WASD or Arrow Keys: Move</p>
-              <p>⏸️ ESC: Pause/Resume</p>
+              <p>🔤 Move: WASD / Arrows / D-pad / Left Stick</p>
+              <p>🍽️ Eat / Select: Space / Enter / A button</p>
+              <p>⏸️ Pause / Back: Esc / Start</p>
               <p>⚙️ F1: Settings</p>
-              <p>🍽️ SPACE: Eat tiles</p>
             </div>
           </div>
         </div>
@@ -242,8 +257,9 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       </div>
     `,
     wire: (root) => {
-      $(root, '#back-to-menu-btn').addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
+      $(root, '#back-to-menu-btn').addEventListener('click', goToMenu);
     },
+    onCancel: goToMenu,
   },
 
   gameOver: {
@@ -271,8 +287,9 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     `,
     wire: (root) => {
       $(root, '#play-again-btn').addEventListener('click', () => { startGame(gameEngine.getResource('gameMode')); });
-      $(root, '#main-menu-btn').addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
+      $(root, '#main-menu-btn').addEventListener('click', goToMenu);
     },
+    onCancel: goToMenu,
   },
 
   paused: {
@@ -298,10 +315,11 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       </div>
     `,
     wire: (root) => {
-      $(root, '#resume-btn').addEventListener('click', () => { void gameEngine.popScreen(); });
+      $(root, '#resume-btn').addEventListener('click', resumePlay);
       $(root, '#pause-settings-btn').addEventListener('click', () => showScreen('settings'));
-      $(root, '#quit-to-menu-btn').addEventListener('click', () => { void gameEngine.setScreen('menu', {}); });
+      $(root, '#quit-to-menu-btn').addEventListener('click', goToMenu);
     },
+    onCancel: resumePlay,
   },
 };
 
@@ -328,11 +346,56 @@ const createScreen = (screen: UIScreen): HTMLElement => {
   return root;
 };
 
+const getFocusables = (screen: UIScreen): HTMLElement[] => {
+  const root = screenElements.get(screen);
+  if (!root) return [];
+  const selector = SCREENS[screen].focusSelector ?? DEFAULT_FOCUS_SELECTOR;
+  return Array.from(root.querySelectorAll<HTMLElement>(selector));
+};
+
+const focusFirstOn = (screen: UIScreen): void => {
+  const [first] = getFocusables(screen);
+  first?.focus();
+};
+
 export const showScreen = (screen: UIScreen): void => {
   screenElements.get(currentScreen)?.style.setProperty('display', 'none');
   const root = screenElements.get(screen) ?? createScreen(screen);
   root.style.display = 'flex';
   currentScreen = screen;
+  // Gameplay screen is driven by inputState, not DOM focus — leaving focus
+  // there would show a focus ring on the pause button during play.
+  if (screen !== 'playing') return focusFirstOn(screen);
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+};
+
+const focusedIndex = (focusables: HTMLElement[]): number => {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement)) return -1;
+  return focusables.indexOf(active);
+};
+
+export const navigateFocus = (direction: 'prev' | 'next'): void => {
+  const focusables = getFocusables(currentScreen);
+  if (focusables.length === 0) return;
+  const current = focusedIndex(focusables);
+  if (current < 0) {
+    focusables[direction === 'next' ? 0 : focusables.length - 1]?.focus();
+    return;
+  }
+  const offset = direction === 'next' ? 1 : -1;
+  focusables[(current + offset + focusables.length) % focusables.length]?.focus();
+};
+
+export const activateFocus = (): void => {
+  const focusables = getFocusables(currentScreen);
+  const current = focusedIndex(focusables);
+  const target = current >= 0 ? focusables[current] : focusables[0];
+  target?.click();
+};
+
+export const triggerCancel = (): void => {
+  SCREENS[currentScreen].onCancel?.();
 };
 
 export const updateGameplayUI = (score: number, lives: number, level: string): void => {

@@ -1,21 +1,14 @@
 import { gameEngine } from '../Engine';
 
-const pauseActions = {
-  playing: () => { void gameEngine.pushScreen('paused', {}); },
-  paused:  () => { void gameEngine.popScreen(); },
-} as const;
-
-const pauseScreens = Object.keys(pauseActions) as Array<keyof typeof pauseActions>;
-
-const isPauseable = (screen: string | null): screen is keyof typeof pauseActions =>
-  screen !== null && screen in pauseActions;
-
+// While playing, the pause action pushes the paused screen. Resuming from
+// pause is handled by the UI navigation system as a "cancel" on the paused
+// UI screen so the same key/button drives back/cancel uniformly.
 export function addPauseSystemToEngine(): void {
   gameEngine.addSystem('pauseSystem')
-    .inScreens(pauseScreens)
-    .withResources(['inputState', '$screen'])
-    .setProcess(({ resources: { inputState, $screen } }) => {
+    .inScreens(['playing'])
+    .withResources(['inputState'])
+    .setProcess(({ resources: { inputState } }) => {
       if (!inputState.actions.justActivated('pause')) return;
-      if (isPauseable($screen.current)) pauseActions[$screen.current]();
+      void gameEngine.pushScreen('paused', {});
     });
 }

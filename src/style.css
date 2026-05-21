@@ -87,6 +87,20 @@
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* Keyboard / gamepad focus indicator. Visible on any button or opt-in
+ * focusable (e.g. mode cards). Uses focus-visible so mouse clicks don't
+ * leave a lingering outline on the last-clicked button. */
+button:focus-visible,
+[data-focusable]:focus-visible {
+  outline: 3px solid #FFD700;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px rgba(255, 215, 0, 0.25);
+}
+
+.mode-card[data-focusable]:focus-visible {
+  transform: translateY(-2px);
+}
+
 /* Touch-friendly button enhancements for mobile */
 @media (max-width: 768px) {
   .btn-mobile {

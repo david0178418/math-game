@@ -10,6 +10,7 @@ import {
 } from './systems/RenderSystem';
 import { addCollisionSystemToEngine } from './systems/CollisionSystem';
 import { addPauseSystemToEngine } from './systems/PauseSystem';
+import { addUINavigationSystemToEngine } from './systems/UINavigationSystem';
 import { gameplayPlugin } from './gameplayPlugin';
 import { playerQuery } from './queries';
 import { showScreen, updateObjective, setFinalScore } from '../ui/UIManager';
@@ -54,7 +55,6 @@ const setupScreenHooks = (): void => {
     setupCanvas();
     enterPlayingScreen(config);
     updateObjective(config.level);
-    startGameLoop();
   });
 
   gameEngine.onScreenEnter('paused', () => {
@@ -75,6 +75,7 @@ const registerSystems = async (): Promise<void> => {
   addShakeSystemToEngine();
   addCollisionSystemToEngine();
   addPauseSystemToEngine();
+  addUINavigationSystemToEngine();
   addRenderSystemToEngine();
 
   await initializeEngine();
@@ -84,4 +85,5 @@ export const initializeGame = async (): Promise<void> => {
   await registerSystems();
   setupScreenHooks();
   await gameEngine.setScreen('menu', {});
+  startGameLoop();
 };
