@@ -9,6 +9,12 @@ import {
   saveTouchControlsMode,
   type TouchControlsMode,
 } from './touchControls';
+import {
+  isFullscreenActive,
+  isFullscreenSupported,
+  onFullscreenChange,
+  toggleFullscreen,
+} from './fullscreen';
 import { requestCanvasResize } from '../ecs/systems/render/context';
 
 // UI-layer screen set. Includes UI-only screens (modeSelect, settings) that
@@ -46,6 +52,24 @@ const refreshTouchModeButtons = (root: ParentNode, mode: TouchControlsMode): voi
     btn.classList.toggle('ring-2', isActive);
     btn.classList.toggle('ring-yellow-300', isActive);
   });
+};
+
+const syncFullscreenButton = (button: HTMLButtonElement): void => {
+  const active = isFullscreenActive();
+  button.setAttribute('aria-pressed', String(active));
+  const label = active ? 'Exit fullscreen' : 'Enter fullscreen';
+  button.setAttribute('aria-label', label);
+  button.title = label;
+};
+
+const wireFullscreenButton = (button: HTMLButtonElement): void => {
+  if (!isFullscreenSupported()) {
+    button.style.display = 'none';
+    return;
+  }
+  syncFullscreenButton(button);
+  button.addEventListener('click', () => { void toggleFullscreen(); });
+  onFullscreenChange(() => syncFullscreenButton(button));
 };
 
 const wireTouchControlsSetting = (root: ParentNode): void => {
@@ -144,11 +168,16 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           </button>
         </div>
       </div>
+
+      <button id="menu-fullscreen-btn" type="button" class="absolute top-3 right-3 md:top-4 md:right-4 bg-gray-600/80 hover:bg-gray-600 text-white border-none w-10 h-10 md:w-12 md:h-12 rounded-md cursor-pointer text-lg md:text-xl shadow-md transition-colors duration-200 flex items-center justify-center z-10">
+        ⛶
+      </button>
     `,
     wire: (root) => {
       $(root, '#start-game-btn').addEventListener('click', () => showScreen('modeSelect'));
       $(root, '#settings-btn').addEventListener('click', openSettings);
       $(root, '#high-scores-btn').addEventListener('click', () => alert('High Scores feature coming soon!'));
+      wireFullscreenButton($<HTMLButtonElement>(root, '#menu-fullscreen-btn'));
     },
   },
 
@@ -222,6 +251,9 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
         </div>
 
         <div class="flex gap-2 md:gap-3 items-center">
+          <button id="hud-fullscreen-btn" type="button" class="bg-gray-600/90 text-white border-none px-3 md:px-4 py-2 rounded-md cursor-pointer text-sm md:text-base transition-colors duration-200 hover:bg-gray-600 min-h-10 min-w-10 flex items-center justify-center">
+            ⛶
+          </button>
           <button id="pause-btn" class="bg-gray-600/90 text-white border-none px-3 md:px-4 py-2 rounded-md cursor-pointer text-sm md:text-base transition-colors duration-200 hover:bg-gray-600 min-h-10 min-w-10 flex items-center justify-center">
             ⏸️
           </button>
@@ -257,6 +289,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     `,
     wire: (root) => {
       $(root, '#pause-btn').addEventListener('click', () => { void gameEngine.pushScreen('paused', {}); });
+      wireFullscreenButton($<HTMLButtonElement>(root, '#hud-fullscreen-btn'));
       gameplayHud.score = $(root, '#score-display');
       gameplayHud.lives = $(root, '#lives-display');
       gameplayHud.level = $(root, '#level-display');
@@ -392,7 +425,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
 const gameContainer = ((): HTMLElement => {
   const container = document.createElement('div');
   container.id = 'game-container';
-  container.className = 'w-screen h-screen relative overflow-hidden flex flex-col items-center justify-center font-sans app-background';
+  container.className = 'w-screen h-dvh relative overflow-hidden flex flex-col items-center justify-center font-sans app-background';
   document.body.appendChild(container);
   return container;
 })();

@@ -4,7 +4,7 @@ import { initializeGame } from './ecs/bootstrap';
 const renderInApp = (html: string): HTMLDivElement => {
   const appElement = document.querySelector<HTMLDivElement>('#app');
   if (!appElement) throw new Error('#app element not found');
-  appElement.className = 'w-screen h-screen flex items-center justify-center app-background';
+  appElement.className = 'w-screen h-dvh flex items-center justify-center app-background';
   appElement.innerHTML = html;
   return appElement;
 };
