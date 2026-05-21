@@ -1,6 +1,15 @@
 import { gameEngine } from '../ecs/Engine';
 import type { GameMode } from '../ecs/types';
 import { GAME_CONFIG } from '../config';
+import {
+  applyTouchControlsVisibility,
+  bindTouchControls,
+  isMode,
+  loadTouchControlsMode,
+  saveTouchControlsMode,
+  type TouchControlsMode,
+} from './touchControls';
+import { requestCanvasResize } from '../ecs/systems/render/context';
 
 // UI-layer screen set. Includes UI-only screens (modeSelect, settings) that
 // have no ECS gameplay semantics. The ECS engine tracks its own narrower set
@@ -8,7 +17,7 @@ import { GAME_CONFIG } from '../config';
 type UIScreen = 'menu' | 'modeSelect' | 'playing' | 'settings' | 'gameOver' | 'paused';
 
 const OVERLAY_BASE =
-  'absolute inset-0 flex flex-col items-center justify-center text-white z-50';
+  'absolute inset-0 flex flex-col items-center justify-center text-white z-50 overflow-y-auto overscroll-contain overlay-safe-padding';
 const BTN_CHROME =
   'text-white border-none rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl btn-mobile';
 const BTN_SIZE = {
@@ -28,6 +37,32 @@ type ScreenSpec = {
 };
 
 const DEFAULT_FOCUS_SELECTOR = 'button:not(:disabled), [data-focusable]:not(.disabled)';
+
+const refreshTouchModeButtons = (root: ParentNode, mode: TouchControlsMode): void => {
+  const buttons = root.querySelectorAll<HTMLButtonElement>('.touch-mode-btn');
+  buttons.forEach((btn) => {
+    const isActive = btn.dataset.touchMode === mode;
+    btn.setAttribute('aria-pressed', String(isActive));
+    btn.classList.toggle('ring-2', isActive);
+    btn.classList.toggle('ring-yellow-300', isActive);
+  });
+};
+
+const wireTouchControlsSetting = (root: ParentNode): void => {
+  const initial = loadTouchControlsMode();
+  refreshTouchModeButtons(root, initial);
+  const buttons = root.querySelectorAll<HTMLButtonElement>('.touch-mode-btn');
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = btn.dataset.touchMode;
+      if (!isMode(next)) return;
+      saveTouchControlsMode(next);
+      applyTouchControlsVisibility(next);
+      refreshTouchModeButtons(root, next);
+      requestCanvasResize();
+    });
+  });
+};
 
 const $ = <T extends HTMLElement = HTMLElement>(root: HTMLElement, sel: string): T => {
   const el = root.querySelector<T>(sel);
@@ -72,33 +107,27 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     id: 'main-menu',
     className: `${OVERLAY_BASE} app-background`,
     html: `
-      <div class="text-center max-w-sm md:max-w-2xl px-6 md:px-10 py-8 md:py-16">
-        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 md:mb-6 text-gold drop-shadow-lg">
-          Math Munchers
-        </h1>
+      <div class="px-6 md:px-10 py-6 sm:py-8 md:py-16 max-w-sm md:max-w-2xl landscape:max-w-4xl flex flex-col landscape:flex-row landscape:items-center text-center landscape:text-left gap-6 landscape:gap-10 lg:landscape:gap-16">
+        <div class="landscape:flex-1">
+          <h1 class="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-3 sm:mb-4 md:mb-6 text-gold drop-shadow-lg">
+            Math Munchers
+          </h1>
 
-        <p class="text-base md:text-xl mb-8 md:mb-12 opacity-90 leading-relaxed px-4">
-          Navigate the grid and collect correct answers while avoiding enemies!
-        </p>
-
-        <div class="flex flex-col gap-4 md:gap-6 items-center">
-          <button id="start-game-btn" class="btn-success ${BTN_CHROME} ${BTN_SIZE.lgResponsive} w-full md:w-auto min-w-48 md:min-w-56">
-            🎮 Start Game
-          </button>
-          <button id="settings-btn" class="btn-primary ${BTN_CHROME} ${BTN_SIZE.mdResponsive} w-full md:w-auto min-w-48 md:min-w-56">
-            ⚙️ Settings
-          </button>
-          <button id="high-scores-btn" class="btn-warning ${BTN_CHROME} ${BTN_SIZE.mdResponsive} w-full md:w-auto min-w-48 md:min-w-56">
-            🏆 High Scores
-          </button>
+          <p class="text-sm sm:text-base md:text-xl opacity-90 leading-relaxed">
+            Navigate the grid and collect correct answers while avoiding enemies!
+          </p>
         </div>
 
-        <div class="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-white/30">
-          <div class="text-xs md:text-sm opacity-70 space-y-1">
-            <p>🎯 Move: WASD / Arrow Keys / D-pad / Left Stick</p>
-            <p>✅ Select: Enter / Space / A • ↩️ Back: Esc / Start</p>
-            <p>⏸️ ESC or Start to pause • ⚙️ F1 for settings</p>
-          </div>
+        <div class="flex flex-col gap-4 md:gap-6 items-center landscape:items-stretch landscape:flex-1">
+          <button id="start-game-btn" class="btn-success ${BTN_CHROME} ${BTN_SIZE.lgResponsive} w-full md:w-auto landscape:w-full min-w-48 md:min-w-56">
+            🎮 Start Game
+          </button>
+          <button id="settings-btn" class="btn-primary ${BTN_CHROME} ${BTN_SIZE.mdResponsive} w-full md:w-auto landscape:w-full min-w-48 md:min-w-56">
+            ⚙️ Settings
+          </button>
+          <button id="high-scores-btn" class="btn-warning ${BTN_CHROME} ${BTN_SIZE.mdResponsive} w-full md:w-auto landscape:w-full min-w-48 md:min-w-56">
+            🏆 High Scores
+          </button>
         </div>
       </div>
     `,
@@ -113,48 +142,48 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     id: 'mode-select-screen',
     className: `${OVERLAY_BASE} app-background`,
     html: `
-      <div class="text-center max-w-sm md:max-w-3xl px-4 md:px-8 py-6 md:py-12">
-        <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 text-gold drop-shadow-lg">
+      <div class="text-center max-w-sm md:max-w-3xl landscape:max-w-6xl px-4 md:px-8 py-4 sm:py-6 md:py-12 landscape:py-3 w-full">
+        <h1 class="text-2xl sm:text-3xl md:text-5xl lg:text-6xl landscape:text-2xl landscape:md:text-3xl font-bold mb-3 sm:mb-4 md:mb-6 landscape:mb-2 text-gold drop-shadow-lg">
           Select Game Mode
         </h1>
 
-        <p class="text-base md:text-xl mb-8 md:mb-12 opacity-90 leading-relaxed px-2">
+        <p class="text-sm sm:text-base md:text-xl mb-4 sm:mb-6 md:mb-12 opacity-90 leading-relaxed px-2 landscape:hidden">
           Choose a math challenge to begin your adventure!
         </p>
 
-        <div class="flex flex-col gap-4 md:gap-6 items-center">
-          <div id="multiples-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-4 md:p-6 rounded-xl shadow-lg cursor-pointer w-full max-w-md md:max-w-lg text-left">
-            <h3 class="text-xl md:text-2xl font-bold mb-2 md:mb-3">🔢 Multiples</h3>
-            <p class="text-sm md:text-base opacity-90 mb-2 md:mb-3">
+        <div class="grid grid-cols-1 landscape:grid-cols-3 gap-3 md:gap-6 items-stretch">
+          <div id="multiples-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🔢 Multiples</h3>
+            <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
               Find all multiples of the given number! Start with multiples of 2 and work your way up.
             </p>
-            <div class="text-xs md:text-sm opacity-70">
+            <div class="text-xs opacity-70 landscape:hidden">
               Example: For multiples of 2, eat 2, 4, 6, 8, 10, 12...
             </div>
           </div>
 
-          <div id="factors-mode" class="mode-card disabled text-white border-none p-4 md:p-6 rounded-xl shadow-lg w-full max-w-md md:max-w-lg text-left">
-            <h3 class="text-xl md:text-2xl font-bold mb-2 md:mb-3">🧮 Factors (Coming Soon)</h3>
-            <p class="text-sm md:text-base opacity-90 mb-2 md:mb-3">
+          <div id="factors-mode" class="mode-card disabled text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🧮 Factors (Coming Soon)</h3>
+            <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
               Find all factors of the given number! This mode will be available in a future update.
             </p>
-            <div class="text-xs md:text-sm opacity-70">
+            <div class="text-xs opacity-70 landscape:hidden">
               Example: For factors of 12, eat 1, 2, 3, 4, 6, 12...
             </div>
           </div>
 
-          <div id="prime-mode" class="mode-card disabled text-white border-none p-4 md:p-6 rounded-xl shadow-lg w-full max-w-md md:max-w-lg text-left">
-            <h3 class="text-xl md:text-2xl font-bold mb-2 md:mb-3">🔑 Prime Numbers (Coming Soon)</h3>
-            <p class="text-sm md:text-base opacity-90 mb-2 md:mb-3">
+          <div id="prime-mode" class="mode-card disabled text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🔑 Prime Numbers (Coming Soon)</h3>
+            <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
               Find all prime numbers! Only eat numbers that have exactly two factors.
             </p>
-            <div class="text-xs md:text-sm opacity-70">
+            <div class="text-xs opacity-70 landscape:hidden">
               Example: Eat 2, 3, 5, 7, 11, 13...
             </div>
           </div>
         </div>
 
-        <button id="back-to-main-btn" class="btn-secondary ${BTN_CHROME} ${BTN_SIZE.mdResponsive} mt-6 md:mt-8">
+        <button id="back-to-main-btn" class="btn-secondary ${BTN_CHROME} ${BTN_SIZE.mdResponsive} mt-4 md:mt-8 landscape:mt-3">
           ← Back to Menu
         </button>
       </div>
@@ -175,6 +204,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           <div id="score-display" class="text-sm md:text-base lg:text-lg bg-green-600/90 px-3 md:px-4 py-2 rounded-lg shadow-md whitespace-nowrap">Score: 0</div>
           <div id="lives-display" class="text-sm md:text-base lg:text-lg bg-red-600/90 px-3 md:px-4 py-2 rounded-lg shadow-md whitespace-nowrap">Lives: 3</div>
           <div id="level-display" class="text-xs md:text-sm lg:text-base bg-blue-600/90 px-2 md:px-3 py-1 md:py-2 rounded-lg shadow-md whitespace-nowrap">Level: Easy</div>
+          <div id="objective-inline" class="hud-objective-inline text-xs bg-gradient-to-r from-purple-600/95 to-pink-600/95 px-3 py-1.5 rounded-lg shadow-md whitespace-nowrap">Multiples of 2</div>
         </div>
 
         <div class="flex gap-2 md:gap-3 items-center">
@@ -190,7 +220,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
         </div>
       </div>
 
-      <div id="canvas-container" class="flex-1 flex items-center justify-center mt-24 md:mt-28 lg:mt-32 mb-16 md:mb-20 px-2 md:px-4">
+      <div id="canvas-container" class="flex-1 min-h-0 min-w-0 flex items-center justify-center mt-24 md:mt-28 lg:mt-32 mb-16 md:mb-20 px-2 md:px-4">
         <canvas id="game-canvas" class="bg-white rounded-lg shadow-2xl max-w-full max-h-full"></canvas>
       </div>
 
@@ -200,12 +230,23 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           <span class="md:hidden">WASD/D-pad to move • Space/A to eat • Avoid enemies</span>
         </div>
       </div>
+
+      <div id="touch-dpad" class="touch-controls" aria-label="Movement controls">
+        <button id="touch-up"    type="button" aria-label="Move up"><span class="dpad-glyph">▲</span></button>
+        <button id="touch-left"  type="button" aria-label="Move left"><span class="dpad-glyph">▲</span></button>
+        <button id="touch-right" type="button" aria-label="Move right"><span class="dpad-glyph">▲</span></button>
+        <button id="touch-down"  type="button" aria-label="Move down"><span class="dpad-glyph">▲</span></button>
+      </div>
+      <div id="touch-action" class="touch-controls" aria-label="Action controls">
+        <button id="touch-eat" type="button" aria-label="Eat">EAT</button>
+      </div>
     `,
     wire: (root) => {
       $(root, '#pause-btn').addEventListener('click', () => { void gameEngine.pushScreen('paused', {}); });
       gameplayHud.score = $(root, '#score-display');
       gameplayHud.lives = $(root, '#lives-display');
       gameplayHud.level = $(root, '#level-display');
+      bindTouchControls(root);
     },
   },
 
@@ -213,22 +254,22 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     id: 'settings-screen',
     className: `${OVERLAY_BASE} app-background`,
     html: `
-      <div class="text-center max-w-sm md:max-w-lg px-4 md:px-8 py-6 md:py-8">
-        <h2 class="text-3xl md:text-4xl font-bold mb-6 md:mb-8 text-gold drop-shadow-lg">⚙️ Settings</h2>
+      <div class="text-center max-w-sm md:max-w-lg landscape:max-w-4xl w-full px-4 md:px-8 py-4 sm:py-6 md:py-8 landscape:py-3">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl landscape:text-xl landscape:md:text-2xl font-bold mb-4 sm:mb-6 md:mb-8 landscape:mb-3 text-gold drop-shadow-lg">⚙️ Settings</h2>
 
-        <div class="flex flex-col gap-4 md:gap-6 text-left">
-          <div class="bg-white/10 p-4 md:p-6 rounded-xl backdrop-blur-sm">
-            <h3 class="text-lg md:text-xl font-semibold mb-3 md:mb-4">🎯 Game Difficulty</h3>
+        <div class="grid grid-cols-1 landscape:grid-cols-2 gap-3 md:gap-6 landscape:gap-3 text-left items-stretch">
+          <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
+            <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">🎯 Game Difficulty</h3>
             <div class="flex flex-col md:flex-row gap-2 md:gap-3">
-              <button class="difficulty-btn flex-1 bg-green-600 text-white border-none px-4 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-green-700 btn-mobile" data-difficulty="easy">Easy</button>
-              <button class="difficulty-btn flex-1 bg-orange-600 text-white border-none px-4 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-orange-700 btn-mobile" data-difficulty="medium">Medium</button>
-              <button class="difficulty-btn flex-1 bg-red-600 text-white border-none px-4 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-red-700 btn-mobile" data-difficulty="hard">Hard</button>
+              <button class="difficulty-btn flex-1 bg-green-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-green-700 btn-mobile" data-difficulty="easy">Easy</button>
+              <button class="difficulty-btn flex-1 bg-orange-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-orange-700 btn-mobile" data-difficulty="medium">Medium</button>
+              <button class="difficulty-btn flex-1 bg-red-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-red-700 btn-mobile" data-difficulty="hard">Hard</button>
             </div>
           </div>
 
-          <div class="bg-white/10 p-4 md:p-6 rounded-xl backdrop-blur-sm">
-            <h3 class="text-lg md:text-xl font-semibold mb-3 md:mb-4">🔊 Audio</h3>
-            <div class="space-y-3">
+          <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
+            <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">🔊 Audio</h3>
+            <div class="space-y-2 md:space-y-3">
               <label class="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" id="sound-effects" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
                 <span class="text-sm md:text-base">Sound Effects</span>
@@ -240,24 +281,35 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
             </div>
           </div>
 
-          <div class="bg-white/10 p-4 md:p-6 rounded-xl backdrop-blur-sm">
-            <h3 class="text-lg md:text-xl font-semibold mb-3 md:mb-4">🎮 Controls</h3>
-            <div class="text-sm md:text-base space-y-1 opacity-90">
-              <p>🔤 Move: WASD / Arrows / D-pad / Left Stick</p>
-              <p>🍽️ Eat / Select: Space / Enter / A button</p>
+          <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
+            <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">🎮 Controls</h3>
+            <div class="text-xs md:text-base landscape:text-xs space-y-0.5 md:space-y-1 opacity-90">
+              <p>🔤 Move: WASD / Arrows / D-pad</p>
+              <p>🍽️ Eat / Select: Space / Enter / A</p>
               <p>⏸️ Pause / Back: Esc / Start</p>
               <p>⚙️ F1: Settings</p>
             </div>
           </div>
+
+          <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
+            <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">📱 Touch Controls</h3>
+            <p class="text-xs md:text-sm opacity-80 mb-2 landscape:hidden">Show on-screen D-pad and Eat button.</p>
+            <div class="flex flex-col md:flex-row gap-2 md:gap-3">
+              <button class="touch-mode-btn flex-1 bg-blue-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-blue-700 btn-mobile" data-touch-mode="auto">Auto</button>
+              <button class="touch-mode-btn flex-1 bg-blue-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-blue-700 btn-mobile" data-touch-mode="on">Always On</button>
+              <button class="touch-mode-btn flex-1 bg-blue-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-blue-700 btn-mobile" data-touch-mode="off">Always Off</button>
+            </div>
+          </div>
         </div>
 
-        <button id="back-to-menu-btn" class="btn-secondary ${BTN_CHROME} ${BTN_SIZE.lg} mt-6 md:mt-8 w-full md:w-auto">
+        <button id="back-to-menu-btn" class="btn-secondary ${BTN_CHROME} ${BTN_SIZE.lg} mt-4 md:mt-8 landscape:mt-3 w-full md:w-auto">
           ← Back to Menu
         </button>
       </div>
     `,
     wire: (root) => {
       $(root, '#back-to-menu-btn').addEventListener('click', goToMenu);
+      wireTouchControlsSetting(root);
     },
     onCancel: goToMenu,
   },
@@ -266,12 +318,12 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     id: 'game-over-screen',
     className: `${OVERLAY_BASE} bg-black/90`,
     html: `
-      <div class="text-center max-w-sm md:max-w-md px-6 py-8">
-        <h1 class="text-red-400 text-4xl md:text-6xl font-bold mb-6 md:mb-8 drop-shadow-lg animate-pulse">
+      <div class="text-center max-w-sm md:max-w-md px-6 py-6 sm:py-8">
+        <h1 class="text-red-400 text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 drop-shadow-lg animate-pulse">
           💀 GAME OVER
         </h1>
 
-        <div id="final-score" class="text-2xl md:text-3xl mb-8 text-green-400 font-bold drop-shadow-md">
+        <div id="final-score" class="text-xl sm:text-2xl md:text-3xl mb-6 sm:mb-8 text-green-400 font-bold drop-shadow-md">
           Final Score: 0
         </div>
 
@@ -296,8 +348,8 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     id: 'pause-screen',
     className: `${OVERLAY_BASE} bg-black/80`,
     html: `
-      <div class="text-center max-w-sm md:max-w-md px-6 py-8">
-        <h2 class="text-4xl md:text-5xl font-bold mb-8 md:mb-12 drop-shadow-lg">⏸️ PAUSED</h2>
+      <div class="text-center max-w-sm md:max-w-md px-6 py-6 sm:py-8">
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 md:mb-12 drop-shadow-lg">⏸️ PAUSED</h2>
 
         <div class="flex flex-col gap-4 md:gap-5">
           <button id="resume-btn" class="btn-success ${BTN_CHROME} ${BTN_SIZE.lg} w-full">
@@ -330,6 +382,15 @@ const gameContainer = ((): HTMLElement => {
   document.body.appendChild(container);
   return container;
 })();
+
+applyTouchControlsVisibility();
+// Re-evaluate auto mode if the primary pointer changes (e.g. window moved
+// between a touchscreen and a regular monitor, or device rotated into a
+// virtual-keyboard state).
+window.matchMedia('(hover: none) and (pointer: coarse)').addEventListener('change', () => {
+  applyTouchControlsVisibility();
+  requestCanvasResize();
+});
 
 const screenElements = new Map<UIScreen, HTMLElement>();
 let currentScreen: UIScreen = 'menu';
@@ -414,8 +475,10 @@ export const updateGameplayUI = (score: number, lives: number, level: string): v
 };
 
 export const updateObjective = (level: number): void => {
-  const el = document.getElementById('objective-display');
-  if (el) el.textContent = `Find multiples of ${level}!`;
+  const full = document.getElementById('objective-display');
+  if (full) full.textContent = `Find multiples of ${level}!`;
+  const inline = document.getElementById('objective-inline');
+  if (inline) inline.textContent = `Multiples of ${level}`;
 };
 
 export const setFinalScore = (score: number): void => {
