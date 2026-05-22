@@ -8,7 +8,7 @@ type Renderable = AllComponents['renderable'];
 const MAX_IMAGE_SIZE = GAME_CONFIG.GRID.CELL_SIZE * 0.8;
 
 const calculateImageDimensions = (
-  img: HTMLImageElement,
+  img: { width: number; height: number },
   requestedWidth?: number,
   requestedHeight?: number,
 ): { width: number; height: number } => {
@@ -50,19 +50,45 @@ const drawImageShape = ({ ctx, centerX, centerY, rotation, renderable, deathScal
     return;
   }
 
-  const { width, height } = calculateImageDimensions(img, renderable.imageWidth, renderable.imageHeight);
+  const spriteSheet = renderable.spriteSheet;
+  const sourceWidth = spriteSheet ? img.width / spriteSheet.frameCount : img.width;
+  const sourceHeight = img.height;
+  const dimensionImage = spriteSheet
+    ? { width: sourceWidth, height: sourceHeight }
+    : img;
+
+  const { width, height } = calculateImageDimensions(
+    dimensionImage,
+    renderable.imageWidth,
+    renderable.imageHeight,
+  );
   const scaledWidth = width * deathScale;
   const scaledHeight = height * deathScale;
+  const drawImage = (): void => {
+    if (!spriteSheet) {
+      ctx.drawImage(img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+      return;
+    }
 
-  if (rotation === 0) {
-    ctx.drawImage(img, centerX - scaledWidth / 2, centerY - scaledHeight / 2, scaledWidth, scaledHeight);
-    return;
-  }
+    const frameIndex = Math.max(0, Math.min(spriteSheet.frameCount - 1, spriteSheet.frameIndex));
+    ctx.drawImage(
+      img,
+      frameIndex * sourceWidth,
+      0,
+      sourceWidth,
+      sourceHeight,
+      -scaledWidth / 2,
+      -scaledHeight / 2,
+      scaledWidth,
+      scaledHeight,
+    );
+  };
 
   ctx.save();
   ctx.translate(centerX, centerY);
-  ctx.rotate((rotation * Math.PI) / 180);
-  ctx.drawImage(img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+  if (rotation !== 0) ctx.rotate((rotation * Math.PI) / 180);
+  if (spriteSheet?.flipX) ctx.scale(-1, 1);
+  drawImage();
   ctx.restore();
 };
 

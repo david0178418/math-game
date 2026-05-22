@@ -4,6 +4,7 @@ import type { PlayingScreenConfig } from './types';
 import { addMovementSystemToEngine } from './systems/MovementSystem';
 import { gridToPixel } from './gameUtils';
 import { addShakeSystemToEngine } from './systems/AnimationSystem';
+import { addFrogSpriteAnimationSystemToEngine } from './systems/FrogSpriteSystem';
 import {
   initializeRenderSystem,
   addRenderSystemToEngine
@@ -73,6 +74,7 @@ const registerSystems = async (): Promise<void> => {
 
   addMovementSystemToEngine();
   addShakeSystemToEngine();
+  addFrogSpriteAnimationSystemToEngine();
   addCollisionSystemToEngine();
   addPauseSystemToEngine();
   addUINavigationSystemToEngine();

@@ -1,8 +1,10 @@
 import { GAME_CONFIG } from '../../../config';
 import flyImage from '../../../assets/images/fly.svg';
+import { FROG_SPRITE_IMAGES } from '../FrogSpriteSystem';
 
 const PRELOAD_IMAGES: readonly string[] = [
   flyImage,
+  ...FROG_SPRITE_IMAGES,
   ...Object.values(GAME_CONFIG.ENEMY_TYPES).map(t => t.IMAGE),
 ];
 

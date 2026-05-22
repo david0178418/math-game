@@ -38,6 +38,25 @@ export interface Components {
     imageSrc?: string;
     imageWidth?: number;
     imageHeight?: number;
+    spriteSheet?: {
+      frameCount: number;
+      frameIndex: number;
+      flipX?: boolean;
+    };
+  };
+  spriteAnimation: {
+    elapsed: number;
+    currentStep: number;
+    steps: Array<{
+      imageSrc: string;
+      frameCount: number;
+      duration: number;
+      flipX?: boolean;
+      reverse?: boolean;
+    }>;
+  };
+  frogSprite: {
+    facing: 'toward' | 'away' | 'left' | 'right';
   };
   player: {
     score: number;

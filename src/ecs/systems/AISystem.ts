@@ -14,6 +14,7 @@ import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 import { startGridMovement, isEntityAnimating } from './AnimationSystem';
 import { createSpiderWeb } from './SpiderWebSystem';
 import { isFrogAttacking } from './FrogTongueSystem';
+import { startFrogGridMovement } from './FrogSpriteSystem';
 
 const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.spider;
 
@@ -125,7 +126,13 @@ function processEnemyAI(
   const newPixelPos = gridToPixel(nextGridX, nextGridY);
   const moved = newPixelPos.x !== enemyPos.x || newPixelPos.y !== enemyPos.y;
 
-  if (moved) startGridMovement(ecs, enemy.id, newPixelPos.x, newPixelPos.y);
+  if (moved) {
+    if (enemyData.enemyType === 'frog') {
+      startFrogGridMovement(ecs, enemy.id, currentGrid, { x: nextGridX, y: nextGridY }, newPixelPos.x, newPixelPos.y);
+    } else {
+      startGridMovement(ecs, enemy.id, newPixelPos.x, newPixelPos.y);
+    }
+  }
 
   if (enemyData.enemyType === 'spider' && moved &&
       Math.random() < SPIDER_CONFIG.WEB_PLACEMENT_CHANCE) {

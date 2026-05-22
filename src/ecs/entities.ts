@@ -4,6 +4,7 @@ import type { AIBehavior, EnemyType } from '../types/shared';
 import type { AllComponents } from './types';
 import { pixelToGrid } from './gameUtils';
 import flyImage from '../assets/images/fly.svg';
+import { defaultFrogRenderable, defaultFrogSprite } from './systems/FrogSpriteSystem';
 
 const playerComponents = (x: number, y: number): Partial<AllComponents> => {
   const grid = pixelToGrid(x, y);
@@ -41,25 +42,31 @@ const enemyComponents = (
   y: number,
   enemyType: EnemyType,
   behaviorType: AIBehavior
-): Partial<AllComponents> => ({
-  position: { x, y },
-  renderable: {
-    shape: 'image',
-    color: GAME_CONFIG.ENEMY_TYPES[enemyType].COLOR,
-    size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
-    layer: GAME_CONFIG.LAYERS.ENTITIES,
-    imageSrc: GAME_CONFIG.ENEMY_TYPES[enemyType].IMAGE,
-  },
-  enemy: {
-    enemyType,
-    behaviorType
-  },
-  collider: {
-    width: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
-    height: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY,
-    group: 'enemy'
-  }
-});
+): Partial<AllComponents> => {
+  const size = GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.ENEMY;
+  return {
+    position: { x, y },
+    renderable: enemyType === 'frog'
+      ? defaultFrogRenderable(GAME_CONFIG.LAYERS.ENTITIES, GAME_CONFIG.ENEMY_TYPES.frog.COLOR, size)
+      : {
+        shape: 'image',
+        color: GAME_CONFIG.ENEMY_TYPES[enemyType].COLOR,
+        size,
+        layer: GAME_CONFIG.LAYERS.ENTITIES,
+        imageSrc: GAME_CONFIG.ENEMY_TYPES[enemyType].IMAGE,
+      },
+    enemy: {
+      enemyType,
+      behaviorType
+    },
+    collider: {
+      width: size,
+      height: size,
+      group: 'enemy'
+    },
+    ...(enemyType === 'frog' ? { frogSprite: defaultFrogSprite() } : {}),
+  };
+};
 
 const mathProblemComponents = (
   x: number,
