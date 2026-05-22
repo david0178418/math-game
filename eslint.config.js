@@ -27,6 +27,7 @@ export default [
       '@typescript-eslint': tseslint
     },
     rules: {
+      'no-undef': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/explicit-function-return-type': 'warn',
@@ -38,4 +39,4 @@ export default [
   {
     ignores: ['dist', 'node_modules']
   }
-]; 
+];
