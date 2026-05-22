@@ -19,6 +19,8 @@ export const FROG_SPRITE_IMAGES = [
 
 type FrogFacing = AllComponents['frogSprite']['facing'];
 type SpriteStep = AllComponents['spriteAnimation']['steps'][number];
+type GridPoint = { x: number; y: number };
+type SpriteStepOptions = Pick<SpriteStep, 'flipX' | 'reverse'>;
 
 const FRAME_COUNT = 8;
 const TURN_DURATION_S = 0.18;
@@ -54,33 +56,50 @@ const facingFromDelta = (dx: number, dy: number): FrogFacing => {
 const isSide = (facing: FrogFacing): boolean => facing === 'left' || facing === 'right';
 const sideFlip = (facing: FrogFacing): boolean => facing === 'left';
 
+const spriteStep = (
+  imageSrc: string,
+  duration: number,
+  options: SpriteStepOptions = {},
+): SpriteStep => ({
+  imageSrc,
+  frameCount: FRAME_COUNT,
+  duration,
+  ...options,
+});
+
 const hopStepForFacing = (facing: FrogFacing, duration: number): SpriteStep => {
   if (facing === 'toward') {
-    return { imageSrc: frogHopToward, frameCount: FRAME_COUNT, duration };
+    return spriteStep(frogHopToward, duration);
   }
   if (facing === 'away') {
-    return { imageSrc: frogHopAway, frameCount: FRAME_COUNT, duration };
+    return spriteStep(frogHopAway, duration);
   }
-  return { imageSrc: frogHopSide, frameCount: FRAME_COUNT, duration, flipX: sideFlip(facing) };
+  return spriteStep(frogHopSide, duration, { flipX: sideFlip(facing) });
 };
 
 const turnBetween = (from: FrogFacing, to: FrogFacing): SpriteStep[] => {
   if (from === to) return [];
 
   if (from === 'toward' && isSide(to)) {
-    return [{ imageSrc: frogTurnFrontSide, frameCount: FRAME_COUNT, duration: TURN_DURATION_S, flipX: sideFlip(to) }];
+    return [spriteStep(frogTurnFrontSide, TURN_DURATION_S, { flipX: sideFlip(to) })];
   }
   if (isSide(from) && to === 'toward') {
-    return [{ imageSrc: frogTurnFrontSide, frameCount: FRAME_COUNT, duration: TURN_DURATION_S, flipX: sideFlip(from), reverse: true }];
+    return [spriteStep(frogTurnFrontSide, TURN_DURATION_S, {
+      flipX: sideFlip(from),
+      reverse: true,
+    })];
   }
   if (from === 'away' && isSide(to)) {
-    return [{ imageSrc: frogTurnSideAway, frameCount: FRAME_COUNT, duration: TURN_DURATION_S, flipX: sideFlip(to), reverse: true }];
+    return [spriteStep(frogTurnSideAway, TURN_DURATION_S, {
+      flipX: sideFlip(to),
+      reverse: true,
+    })];
   }
   if (isSide(from) && to === 'away') {
-    return [{ imageSrc: frogTurnSideAway, frameCount: FRAME_COUNT, duration: TURN_DURATION_S, flipX: sideFlip(from) }];
+    return [spriteStep(frogTurnSideAway, TURN_DURATION_S, { flipX: sideFlip(from) })];
   }
   if (isSide(from) && isSide(to)) {
-    return [{ imageSrc: frogHopSide, frameCount: FRAME_COUNT, duration: TURN_DURATION_S, flipX: sideFlip(to) }];
+    return [spriteStep(frogHopSide, TURN_DURATION_S, { flipX: sideFlip(to) })];
   }
 
   const bridge: FrogFacing = 'right';
@@ -103,11 +122,52 @@ const applySpriteStep = (
   };
 };
 
+const totalStepDuration = (steps: readonly SpriteStep[]): number =>
+  steps.reduce((sum, step) => sum + step.duration, 0);
+
+const lastStep = (steps: readonly SpriteStep[]): SpriteStep => steps[steps.length - 1];
+
+const findCurrentStep = (
+  steps: readonly SpriteStep[],
+  elapsed: number,
+): { step: SpriteStep; stepIndex: number; elapsedBeforeStep: number } => {
+  let elapsedBeforeStep = 0;
+
+  for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
+    const step = steps[stepIndex];
+    if (elapsed < elapsedBeforeStep + step.duration) {
+      return { step, stepIndex, elapsedBeforeStep };
+    }
+    elapsedBeforeStep += step.duration;
+  }
+
+  return {
+    step: lastStep(steps),
+    stepIndex: steps.length - 1,
+    elapsedBeforeStep: totalStepDuration(steps) - lastStep(steps).duration,
+  };
+};
+
+const frameIndexForStep = (
+  step: SpriteStep,
+  elapsed: number,
+  elapsedBeforeStep: number,
+): number => {
+  const stepElapsed = Math.max(0, elapsed - elapsedBeforeStep);
+  const progress = Math.min(1, stepElapsed / step.duration);
+  const forwardFrame = Math.min(
+    step.frameCount - 1,
+    Math.floor(progress * step.frameCount),
+  );
+
+  return step.reverse ? step.frameCount - 1 - forwardFrame : forwardFrame;
+};
+
 export const startFrogGridMovement = (
   ecs: GameEngine,
   entityId: number,
-  fromGrid: { x: number; y: number },
-  toGrid: { x: number; y: number },
+  fromGrid: GridPoint,
+  toGrid: GridPoint,
   toX: number,
   toY: number,
 ): void => {
@@ -118,7 +178,7 @@ export const startFrogGridMovement = (
 
   const targetFacing = facingFromDelta(toGrid.x - fromGrid.x, toGrid.y - fromGrid.y);
   const turnSteps = turnBetween(frogSprite.facing, targetFacing);
-  const hopDuration = Math.max(0.2, MOVE_DURATION_S - turnSteps.reduce((sum, step) => sum + step.duration, 0));
+  const hopDuration = Math.max(0.2, MOVE_DURATION_S - totalStepDuration(turnSteps));
   const steps = [...turnSteps, hopStepForFacing(targetFacing, hopDuration)];
 
   frogSprite.facing = targetFacing;
@@ -126,6 +186,7 @@ export const startFrogGridMovement = (
 
   ecs.addComponent(entityId, 'spriteAnimation', {
     elapsed: 0,
+    duration: totalStepDuration(steps),
     currentStep: 0,
     steps,
   });
@@ -156,41 +217,25 @@ export function addFrogSpriteAnimationSystemToEngine(): void {
       ({ entity, dt, ecs }) => {
         const animation = entity.components.spriteAnimation;
         animation.elapsed += dt;
-
-        let elapsedBeforeStep = 0;
-        let currentStep = animation.steps[animation.steps.length - 1];
-        let stepIndex = animation.steps.length - 1;
-
-        for (let i = 0; i < animation.steps.length; i++) {
-          const step = animation.steps[i];
-          if (animation.elapsed < elapsedBeforeStep + step.duration) {
-            currentStep = step;
-            stepIndex = i;
-            break;
-          }
-          elapsedBeforeStep += step.duration;
-        }
+        const { step: currentStep, stepIndex, elapsedBeforeStep } = findCurrentStep(
+          animation.steps,
+          animation.elapsed,
+        );
 
         animation.currentStep = stepIndex;
 
-        const stepElapsed = Math.max(0, animation.elapsed - elapsedBeforeStep);
-        const progress = Math.min(1, stepElapsed / currentStep.duration);
-        const forwardFrame = Math.min(
-          currentStep.frameCount - 1,
-          Math.floor(progress * currentStep.frameCount),
+        applySpriteStep(
+          entity.components.renderable,
+          currentStep,
+          frameIndexForStep(currentStep, animation.elapsed, elapsedBeforeStep),
         );
-        const frameIndex = currentStep.reverse
-          ? currentStep.frameCount - 1 - forwardFrame
-          : forwardFrame;
 
-        applySpriteStep(entity.components.renderable, currentStep, frameIndex);
-
-        const totalDuration = animation.steps.reduce((sum, step) => sum + step.duration, 0);
-        if (animation.elapsed >= totalDuration) {
+        if (animation.elapsed >= animation.duration) {
+          const finalStep = lastStep(animation.steps);
           applySpriteStep(
             entity.components.renderable,
-            animation.steps[animation.steps.length - 1],
-            FRAME_COUNT - 1,
+            finalStep,
+            finalStep.frameCount - 1,
           );
           ecs.commands.removeComponent(entity.id, 'spriteAnimation');
         }

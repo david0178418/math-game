@@ -46,6 +46,7 @@ export interface Components {
   };
   spriteAnimation: {
     elapsed: number;
+    duration: number;
     currentStep: number;
     steps: Array<{
       imageSrc: string;
