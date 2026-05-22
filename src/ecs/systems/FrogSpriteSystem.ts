@@ -23,6 +23,7 @@ type GridPoint = { x: number; y: number };
 type SpriteStepOptions = Pick<SpriteStep, 'flipX' | 'reverse' | 'staticFrameIndex'>;
 
 const FRAME_COUNT = 8;
+const FROG_RENDER_SCALE = 1.5;
 const TURN_DURATION_S = 0.18;
 const JUMP_INTENT_DELAY_S = 1;
 const MOVE_DURATION_S = ANIMATION_CONFIG.MOVEMENT_DURATION / 1000;
@@ -39,6 +40,8 @@ export const defaultFrogRenderable = (
   size,
   layer,
   imageSrc: frogHopToward,
+  imageWidth: size * FROG_RENDER_SCALE,
+  imageHeight: size * FROG_RENDER_SCALE,
   spriteSheet: {
     frameCount: FRAME_COUNT,
     frameIndex: FRAME_COUNT - 1,

@@ -42,6 +42,10 @@ export const GAME_CONFIG = {
     UI: 10,
   },
 
+  RENDER: {
+    ENTITY_BASELINE_RATIO: 0.75,
+  },
+
   ENEMY_SPAWN: {
     MAX_ENEMIES: 3,
   },

@@ -7,26 +7,45 @@ type Renderable = AllComponents['renderable'];
 
 const MAX_IMAGE_SIZE = GAME_CONFIG.GRID.CELL_SIZE * 0.8;
 
+function entityBaselineY(
+  position: { y: number },
+  renderable: Renderable,
+  shakeOffsetY: number,
+): number | undefined {
+  return renderable.layer >= GAME_CONFIG.LAYERS.ENTITIES
+    ? position.y + GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.RENDER.ENTITY_BASELINE_RATIO + shakeOffsetY
+    : undefined;
+}
+
+function centerYFromBaseline(
+  centerY: number,
+  baselineY: number | undefined,
+  height: number,
+): number {
+  return baselineY === undefined ? centerY : baselineY - height / 2;
+}
+
 const calculateImageDimensions = (
   img: { width: number; height: number },
   requestedWidth?: number,
   requestedHeight?: number,
 ): { width: number; height: number } => {
   const aspectRatio = img.width / img.height;
-  const width0 = requestedWidth || MAX_IMAGE_SIZE;
-  const height0 = requestedHeight || MAX_IMAGE_SIZE;
+  const width0 = requestedWidth ?? MAX_IMAGE_SIZE;
+  const height0 = requestedHeight ?? MAX_IMAGE_SIZE;
+  const maxImageSize = Math.max(MAX_IMAGE_SIZE, width0, height0);
 
   if (aspectRatio > 1) {
     const heightFromWidth = width0 / aspectRatio;
-    if (heightFromWidth > MAX_IMAGE_SIZE) {
-      return { width: MAX_IMAGE_SIZE * aspectRatio, height: MAX_IMAGE_SIZE };
+    if (heightFromWidth > maxImageSize) {
+      return { width: maxImageSize * aspectRatio, height: maxImageSize };
     }
     return { width: width0, height: heightFromWidth };
   }
 
   const widthFromHeight = height0 * aspectRatio;
-  if (widthFromHeight > MAX_IMAGE_SIZE) {
-    return { width: MAX_IMAGE_SIZE, height: MAX_IMAGE_SIZE / aspectRatio };
+  if (widthFromHeight > maxImageSize) {
+    return { width: maxImageSize, height: maxImageSize / aspectRatio };
   }
   return { width: widthFromHeight, height: height0 };
 };
@@ -38,14 +57,16 @@ interface ShapeArgs {
   rotation: number;
   renderable: Renderable;
   deathScale: number;
+  baselineY?: number;
 }
 
-const drawImageShape = ({ ctx, centerX, centerY, rotation, renderable, deathScale }: ShapeArgs): void => {
+const drawImageShape = ({ ctx, centerX, centerY, rotation, renderable, deathScale, baselineY }: ShapeArgs): void => {
   const img = renderable.imageSrc ? getCachedImage(renderable.imageSrc) : undefined;
   if (!img || !img.complete) {
+    const radius = (renderable.size / 2) * deathScale;
     ctx.fillStyle = renderable.color;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, (renderable.size / 2) * deathScale, 0, Math.PI * 2);
+    ctx.arc(centerX, centerYFromBaseline(centerY, baselineY, radius * 2), radius, 0, Math.PI * 2);
     ctx.fill();
     return;
   }
@@ -64,6 +85,7 @@ const drawImageShape = ({ ctx, centerX, centerY, rotation, renderable, deathScal
   );
   const scaledWidth = width * deathScale;
   const scaledHeight = height * deathScale;
+  const drawCenterY = centerYFromBaseline(centerY, baselineY, scaledHeight);
   const drawImage = (): void => {
     if (!spriteSheet) {
       ctx.drawImage(img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
@@ -85,26 +107,27 @@ const drawImageShape = ({ ctx, centerX, centerY, rotation, renderable, deathScal
   };
 
   ctx.save();
-  ctx.translate(centerX, centerY);
+  ctx.translate(centerX, drawCenterY);
   if (rotation !== 0) ctx.rotate((rotation * Math.PI) / 180);
   if (spriteSheet?.flipX) ctx.scale(-1, 1);
   drawImage();
   ctx.restore();
 };
 
-const drawCircleShape = ({ ctx, centerX, centerY, renderable, deathScale }: ShapeArgs): void => {
+const drawCircleShape = ({ ctx, centerX, centerY, renderable, deathScale, baselineY }: ShapeArgs): void => {
+  const radius = (renderable.size / 2) * deathScale;
   ctx.fillStyle = renderable.color;
   ctx.beginPath();
-  ctx.arc(centerX, centerY, (renderable.size / 2) * deathScale, 0, Math.PI * 2);
+  ctx.arc(centerX, centerYFromBaseline(centerY, baselineY, radius * 2), radius, 0, Math.PI * 2);
   ctx.fill();
 };
 
-const drawRectangleShape = ({ ctx, centerX, centerY, renderable, deathScale }: ShapeArgs): void => {
+const drawRectangleShape = ({ ctx, centerX, centerY, renderable, deathScale, baselineY }: ShapeArgs): void => {
   ctx.fillStyle = renderable.color;
   const halfSize = (renderable.size / 2) * deathScale;
   ctx.fillRect(
     centerX - halfSize,
-    centerY - halfSize,
+    centerYFromBaseline(centerY, baselineY, renderable.size * deathScale) - halfSize,
     renderable.size * deathScale,
     renderable.size * deathScale,
   );
@@ -128,6 +151,7 @@ export interface DrawEntityArgs {
 export const drawEntity = (ctx: CanvasRenderingContext2D, args: DrawEntityArgs): void => {
   const { position, renderable, isInvulnerable, deathScale, shakeOffsetX, shakeOffsetY } = args;
   const center = cellCenter(position);
+  const baselineY = entityBaselineY(position, renderable, shakeOffsetY);
 
   ctx.save();
   if (isInvulnerable) ctx.globalAlpha = 0.5;
@@ -139,6 +163,7 @@ export const drawEntity = (ctx: CanvasRenderingContext2D, args: DrawEntityArgs):
     rotation: position.rotation ?? 0,
     renderable,
     deathScale,
+    baselineY,
   });
 
   ctx.restore();
