@@ -54,6 +54,7 @@ export interface Components {
       duration: number;
       flipX?: boolean;
       reverse?: boolean;
+      staticFrameIndex?: number;
     }>;
   };
   frogSprite: {

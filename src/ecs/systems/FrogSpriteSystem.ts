@@ -20,10 +20,11 @@ export const FROG_SPRITE_IMAGES = [
 type FrogFacing = AllComponents['frogSprite']['facing'];
 type SpriteStep = AllComponents['spriteAnimation']['steps'][number];
 type GridPoint = { x: number; y: number };
-type SpriteStepOptions = Pick<SpriteStep, 'flipX' | 'reverse'>;
+type SpriteStepOptions = Pick<SpriteStep, 'flipX' | 'reverse' | 'staticFrameIndex'>;
 
 const FRAME_COUNT = 8;
 const TURN_DURATION_S = 0.18;
+const JUMP_INTENT_DELAY_S = 1;
 const MOVE_DURATION_S = ANIMATION_CONFIG.MOVEMENT_DURATION / 1000;
 
 const easeOutQuad = (t: number): number => 1 - (1 - t) * (1 - t);
@@ -55,6 +56,8 @@ const facingFromDelta = (dx: number, dy: number): FrogFacing => {
 
 const isSide = (facing: FrogFacing): boolean => facing === 'left' || facing === 'right';
 const sideFlip = (facing: FrogFacing): boolean => facing === 'left';
+const randomSideTurnBridge = (): FrogFacing => Math.random() < 0.5 ? 'toward' : 'away';
+const randomDepthTurnBridge = (): FrogFacing => Math.random() < 0.5 ? 'left' : 'right';
 
 const spriteStep = (
   imageSrc: string,
@@ -76,6 +79,13 @@ const hopStepForFacing = (facing: FrogFacing, duration: number): SpriteStep => {
   }
   return spriteStep(frogHopSide, duration, { flipX: sideFlip(facing) });
 };
+
+function turnThrough(from: FrogFacing, bridge: FrogFacing, to: FrogFacing): SpriteStep[] {
+  return [
+    ...turnBetween(from, bridge),
+    ...turnBetween(bridge, to),
+  ];
+}
 
 const turnBetween = (from: FrogFacing, to: FrogFacing): SpriteStep[] => {
   if (from === to) return [];
@@ -99,14 +109,32 @@ const turnBetween = (from: FrogFacing, to: FrogFacing): SpriteStep[] => {
     return [spriteStep(frogTurnSideAway, TURN_DURATION_S, { flipX: sideFlip(from) })];
   }
   if (isSide(from) && isSide(to)) {
-    return [spriteStep(frogHopSide, TURN_DURATION_S, { flipX: sideFlip(to) })];
+    return turnThrough(from, randomSideTurnBridge(), to);
   }
 
-  const bridge: FrogFacing = 'right';
-  return [
-    ...turnBetween(from, bridge),
-    ...turnBetween(bridge, to),
-  ];
+  return turnThrough(from, randomDepthTurnBridge(), to);
+};
+
+const finalFrameIndexForStep = (step: SpriteStep): number =>
+  step.reverse ? 0 : step.frameCount - 1;
+
+const intentDelayStepForFacing = (
+  facing: FrogFacing,
+  turnSteps: readonly SpriteStep[],
+): SpriteStep => {
+  const finalTurnStep = turnSteps.at(-1);
+  if (finalTurnStep) {
+    return spriteStep(finalTurnStep.imageSrc, JUMP_INTENT_DELAY_S, {
+      flipX: finalTurnStep.flipX,
+      staticFrameIndex: finalFrameIndexForStep(finalTurnStep),
+    });
+  }
+
+  const facingStep = hopStepForFacing(facing, JUMP_INTENT_DELAY_S);
+  return {
+    ...facingStep,
+    staticFrameIndex: facingStep.frameCount - 1,
+  };
 };
 
 const applySpriteStep = (
@@ -153,6 +181,10 @@ const frameIndexForStep = (
   elapsed: number,
   elapsedBeforeStep: number,
 ): number => {
+  if (step.staticFrameIndex !== undefined) {
+    return Math.max(0, Math.min(step.frameCount - 1, step.staticFrameIndex));
+  }
+
   const stepElapsed = Math.max(0, elapsed - elapsedBeforeStep);
   const progress = Math.min(1, stepElapsed / step.duration);
   const forwardFrame = Math.min(
@@ -179,7 +211,11 @@ export const startFrogGridMovement = (
   const targetFacing = facingFromDelta(toGrid.x - fromGrid.x, toGrid.y - fromGrid.y);
   const turnSteps = turnBetween(frogSprite.facing, targetFacing);
   const hopDuration = Math.max(0.2, MOVE_DURATION_S - totalStepDuration(turnSteps));
-  const steps = [...turnSteps, hopStepForFacing(targetFacing, hopDuration)];
+  const steps = [
+    ...turnSteps,
+    intentDelayStepForFacing(targetFacing, turnSteps),
+    hopStepForFacing(targetFacing, hopDuration),
+  ];
 
   frogSprite.facing = targetFacing;
   applySpriteStep(renderable, steps[0], steps[0].reverse ? FRAME_COUNT - 1 : 0);
@@ -198,6 +234,7 @@ export const startFrogGridMovement = (
 
   ecs.addComponent(entityId, 'tween', createTweenSequence([
     ...turnSteps.map(step => ({ targets, duration: step.duration, easing: easeOutQuad })),
+    { targets, duration: JUMP_INTENT_DELAY_S, easing: easeOutQuad },
     {
       targets: [
         { component: 'position' as const, field: 'x' as const, to: toX },
