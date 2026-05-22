@@ -44,6 +44,7 @@ export const GAME_CONFIG = {
 
   RENDER: {
     ENTITY_BASELINE_RATIO: 0.75,
+    PLAY_AREA_MARGIN_RATIO: 0.65,
   },
 
   ENEMY_SPAWN: {

@@ -6,11 +6,23 @@ let ctx: CanvasRenderingContext2D | null = null;
 let observer: ResizeObserver | null = null;
 let observedTarget: Element | null = null;
 
+export const renderMargin = (): number =>
+	Math.ceil(GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.RENDER.PLAY_AREA_MARGIN_RATIO);
+
+const canvasPixelSize = (): { width: number; height: number } => {
+	const margin = renderMargin();
+	const gridWidth = GAME_CONFIG.GRID.WIDTH * GAME_CONFIG.GRID.CELL_SIZE;
+	const gridHeight = GAME_CONFIG.GRID.HEIGHT * GAME_CONFIG.GRID.CELL_SIZE;
+	return {
+		width: gridWidth + margin * 2,
+		height: gridHeight + margin * 2,
+	};
+};
+
 const resizeCanvas = (): void => {
 	if (!canvas) return;
 
-	const gameWidth = GAME_CONFIG.GRID.WIDTH * GAME_CONFIG.GRID.CELL_SIZE;
-	const gameHeight = GAME_CONFIG.GRID.HEIGHT * GAME_CONFIG.GRID.CELL_SIZE;
+	const gameSize = canvasPixelSize();
 
 	// #canvas-container is a flex-1 region between the top HUD and bottom hints
 	// / on-screen touch controls. Sizing against its rect (instead of the window)
@@ -19,13 +31,13 @@ const resizeCanvas = (): void => {
 	const availW = container?.clientWidth ?? window.innerWidth;
 	const availH = container?.clientHeight ?? window.innerHeight;
 
-	const scale = Math.min(availW / gameWidth, availH / gameHeight, 1);
+	const scale = Math.min(availW / gameSize.width, availH / gameSize.height, 1);
 
-	canvas.width = gameWidth;
-	canvas.height = gameHeight;
+	canvas.width = gameSize.width;
+	canvas.height = gameSize.height;
 
-	canvas.style.width = `${gameWidth * scale}px`;
-	canvas.style.height = `${gameHeight * scale}px`;
+	canvas.style.width = `${gameSize.width * scale}px`;
+	canvas.style.height = `${gameSize.height * scale}px`;
 
 	if (ctx) {
 		ctx.setTransform(1, 0, 0, 1, 0, 0);

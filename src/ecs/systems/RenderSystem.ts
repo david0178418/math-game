@@ -8,7 +8,7 @@ import {
   spiderWebQuery,
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { cleanupRenderSystem, getCtx } from './render/context';
+import { cleanupRenderSystem, getCtx, renderMargin } from './render/context';
 import { drawGrid } from './render/grid';
 import { drawEntity } from './render/entities';
 import { drawPlayerHighlight, drawMathProblemNumbers } from './render/mathProblems';
@@ -35,12 +35,9 @@ export const addRenderSystemToEngine = (): void => {
 
       const currentTime = performance.now();
 
-      ctx.clearRect(
-        0,
-        0,
-        GAME_CONFIG.GRID.WIDTH * GAME_CONFIG.GRID.CELL_SIZE,
-        GAME_CONFIG.GRID.HEIGHT * GAME_CONFIG.GRID.CELL_SIZE,
-      );
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.save();
+      ctx.translate(renderMargin(), renderMargin());
 
       drawGrid(ctx);
       drawPlayerHighlight(ctx, queries.player, queries.mathProblems);
@@ -80,5 +77,6 @@ export const addRenderSystemToEngine = (): void => {
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime);
       if (queries.player) drawFrozenPlayerEffect(ctx, queries.player, currentTime);
       drawTargetHighlight(ctx, queries.player);
+      ctx.restore();
     });
 };
