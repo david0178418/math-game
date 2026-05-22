@@ -50,7 +50,7 @@ export const addRenderSystemToEngine = (): void => {
         (a, b) => a.components.renderable.layer - b.components.renderable.layer,
       );
 
-      for (const entity of sortedEntities) {
+      const drawRenderableEntity = (entity: (typeof sortedEntities)[number]): void => {
         const timers = 'timers' in entity.components ? entity.components.timers : undefined;
         const playerComp = 'player' in entity.components ? entity.components.player : undefined;
         const shake = gameEngine.entityManager.getComponent(entity.id, 'shake');
@@ -63,11 +63,22 @@ export const addRenderSystemToEngine = (): void => {
           shakeOffsetX: shake?.offsetX ?? 0,
           shakeOffsetY: shake?.offsetY ?? 0,
         });
+      };
+
+      for (const entity of sortedEntities) {
+        if (entity.components.renderable.layer >= GAME_CONFIG.LAYERS.ENTITIES) continue;
+        drawRenderableEntity(entity);
+      }
+
+      drawMathProblemNumbers(ctx, queries.mathProblems);
+
+      for (const entity of sortedEntities) {
+        if (entity.components.renderable.layer < GAME_CONFIG.LAYERS.ENTITIES) continue;
+        drawRenderableEntity(entity);
       }
 
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime);
       if (queries.player) drawFrozenPlayerEffect(ctx, queries.player, currentTime);
       drawTargetHighlight(ctx, queries.player);
-      drawMathProblemNumbers(ctx, queries.mathProblems);
     });
 };
