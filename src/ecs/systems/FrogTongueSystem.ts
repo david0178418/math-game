@@ -34,6 +34,10 @@ function getTongue(ecs: GameEngine, entityId: number): AllComponents['frogTongue
   return c;
 }
 
+const markTongueChanged = (frogId: number): void => {
+  gameEngine.markChanged(frogId, 'frogTongue');
+};
+
 function* tongueLifecycle(frogId: number): CoroutineGenerator {
   while (true) {
     const tongue = getTongue(gameEngine, frogId);
@@ -41,6 +45,7 @@ function* tongueLifecycle(frogId: number): CoroutineGenerator {
     tongue.segments = [];
     tongue.currentLength = 0;
     tongue.direction = { x: 0, y: 0 };
+    markTongueChanged(frogId);
 
     yield* waitSeconds(COOLDOWN_SECONDS);
     yield* waitUntil(() =>
@@ -50,6 +55,7 @@ function* tongueLifecycle(frogId: number): CoroutineGenerator {
     tongue.direction = direction;
     startFrogTongueAnimation(gameEngine, frogId, direction);
     tongue.phase = 'extending';
+    markTongueChanged(frogId);
     console.log(`🐸 Frog ${frogId} starting tongue attack in direction (${tongue.direction.x}, ${tongue.direction.y})`);
 
     const maxLength = tongue.maxRange * CELL;
@@ -63,9 +69,11 @@ function* tongueLifecycle(frogId: number): CoroutineGenerator {
     }
 
     tongue.phase = 'holding';
+    markTongueChanged(frogId);
     yield* waitSeconds(HOLD_SECONDS);
 
     tongue.phase = 'retracting';
+    markTongueChanged(frogId);
     while (tongue.currentLength > 0) {
       const dt: number = yield;
       tongue.currentLength = Math.max(0, tongue.currentLength - FROG_CONFIG.TONGUE_SPEED * dt);
@@ -81,10 +89,16 @@ function updateTongueSegments(frogId: number, tongue: AllComponents['frogTongue'
 
   tongue.segments = [];
 
-  if (tongue.direction.x === 0 && tongue.direction.y === 0) return;
+  if (tongue.direction.x === 0 && tongue.direction.y === 0) {
+    markTongueChanged(frogId);
+    return;
+  }
 
   const tongueGridLength = Math.floor(tongue.currentLength / CELL);
-  if (tongueGridLength <= 0) return;
+  if (tongueGridLength <= 0) {
+    markTongueChanged(frogId);
+    return;
+  }
 
   const frogGrid = pixelToGrid(frogPos.x, frogPos.y);
   const blockedCells = collectBlockedCells(gameEngine, frogId);
@@ -105,6 +119,8 @@ function updateTongueSegments(frogId: number, tongue: AllComponents['frogTongue'
 
     tongue.segments.push({ x: gx, y: gy });
   }
+
+  markTongueChanged(frogId);
 }
 
 function collectBlockedCells(ecs: GameEngine, frogId: number): Set<string> {

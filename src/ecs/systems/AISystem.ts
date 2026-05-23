@@ -86,6 +86,7 @@ const AI_PROCESSORS: Record<AIBehavior, (ctx: AIContext) => { x: number; y: numb
 export function addAISystemToEngine(): void {
   gameEngine.addSystem('aiSystem')
     .setPriority(SYSTEM_PRIORITIES.AI)
+    .inPhase('preUpdate')
     .addQuery('enemies', { ...enemyQuery, optional: ['frogTongue'], mutates: ['enemy', 'timers'] } as const)
     .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {

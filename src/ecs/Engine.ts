@@ -28,11 +28,14 @@ const inputPlugin = createInputPlugin<GameAction>({
   preventDefaultKeys: ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Enter'],
 });
 
-const timerPlugin = createTimerPlugin<TimerSlot>();
+const timerPlugin = createTimerPlugin<TimerSlot>({ priority: SYSTEM_PRIORITIES.TIMERS });
 // Priority slots tween between movement and render so render reads the
 // just-interpolated values, not last frame's.
 const tweenPlugin = createTweenPlugin({ priority: SYSTEM_PRIORITIES.ANIMATION });
-const coroutinePlugin = createCoroutinePlugin({ priority: SYSTEM_PRIORITIES.FROG_TONGUE });
+const coroutinePlugin = createCoroutinePlugin({
+  priority: SYSTEM_PRIORITIES.FROG_TONGUE,
+  phase: 'preUpdate',
+});
 
 export const gameEngine = ECSpresso.create()
   .withPlugin(inputPlugin)

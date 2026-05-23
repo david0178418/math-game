@@ -31,6 +31,7 @@ export const AI_CONFIG = {
 
 // System Priorities (for consistent ordering)
 export const SYSTEM_PRIORITIES = {
+  TIMERS: 95,                   // Timer updates after input, before gameplay intent
   AI: 85,                       // AI behavior
   MOVEMENT: 80,                 // Movement processing
   ANIMATION: 75,                // Animation interpolation (after movement, before collision)
@@ -41,5 +42,3 @@ export const SYSTEM_PRIORITIES = {
   FROG_TONGUE: 22,              // Frog Tongue system (before render, after problem management)
   RENDER: 10,                   // Rendering (should be last)
 } as const;
-
- 

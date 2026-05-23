@@ -47,6 +47,7 @@ const tryStartRotationTween = (
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
     .setPriority(SYSTEM_PRIORITIES.MOVEMENT)
+    .inPhase('preUpdate')
     .withResources(['inputState'])
     .setProcessEach(playerMovementQuery, ({ entity, dt, ecs, resources: { inputState } }) => {
       const position = entity.components.position;

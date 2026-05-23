@@ -1,5 +1,5 @@
 import { gameEngine, type GameEngine } from '../Engine';
-import { createTweenSequence } from 'ecspresso/plugins/scripting/tween';
+import { createTweenSequence, type TweenSequenceStepInput } from 'ecspresso/plugins/scripting/tween';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG } from '../../config';
 
@@ -9,6 +9,14 @@ const easeOutQuad = (t: number): number => 1 - (1 - t) * (1 - t);
 
 const MOVEMENT_DURATION_S = ANIMATION_CONFIG.MOVEMENT_DURATION / 1000;
 const DEATH_DURATION_S = ANIMATION_CONFIG.DEATH.DURATION / 1000;
+
+const queueTween = (
+  ecs: GameEngine,
+  entityId: number,
+  steps: readonly TweenSequenceStepInput[],
+): void => {
+  ecs.commands.addComponent(entityId, 'tween', createTweenSequence(steps).tween);
+};
 
 // A tween component on an entity means it's currently animating (movement,
 // rotation, or death). Shake is a separate component and does NOT block input.
@@ -25,13 +33,13 @@ export const startRotationTween = (
   toRotation: number,
   durationMs: number,
 ): void => {
-  ecs.addComponent(entityId, 'tween', createTweenSequence([
+  queueTween(ecs, entityId, [
     {
       targets: [{ component: 'position' as const, field: 'rotation' as const, to: toRotation }],
       duration: durationMs / 1000,
       easing: easeOutQuad,
     },
-  ]).tween);
+  ]);
 };
 
 /**
@@ -54,9 +62,9 @@ export const startGridMovement = (
       ? []
       : [{ component: 'position' as const, field: 'rotation' as const, to: toRotation }]),
   ];
-  ecs.addComponent(entityId, 'tween', createTweenSequence([
+  queueTween(ecs, entityId, [
     { targets, duration: MOVEMENT_DURATION_S, easing: easeOutQuad },
-  ]).tween);
+  ]);
 };
 
 /**
@@ -69,7 +77,7 @@ export const startDeathAnimation = (
   currentRotation: number,
 ): void => {
   const spinTo = currentRotation + ANIMATION_CONFIG.DEATH.SPIN_ROTATIONS * 360;
-  ecs.addComponent(entityId, 'tween', createTweenSequence([
+  queueTween(ecs, entityId, [
     {
       targets: [
         { component: 'player', field: 'deathScale', to: ANIMATION_CONFIG.DEATH.SCALE_END },
@@ -78,7 +86,7 @@ export const startDeathAnimation = (
       duration: DEATH_DURATION_S,
       easing: easeOutQuad,
     },
-  ]).tween);
+  ]);
 };
 
 /**
@@ -91,7 +99,7 @@ export const startShake = (
   intensity: number,
   durationMs: number,
 ): void => {
-  ecs.addComponent(entityId, 'shake', {
+  ecs.commands.addComponent(entityId, 'shake', {
     intensity,
     duration: durationMs / 1000,
     elapsed: 0,
@@ -115,4 +123,3 @@ export function addShakeSystemToEngine(): void {
       shake.offsetY = (Math.random() - 0.5) * remaining * 2;
     });
 }
-

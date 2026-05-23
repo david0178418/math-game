@@ -180,6 +180,35 @@ const applySpriteStep = (
   };
 };
 
+const applySpriteStepToEntity = (
+  ecs: GameEngine,
+  entityId: number,
+  step: SpriteStep,
+  frameIndex: number,
+): void => {
+  ecs.mutateComponent(entityId, 'renderable', renderable => {
+    applySpriteStep(renderable, step, frameIndex);
+  });
+};
+
+const getFrogSpriteAnimationTarget = (
+  ecs: GameEngine,
+  entityId: number,
+): AllComponents['frogSprite'] | undefined => {
+  if (!ecs.hasComponent(entityId, 'renderable')) return undefined;
+  return ecs.getComponent(entityId, 'frogSprite');
+};
+
+const setFrogFacing = (
+  ecs: GameEngine,
+  entityId: number,
+  facing: FrogFacing,
+): void => {
+  ecs.mutateComponent(entityId, 'frogSprite', sprite => {
+    sprite.facing = facing;
+  });
+};
+
 const totalStepDuration = (steps: readonly SpriteStep[]): number =>
   steps.reduce((sum, step) => sum + step.duration, 0);
 
@@ -228,12 +257,14 @@ const frameIndexForStep = (
 const startSpriteAnimation = (
   ecs: GameEngine,
   entityId: number,
-  renderable: AllComponents['renderable'],
   steps: SpriteStep[],
 ): number => {
+  const firstStep = steps[0];
+  if (!firstStep) return 0;
+
   const duration = totalStepDuration(steps);
-  applySpriteStep(renderable, steps[0], initialFrameIndexForStep(steps[0]));
-  ecs.addComponent(entityId, 'spriteAnimation', {
+  applySpriteStepToEntity(ecs, entityId, firstStep, initialFrameIndexForStep(firstStep));
+  ecs.commands.addComponent(entityId, 'spriteAnimation', {
     elapsed: 0,
     duration,
     currentStep: 0,
@@ -250,10 +281,9 @@ export const startFrogGridMovement = (
   toX: number,
   toY: number,
 ): void => {
-  const position = ecs.entityManager.getComponent(entityId, 'position');
-  const renderable = ecs.entityManager.getComponent(entityId, 'renderable');
-  const frogSprite = ecs.entityManager.getComponent(entityId, 'frogSprite');
-  if (!position || !renderable || !frogSprite) return;
+  const position = ecs.getComponent(entityId, 'position');
+  const frogSprite = getFrogSpriteAnimationTarget(ecs, entityId);
+  if (!position || !frogSprite) return;
 
   const targetFacing = facingFromDelta(toGrid.x - fromGrid.x, toGrid.y - fromGrid.y);
   const turnSteps = turnBetween(frogSprite.facing, targetFacing);
@@ -264,15 +294,15 @@ export const startFrogGridMovement = (
     hopStepForFacing(targetFacing, hopDuration),
   ];
 
-  frogSprite.facing = targetFacing;
-  startSpriteAnimation(ecs, entityId, renderable, steps);
+  setFrogFacing(ecs, entityId, targetFacing);
+  startSpriteAnimation(ecs, entityId, steps);
 
   const targets = [
     { component: 'position' as const, field: 'x' as const, to: position.x },
     { component: 'position' as const, field: 'y' as const, to: position.y },
   ];
 
-  ecs.addComponent(entityId, 'tween', createTweenSequence([
+  ecs.commands.addComponent(entityId, 'tween', createTweenSequence([
     ...turnSteps.map(step => ({ targets, duration: step.duration, easing: easeOutQuad })),
     { targets, duration: JUMP_INTENT_DELAY_S, easing: easeOutQuad },
     {
@@ -291,25 +321,23 @@ export const startFrogTongueAnimation = (
   entityId: number,
   direction: GridPoint,
 ): void => {
-  const renderable = ecs.entityManager.getComponent(entityId, 'renderable');
-  const frogSprite = ecs.entityManager.getComponent(entityId, 'frogSprite');
-  if (!renderable || !frogSprite) return;
+  const frogSprite = getFrogSpriteAnimationTarget(ecs, entityId);
+  if (!frogSprite) return;
   if (direction.x === 0 && direction.y === 0) return;
 
   const targetFacing = facingFromDelta(direction.x, direction.y);
   const openingStep = mouthOpenStepForFacing(targetFacing, MOUTH_OPEN_DURATION_S);
 
-  frogSprite.facing = targetFacing;
-  startSpriteAnimation(ecs, entityId, renderable, [openingStep]);
+  setFrogFacing(ecs, entityId, targetFacing);
+  startSpriteAnimation(ecs, entityId, [openingStep]);
 };
 
 export const closeFrogMouth = (
   ecs: GameEngine,
   entityId: number,
 ): number => {
-  const renderable = ecs.entityManager.getComponent(entityId, 'renderable');
-  const frogSprite = ecs.entityManager.getComponent(entityId, 'frogSprite');
-  if (!renderable || !frogSprite) return 0;
+  const frogSprite = getFrogSpriteAnimationTarget(ecs, entityId);
+  if (!frogSprite) return 0;
 
   const closeStep = {
     ...mouthOpenStepForFacing(frogSprite.facing, MOUTH_OPEN_DURATION_S),
@@ -321,7 +349,7 @@ export const closeFrogMouth = (
   };
   const steps = [closeStep, idleStep];
 
-  return startSpriteAnimation(ecs, entityId, renderable, steps);
+  return startSpriteAnimation(ecs, entityId, steps);
 };
 
 export function addFrogSpriteAnimationSystemToEngine(): void {
