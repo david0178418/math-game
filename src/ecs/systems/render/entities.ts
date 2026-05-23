@@ -5,7 +5,7 @@ import { getCachedImage } from './images';
 
 type Renderable = AllComponents['renderable'];
 
-const MAX_IMAGE_SIZE = GAME_CONFIG.GRID.CELL_SIZE * 0.8;
+const MAX_IMAGE_SIZE = GAME_CONFIG.GRID.CELL_SIZE;
 
 function entityBaselineY(
   position: { y: number },

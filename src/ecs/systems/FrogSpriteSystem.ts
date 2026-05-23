@@ -32,7 +32,6 @@ type SpriteStepOptions = Pick<SpriteStep, 'flipX' | 'reverse' | 'staticFrameInde
 
 const FRAME_COUNT = 8;
 const MOUTH_OPEN_FRAME_COUNT = 4;
-const FROG_RENDER_SCALE = 1.5;
 const TURN_DURATION_S = 0.18;
 const JUMP_INTENT_DELAY_S = 1;
 const MOUTH_OPEN_DURATION_S = 0.16;
@@ -51,8 +50,6 @@ export const defaultFrogRenderable = (
   size,
   layer,
   imageSrc: frogHopToward,
-  imageWidth: size * FROG_RENDER_SCALE,
-  imageHeight: size * FROG_RENDER_SCALE,
   spriteSheet: {
     frameCount: FRAME_COUNT,
     frameIndex: FRAME_COUNT - 1,

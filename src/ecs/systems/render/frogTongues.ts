@@ -20,24 +20,28 @@ interface TongueStyle {
 
 const DEFAULT_RGB = '255, 20, 147';
 const CELL = GAME_CONFIG.GRID.CELL_SIZE;
+const AWAY_MOUTH_ANCHOR = { x: 0, y: -0.40 } as const;
+const TOWARD_MOUTH_ANCHOR = { x: 0, y: -0.31 } as const;
+const SIDE_MOUTH_ANCHOR = { x: 0.14, y: -0.34 } as const;
+
 const TONGUE_PRESENTATION: Record<DirectionKey, TonguePresentation> = {
   away: {
-    anchor: { x: 0, y: -0.76 },
+    anchor: AWAY_MOUTH_ANCHOR,
     layer: 'behindFrog',
     flattenToAnchorY: false,
   },
   toward: {
-    anchor: { x: 0, y: -0.53 },
+    anchor: TOWARD_MOUTH_ANCHOR,
     layer: 'aboveFrog',
     flattenToAnchorY: false,
   },
   left: {
-    anchor: { x: -0.30, y: -0.55 },
+    anchor: { x: -SIDE_MOUTH_ANCHOR.x, y: SIDE_MOUTH_ANCHOR.y },
     layer: 'aboveFrog',
     flattenToAnchorY: true,
   },
   right: {
-    anchor: { x: 0.30, y: -0.55 },
+    anchor: SIDE_MOUTH_ANCHOR,
     layer: 'aboveFrog',
     flattenToAnchorY: true,
   },

@@ -1,5 +1,5 @@
 import lizardImage from './assets/images/lizard.svg';
-import spiderImage from './assets/images/spider.svg';
+import spiderImage from './assets/images/spider.png';
 import frogImage from './assets/images/frog.svg';
 
 export const GAME_CONFIG = {
