@@ -68,13 +68,14 @@ export const addRenderSystemToEngine = (): void => {
       }
 
       drawMathProblemNumbers(ctx, queries.mathProblems);
+      drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'behindFrog');
 
       for (const entity of sortedEntities) {
         if (entity.components.renderable.layer < GAME_CONFIG.LAYERS.ENTITIES) continue;
         drawRenderableEntity(entity);
       }
 
-      drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime);
+      drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'aboveFrog');
       if (queries.player) drawFrozenPlayerEffect(ctx, queries.player, currentTime);
       drawTargetHighlight(ctx, queries.player);
       ctx.restore();

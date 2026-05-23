@@ -4,6 +4,13 @@ import type { FrogTongueEntity } from '../../queries';
 
 type Tongue = FrogTongueEntity['components']['frogTongue'];
 type ActivePhase = Exclude<Tongue['phase'], 'idle'>;
+type TongueLayer = 'behindFrog' | 'aboveFrog';
+type DirectionKey = 'away' | 'toward' | 'left' | 'right';
+type TonguePresentation = {
+  anchor: { x: number; y: number };
+  layer: TongueLayer;
+  flattenToAnchorY: boolean;
+};
 
 interface TongueStyle {
   baseOpacity: number;
@@ -12,6 +19,29 @@ interface TongueStyle {
 }
 
 const DEFAULT_RGB = '255, 20, 147';
+const CELL = GAME_CONFIG.GRID.CELL_SIZE;
+const TONGUE_PRESENTATION: Record<DirectionKey, TonguePresentation> = {
+  away: {
+    anchor: { x: 0, y: -0.76 },
+    layer: 'behindFrog',
+    flattenToAnchorY: false,
+  },
+  toward: {
+    anchor: { x: 0, y: -0.53 },
+    layer: 'aboveFrog',
+    flattenToAnchorY: false,
+  },
+  left: {
+    anchor: { x: -0.30, y: -0.55 },
+    layer: 'aboveFrog',
+    flattenToAnchorY: true,
+  },
+  right: {
+    anchor: { x: 0.30, y: -0.55 },
+    layer: 'aboveFrog',
+    flattenToAnchorY: true,
+  },
+} as const;
 
 const TONGUE_PHASE_STYLES: Record<ActivePhase, (currentTime: number, tongue: Tongue) => TongueStyle> = {
   extending: (currentTime) => {
@@ -24,6 +54,36 @@ const TONGUE_PHASE_STYLES: Record<ActivePhase, (currentTime: number, tongue: Ton
     return { baseOpacity: fade, lineWidth: 8, tongueRGB: DEFAULT_RGB };
   },
 };
+
+function directionKey({ x, y }: Tongue['direction']): DirectionKey {
+  if (Math.abs(x) >= Math.abs(y)) return x < 0 ? 'left' : 'right';
+  return y < 0 ? 'away' : 'toward';
+}
+
+function tonguePresentation(tongue: Tongue): TonguePresentation {
+  return TONGUE_PRESENTATION[directionKey(tongue.direction)];
+}
+
+function mouthAnchor(
+  position: FrogTongueEntity['components']['position'],
+  anchor: TonguePresentation['anchor'],
+): { x: number; y: number } {
+  const center = cellCenter(position);
+  return {
+    x: center.x + anchor.x * CELL,
+    y: center.y + anchor.y * CELL,
+  };
+}
+
+function visibleTonguePoints(
+  tongue: Tongue,
+  mouthY: number,
+  flattenToAnchorY: boolean,
+): Array<{ x: number; y: number }> {
+  const gridPoints = tongue.segments.map(s => gridCellCenter(s.x, s.y));
+  if (!flattenToAnchorY) return gridPoints;
+  return gridPoints.map(({ x }) => ({ x, y: mouthY }));
+}
 
 const drawTongueTip = (
   ctx: CanvasRenderingContext2D,
@@ -57,14 +117,17 @@ export const drawEnhancedFrogTongues = (
   ctx: CanvasRenderingContext2D,
   frogs: FrogTongueEntity[],
   currentTime: number,
+  layer: TongueLayer = 'aboveFrog',
 ): void => {
   for (const frog of frogs) {
     const tongue = frog.components.frogTongue;
     if (tongue.phase === 'idle' || tongue.segments.length === 0) continue;
+    const presentation = tonguePresentation(tongue);
+    if (presentation.layer !== layer) continue;
 
-    const { x: frogCenterX, y: frogCenterY } = cellCenter(frog.components.position);
+    const { x: mouthX, y: mouthY } = mouthAnchor(frog.components.position, presentation.anchor);
     const { baseOpacity, lineWidth, tongueRGB } = TONGUE_PHASE_STYLES[tongue.phase](currentTime, tongue);
-    const segmentCenters = tongue.segments.map(s => gridCellCenter(s.x, s.y));
+    const segmentCenters = visibleTonguePoints(tongue, mouthY, presentation.flattenToAnchorY);
 
     ctx.save();
 
@@ -73,7 +136,7 @@ export const drawEnhancedFrogTongues = (
     ctx.lineCap = 'round';
 
     ctx.beginPath();
-    ctx.moveTo(frogCenterX + 2, frogCenterY + 2);
+    ctx.moveTo(mouthX + 2, mouthY + 2);
     for (const { x, y } of segmentCenters) ctx.lineTo(x + 2, y + 2);
     ctx.stroke();
 
@@ -81,7 +144,7 @@ export const drawEnhancedFrogTongues = (
     ctx.lineWidth = lineWidth;
 
     ctx.beginPath();
-    ctx.moveTo(frogCenterX, frogCenterY);
+    ctx.moveTo(mouthX, mouthY);
     for (const { x, y } of segmentCenters) ctx.lineTo(x, y);
     ctx.stroke();
 
