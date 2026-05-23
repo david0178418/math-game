@@ -9,7 +9,7 @@ import {
 } from 'ecspresso/plugins/scripting/coroutine';
 import type { AllComponents } from '../types';
 import { isEntityAnimating } from './AnimationSystem';
-import { faceFrogDirection } from './FrogSpriteSystem';
+import { closeFrogMouth, startFrogTongueAnimation } from './FrogSpriteSystem';
 
 const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.frog;
 const CELL = GAME_CONFIG.GRID.CELL_SIZE;
@@ -48,7 +48,7 @@ function* tongueLifecycle(frogId: number): CoroutineGenerator {
 
     const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
     tongue.direction = direction;
-    faceFrogDirection(gameEngine, frogId, direction);
+    startFrogTongueAnimation(gameEngine, frogId, direction);
     tongue.phase = 'extending';
     console.log(`🐸 Frog ${frogId} starting tongue attack in direction (${tongue.direction.x}, ${tongue.direction.y})`);
 
@@ -71,6 +71,7 @@ function* tongueLifecycle(frogId: number): CoroutineGenerator {
       tongue.currentLength = Math.max(0, tongue.currentLength - FROG_CONFIG.TONGUE_SPEED * dt);
       updateTongueSegments(frogId, tongue);
     }
+    yield* waitSeconds(closeFrogMouth(gameEngine, frogId));
   }
 }
 

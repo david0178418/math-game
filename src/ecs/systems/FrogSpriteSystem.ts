@@ -6,6 +6,9 @@ import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import frogHopAway from '../../assets/images/frog-hop-away.png';
 import frogHopSide from '../../assets/images/frog-hop-side.png';
 import frogHopToward from '../../assets/images/frog-hop-toward.png';
+import frogMouthOpenAway from '../../assets/images/frog-mouth-open-back.png';
+import frogMouthOpenSide from '../../assets/images/frog-open-mouth-side.png';
+import frogMouthOpenToward from '../../assets/images/frog-mouth-open-front.png';
 import frogTurnFrontSide from '../../assets/images/frog-turn-front-side.png';
 import frogTurnSideAway from '../../assets/images/frog-turn-side-away.png';
 
@@ -13,6 +16,9 @@ export const FROG_SPRITE_IMAGES = [
   frogHopAway,
   frogHopSide,
   frogHopToward,
+  frogMouthOpenAway,
+  frogMouthOpenSide,
+  frogMouthOpenToward,
   frogTurnFrontSide,
   frogTurnSideAway,
 ] as const;
@@ -20,12 +26,17 @@ export const FROG_SPRITE_IMAGES = [
 type FrogFacing = AllComponents['frogSprite']['facing'];
 type SpriteStep = AllComponents['spriteAnimation']['steps'][number];
 type GridPoint = { x: number; y: number };
-type SpriteStepOptions = Pick<SpriteStep, 'flipX' | 'reverse' | 'staticFrameIndex'>;
+type SpriteStepOptions = Pick<SpriteStep, 'flipX' | 'reverse' | 'staticFrameIndex'> & {
+  frameCount?: number;
+};
 
 const FRAME_COUNT = 8;
+const MOUTH_OPEN_FRAME_COUNT = 4;
 const FROG_RENDER_SCALE = 1.5;
 const TURN_DURATION_S = 0.18;
 const JUMP_INTENT_DELAY_S = 1;
+const MOUTH_OPEN_DURATION_S = 0.16;
+const MOUTH_CLOSE_IDLE_SETTLE_S = 0.01;
 const MOVE_DURATION_S = ANIMATION_CONFIG.MOVEMENT_DURATION / 1000;
 
 const easeOutQuad = (t: number): number => 1 - (1 - t) * (1 - t);
@@ -65,10 +76,10 @@ const randomDepthTurnBridge = (): FrogFacing => Math.random() < 0.5 ? 'left' : '
 const spriteStep = (
   imageSrc: string,
   duration: number,
-  options: SpriteStepOptions = {},
+  { frameCount = FRAME_COUNT, ...options }: SpriteStepOptions = {},
 ): SpriteStep => ({
   imageSrc,
-  frameCount: FRAME_COUNT,
+  frameCount,
   duration,
   ...options,
 });
@@ -81,6 +92,19 @@ const hopStepForFacing = (facing: FrogFacing, duration: number): SpriteStep => {
     return spriteStep(frogHopAway, duration);
   }
   return spriteStep(frogHopSide, duration, { flipX: sideFlip(facing) });
+};
+
+const mouthOpenStepForFacing = (facing: FrogFacing, duration: number): SpriteStep => {
+  if (facing === 'toward') {
+    return spriteStep(frogMouthOpenToward, duration, { frameCount: MOUTH_OPEN_FRAME_COUNT });
+  }
+  if (facing === 'away') {
+    return spriteStep(frogMouthOpenAway, duration, { frameCount: MOUTH_OPEN_FRAME_COUNT });
+  }
+  return spriteStep(frogMouthOpenSide, duration, {
+    flipX: sideFlip(facing),
+    frameCount: MOUTH_OPEN_FRAME_COUNT,
+  });
 };
 
 function turnThrough(from: FrogFacing, bridge: FrogFacing, to: FrogFacing): SpriteStep[] {
@@ -119,7 +143,10 @@ const turnBetween = (from: FrogFacing, to: FrogFacing): SpriteStep[] => {
 };
 
 const finalFrameIndexForStep = (step: SpriteStep): number =>
-  step.reverse ? 0 : step.frameCount - 1;
+  step.staticFrameIndex ?? (step.reverse ? 0 : step.frameCount - 1);
+
+const initialFrameIndexForStep = (step: SpriteStep): number =>
+  step.reverse ? step.frameCount - 1 : 0;
 
 const intentDelayStepForFacing = (
   facing: FrogFacing,
@@ -198,6 +225,23 @@ const frameIndexForStep = (
   return step.reverse ? step.frameCount - 1 - forwardFrame : forwardFrame;
 };
 
+const startSpriteAnimation = (
+  ecs: GameEngine,
+  entityId: number,
+  renderable: AllComponents['renderable'],
+  steps: SpriteStep[],
+): number => {
+  const duration = totalStepDuration(steps);
+  applySpriteStep(renderable, steps[0], initialFrameIndexForStep(steps[0]));
+  ecs.addComponent(entityId, 'spriteAnimation', {
+    elapsed: 0,
+    duration,
+    currentStep: 0,
+    steps,
+  });
+  return duration;
+};
+
 export const startFrogGridMovement = (
   ecs: GameEngine,
   entityId: number,
@@ -221,14 +265,7 @@ export const startFrogGridMovement = (
   ];
 
   frogSprite.facing = targetFacing;
-  applySpriteStep(renderable, steps[0], steps[0].reverse ? FRAME_COUNT - 1 : 0);
-
-  ecs.addComponent(entityId, 'spriteAnimation', {
-    elapsed: 0,
-    duration: totalStepDuration(steps),
-    currentStep: 0,
-    steps,
-  });
+  startSpriteAnimation(ecs, entityId, renderable, steps);
 
   const targets = [
     { component: 'position' as const, field: 'x' as const, to: position.x },
@@ -249,7 +286,7 @@ export const startFrogGridMovement = (
   ]).tween);
 };
 
-export const faceFrogDirection = (
+export const startFrogTongueAnimation = (
   ecs: GameEngine,
   entityId: number,
   direction: GridPoint,
@@ -260,10 +297,31 @@ export const faceFrogDirection = (
   if (direction.x === 0 && direction.y === 0) return;
 
   const targetFacing = facingFromDelta(direction.x, direction.y);
-  const facingStep = hopStepForFacing(targetFacing, 0);
+  const openingStep = mouthOpenStepForFacing(targetFacing, MOUTH_OPEN_DURATION_S);
 
   frogSprite.facing = targetFacing;
-  applySpriteStep(renderable, facingStep, FRAME_COUNT - 1);
+  startSpriteAnimation(ecs, entityId, renderable, [openingStep]);
+};
+
+export const closeFrogMouth = (
+  ecs: GameEngine,
+  entityId: number,
+): number => {
+  const renderable = ecs.entityManager.getComponent(entityId, 'renderable');
+  const frogSprite = ecs.entityManager.getComponent(entityId, 'frogSprite');
+  if (!renderable || !frogSprite) return 0;
+
+  const closeStep = {
+    ...mouthOpenStepForFacing(frogSprite.facing, MOUTH_OPEN_DURATION_S),
+    reverse: true,
+  };
+  const idleStep = {
+    ...hopStepForFacing(frogSprite.facing, MOUTH_CLOSE_IDLE_SETTLE_S),
+    staticFrameIndex: FRAME_COUNT - 1,
+  };
+  const steps = [closeStep, idleStep];
+
+  return startSpriteAnimation(ecs, entityId, renderable, steps);
 };
 
 export function addFrogSpriteAnimationSystemToEngine(): void {
@@ -292,7 +350,7 @@ export function addFrogSpriteAnimationSystemToEngine(): void {
           applySpriteStep(
             entity.components.renderable,
             finalStep,
-            finalStep.frameCount - 1,
+            finalFrameIndexForStep(finalStep),
           );
           ecs.commands.removeComponent(entity.id, 'spriteAnimation');
         }
