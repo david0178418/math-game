@@ -249,6 +249,23 @@ export const startFrogGridMovement = (
   ]).tween);
 };
 
+export const faceFrogDirection = (
+  ecs: GameEngine,
+  entityId: number,
+  direction: GridPoint,
+): void => {
+  const renderable = ecs.entityManager.getComponent(entityId, 'renderable');
+  const frogSprite = ecs.entityManager.getComponent(entityId, 'frogSprite');
+  if (!renderable || !frogSprite) return;
+  if (direction.x === 0 && direction.y === 0) return;
+
+  const targetFacing = facingFromDelta(direction.x, direction.y);
+  const facingStep = hopStepForFacing(targetFacing, 0);
+
+  frogSprite.facing = targetFacing;
+  applySpriteStep(renderable, facingStep, FRAME_COUNT - 1);
+};
+
 export function addFrogSpriteAnimationSystemToEngine(): void {
   gameEngine.addSystem('frogSpriteAnimationSystem')
     .setPriority(SYSTEM_PRIORITIES.ANIMATION)

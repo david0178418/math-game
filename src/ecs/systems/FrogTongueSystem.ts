@@ -8,6 +8,8 @@ import {
   type CoroutineGenerator,
 } from 'ecspresso/plugins/scripting/coroutine';
 import type { AllComponents } from '../types';
+import { isEntityAnimating } from './AnimationSystem';
+import { faceFrogDirection } from './FrogSpriteSystem';
 
 const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.frog;
 const CELL = GAME_CONFIG.GRID.CELL_SIZE;
@@ -41,10 +43,13 @@ function* tongueLifecycle(frogId: number): CoroutineGenerator {
     tongue.direction = { x: 0, y: 0 };
 
     yield* waitSeconds(COOLDOWN_SECONDS);
-    yield* waitUntil(() => Math.random() < PER_FRAME_ATTACK_CHANCE);
+    yield* waitUntil(() =>
+      !isEntityAnimating(gameEngine, frogId) && Math.random() < PER_FRAME_ATTACK_CHANCE);
 
+    const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+    tongue.direction = direction;
+    faceFrogDirection(gameEngine, frogId, direction);
     tongue.phase = 'extending';
-    tongue.direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
     console.log(`🐸 Frog ${frogId} starting tongue attack in direction (${tongue.direction.x}, ${tongue.direction.y})`);
 
     const maxLength = tongue.maxRange * CELL;
