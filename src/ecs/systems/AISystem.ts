@@ -11,10 +11,11 @@ import {
   type PlayerEntity
 } from '../queries';
 import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
-import { startGridMovement, isEntityAnimating } from './AnimationSystem';
+import { isEntityAnimating } from './AnimationSystem';
 import { createSpiderWeb } from './SpiderWebSystem';
 import { isFrogAttacking } from './FrogTongueSystem';
 import { startFrogGridMovement } from './FrogSpriteSystem';
+import { startEnemyGridMovement } from './EnemySpriteSystem';
 
 const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.spider;
 
@@ -131,7 +132,7 @@ function processEnemyAI(
     if (enemyData.enemyType === 'frog') {
       startFrogGridMovement(ecs, enemy.id, currentGrid, { x: nextGridX, y: nextGridY }, newPixelPos.x, newPixelPos.y);
     } else {
-      startGridMovement(ecs, enemy.id, newPixelPos.x, newPixelPos.y);
+      startEnemyGridMovement(ecs, enemy.id, enemyData.enemyType, currentGrid, { x: nextGridX, y: nextGridY }, newPixelPos.x, newPixelPos.y);
     }
   }
 

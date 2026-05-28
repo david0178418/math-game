@@ -5,6 +5,7 @@ import type { AllComponents } from './types';
 import { pixelToGrid } from './gameUtils';
 import flyImage from '../assets/images/fly.svg';
 import { defaultFrogRenderable, defaultFrogSprite } from './systems/FrogSpriteSystem';
+import { defaultEnemyRenderable, defaultEnemySprite } from './systems/EnemySpriteSystem';
 
 const playerComponents = (x: number, y: number): Partial<AllComponents> => {
   const grid = pixelToGrid(x, y);
@@ -48,13 +49,12 @@ const enemyComponents = (
     position: { x, y },
     renderable: enemyType === 'frog'
       ? defaultFrogRenderable(GAME_CONFIG.LAYERS.ENTITIES, GAME_CONFIG.ENEMY_TYPES.frog.COLOR, size)
-      : {
-        shape: 'image',
-        color: GAME_CONFIG.ENEMY_TYPES[enemyType].COLOR,
+      : defaultEnemyRenderable(
+        enemyType,
+        GAME_CONFIG.LAYERS.ENTITIES,
+        GAME_CONFIG.ENEMY_TYPES[enemyType].COLOR,
         size,
-        layer: GAME_CONFIG.LAYERS.ENTITIES,
-        imageSrc: GAME_CONFIG.ENEMY_TYPES[enemyType].IMAGE,
-      },
+      ),
     enemy: {
       enemyType,
       behaviorType
@@ -64,7 +64,7 @@ const enemyComponents = (
       height: size,
       group: 'enemy'
     },
-    ...(enemyType === 'frog' ? { frogSprite: defaultFrogSprite() } : {}),
+    ...(enemyType === 'frog' ? { frogSprite: defaultFrogSprite() } : { enemySprite: defaultEnemySprite() }),
   };
 };
 

@@ -60,6 +60,9 @@ export interface Components {
   frogSprite: {
     facing: 'toward' | 'away' | 'left' | 'right';
   };
+  enemySprite: {
+    facing: 'toward' | 'away' | 'left' | 'right';
+  };
   player: {
     score: number;
     lives: number;
