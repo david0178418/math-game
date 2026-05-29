@@ -3,7 +3,7 @@ import { GAME_CONFIG } from '../config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import type { AllComponents } from './types';
 import { pixelToGrid } from './gameUtils';
-import flyImage from '../assets/images/fly.svg';
+import { flyImage } from './assets';
 import { defaultFrogRenderable, defaultFrogSprite } from './systems/FrogSpriteSystem';
 import { defaultEnemyRenderable, defaultEnemySprite } from './systems/EnemySpriteSystem';
 

@@ -1,5 +1,4 @@
 import { GAME_CONFIG } from '../../../config';
-import { preloadEntityImages } from './images';
 
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
@@ -74,7 +73,6 @@ export const initializeRenderSystem = (canvasElement: HTMLCanvasElement): void =
 	if (isFirstInit) {
 		// Belt-and-suspenders fallback for environments without ResizeObserver.
 		window.addEventListener('resize', resizeCanvas);
-		void preloadEntityImages();
 	}
 };
 

@@ -4,6 +4,7 @@ import { createTimerPlugin } from 'ecspresso/plugins/scripting/timers';
 import { createTweenPlugin } from 'ecspresso/plugins/scripting/tween';
 import { createCoroutinePlugin } from 'ecspresso/plugins/scripting/coroutine';
 import { SYSTEM_PRIORITIES } from './systemConfigs';
+import { configureImageAssets } from './assets';
 import { GAME_CONFIG } from '../config';
 import type {
   Components,
@@ -43,6 +44,7 @@ export const gameEngine = ECSpresso.create()
   .withPlugin(tweenPlugin)
   .withPlugin(coroutinePlugin)
   .withComponentTypes<Components>()
+  .withAssets(configureImageAssets)
   .withResourceTypes<Resources>()
   .withResource('gameMode', 'multiples')
   .withResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL)

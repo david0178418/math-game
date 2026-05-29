@@ -16,6 +16,7 @@ import { drawEnhancedSpiderWebs } from './render/spiderWebs';
 import { drawEnhancedFrogTongues } from './render/frogTongues';
 import { drawFrozenPlayerEffect } from './render/frozenPlayer';
 import { drawTargetHighlight } from './render/targetHighlight';
+import { IMAGE_ASSET_KEYS } from '../assets';
 
 export { initializeRenderSystem } from './render/context';
 
@@ -23,6 +24,7 @@ export const addRenderSystemToEngine = (): void => {
   gameEngine.addSystem('renderSystem')
     .setPriority(SYSTEM_PRIORITIES.RENDER)
     .inScreens(['playing'])
+    .requiresAssets(IMAGE_ASSET_KEYS)
     .addQuery('renderableEntities', renderableEntityQuery)
     .addSingleton('player', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)

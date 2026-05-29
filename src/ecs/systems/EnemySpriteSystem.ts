@@ -3,16 +3,18 @@ import { ANIMATION_CONFIG } from '../../config';
 import type { EnemyType } from '../../types/shared';
 import { type GameEngine } from '../Engine';
 import type { AllComponents } from '../types';
-import lizardWalkAway from '../../assets/lizard-walk-away.png';
-import lizardWalkSide from '../../assets/lizard-walk-side.png';
-import lizardWalkToward from '../../assets/lizard-ward-toward.png';
-import lizardTurnSideAway from '../../assets/lizard-turn-side-away.png';
-import lizardTurnTowardSide from '../../assets/lizard-turn-toward-side.png';
-import spiderWalkAway from '../../assets/spider-walk-away.png';
-import spiderWalkSide from '../../assets/spider-walk-side.png';
-import spiderWalkToward from '../../assets/spider-walk-toward.png';
-import spiderTurnSideAway from '../../assets/spider-turn-side-away.png';
-import spiderTurnTowardSide from '../../assets/spider-turn-toward-side.png';
+import {
+  lizardWalkAway,
+  lizardWalkSide,
+  lizardWalkToward,
+  lizardTurnSideAway,
+  lizardTurnTowardSide,
+  spiderWalkAway,
+  spiderWalkSide,
+  spiderWalkToward,
+  spiderTurnSideAway,
+  spiderTurnTowardSide,
+} from '../assets';
 
 type Facing = AllComponents['enemySprite']['facing'];
 type SpriteStep = AllComponents['spriteAnimation']['steps'][number];

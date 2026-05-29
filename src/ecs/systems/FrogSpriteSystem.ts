@@ -3,16 +3,7 @@ import { gameEngine, type GameEngine } from '../Engine';
 import type { AllComponents } from '../types';
 import { ANIMATION_CONFIG } from '../../config';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import frogHopAway from '../../assets/images/frog-hop-away.png';
-import frogHopSide from '../../assets/images/frog-hop-side.png';
-import frogHopToward from '../../assets/images/frog-hop-toward.png';
-import frogMouthOpenAway from '../../assets/images/frog-mouth-open-back.png';
-import frogMouthOpenSide from '../../assets/images/frog-open-mouth-side.png';
-import frogMouthOpenToward from '../../assets/images/frog-mouth-open-front.png';
-import frogTurnFrontSide from '../../assets/images/frog-turn-front-side.png';
-import frogTurnSideAway from '../../assets/images/frog-turn-side-away.png';
-
-export const FROG_SPRITE_IMAGES = [
+import {
   frogHopAway,
   frogHopSide,
   frogHopToward,
@@ -21,7 +12,7 @@ export const FROG_SPRITE_IMAGES = [
   frogMouthOpenToward,
   frogTurnFrontSide,
   frogTurnSideAway,
-] as const;
+} from '../assets';
 
 type FrogFacing = AllComponents['frogSprite']['facing'];
 type SpriteStep = AllComponents['spriteAnimation']['steps'][number];
