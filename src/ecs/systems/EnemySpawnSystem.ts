@@ -23,7 +23,7 @@ export function addEnemySpawnSystemToEngine(): void {
       const player = queries.player;
       if (!player) return;
 
-      const { index } = gameEngine.getResource('enemySpawn');
+      const { index } = ecs.getResource('enemySpawn');
       const currentEnemyCount = queries.enemies.length;
       const cycleComplete = index >= SPAWN_ORDER.length;
 

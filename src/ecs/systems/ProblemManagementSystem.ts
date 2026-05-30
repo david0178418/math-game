@@ -13,6 +13,7 @@ import {
   type PositionEntity
 } from '../queries';
 import { PROBLEM_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
+import type { Resources } from '../types';
 
 /**
  * Problem Management System
@@ -32,12 +33,17 @@ export function addProblemManagementSystemToEngine(): void {
         problem => !problem.components.mathProblem.consumed
       );
 
-      if (player && activeProblems.length === 0 && !player.components.timers.problemSpawn?.active) {
-        populateFullGrid(ecs, queries.allPositions);
-        player.components.timers.problemSpawn = createTimer(GAME_CONFIG.TIMING.SHORT_DELAY / 1000);
-      }
+      if (player) {
+        const gameMode = ecs.getResource('gameMode');
+        const currentLevel = ecs.getResource('currentLevel');
 
-      if (player) checkLevelCompletion(player, queries.mathProblems);
+        if (activeProblems.length === 0 && !player.components.timers.problemSpawn?.active) {
+          populateFullGrid(ecs, queries.allPositions, gameMode, currentLevel);
+          player.components.timers.problemSpawn = createTimer(GAME_CONFIG.TIMING.SHORT_DELAY / 1000);
+        }
+
+        checkLevelCompletion(player, queries.mathProblems, gameMode, currentLevel);
+      }
       cleanupConsumedProblems(ecs, queries.mathProblems);
     });
 }
@@ -45,10 +51,12 @@ export function addProblemManagementSystemToEngine(): void {
 /**
  * Populate the entire grid with math problems
  */
-function populateFullGrid(ecs: GameEngine, allPositionEntities: PositionEntity[]): void {
-  const gameMode = gameEngine.getResource('gameMode');
-  const currentLevel = gameEngine.getResource('currentLevel');
-  
+function populateFullGrid(
+  ecs: GameEngine,
+  allPositionEntities: PositionEntity[],
+  gameMode: Resources['gameMode'],
+  currentLevel: number,
+): void {
   if (gameMode !== 'multiples') return;
   
   // Get all problems needed for this level (30 problems for full grid)
@@ -115,14 +123,16 @@ function getAllGridPositionsWithoutMathProblems(allPositionEntities: PositionEnt
  * Check if all correct answers have been consumed (level completion).
  *
  * Triggers a `setScreen('playing', { level: nextLevel })` round-trip — the
- * exit clears all `{ scope: 'playing' }` entities (problems, enemies, webs)
+ * exit clears playing-scoped entities (problems, enemies, webs)
  * and the re-entry rebuilds the board via `bootstrap.ts`'s screen hook.
  * The player entity is unscoped, so score and lives persist into the new level.
  */
-function checkLevelCompletion(player: PlayerEntity, mathProblems: MathProblemEntityWithRenderable[]): void {
-  const gameMode = gameEngine.getResource('gameMode');
-  const currentLevel = gameEngine.getResource('currentLevel');
-
+function checkLevelCompletion(
+  player: PlayerEntity,
+  mathProblems: MathProblemEntityWithRenderable[],
+  gameMode: Resources['gameMode'],
+  currentLevel: number,
+): void {
   if (gameMode !== 'multiples') return;
 
   const correctMultiples: number[] = [];

@@ -107,7 +107,7 @@ export const createEnemy = (
   enemyType: EnemyType,
   behaviorType: AIBehavior,
 ): void => {
-  commands.spawn(enemyComponents(x, y, enemyType, behaviorType), { scope: 'playing' });
+  commands.spawn(enemyComponents(x, y, enemyType, behaviorType));
 };
 
 export const createMathProblem = (
@@ -118,5 +118,5 @@ export const createMathProblem = (
   isCorrect: boolean,
   difficulty: number,
 ): void => {
-  commands.spawn(mathProblemComponents(x, y, value, isCorrect, difficulty), { scope: 'playing' });
+  commands.spawn(mathProblemComponents(x, y, value, isCorrect, difficulty));
 };

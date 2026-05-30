@@ -35,8 +35,7 @@ export function createSpiderWeb(ecs: GameEngine, gridX: number, gridY: number): 
         },
       }),
     },
-  }, { scope: 'playing' });
+  });
 
   console.log(`🕸️ Created spider web at grid (${gridX}, ${gridY})`);
 }
-
