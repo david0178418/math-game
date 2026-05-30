@@ -101,7 +101,7 @@ function updateTongueSegments(frogId: number, tongue: AllComponents['frogTongue'
   }
 
   const frogGrid = pixelToGrid(frogPos.x, frogPos.y);
-  const blockedCells = collectBlockedCells(gameEngine, frogId);
+  const blockedCells = collectEnemyBlockedCells(gameEngine, frogId);
 
   for (let i = 1; i <= tongueGridLength; i++) {
     const gx = frogGrid.x + tongue.direction.x * i;
@@ -123,18 +123,16 @@ function updateTongueSegments(frogId: number, tongue: AllComponents['frogTongue'
   markTongueChanged(frogId);
 }
 
-function collectBlockedCells(ecs: GameEngine, frogId: number): Set<string> {
-  const blocked = new Set<string>();
-  for (const enemy of ecs.entityManager.getEntitiesWithQuery(['enemy', 'position'])) {
-    if (enemy.id === frogId) continue;
-    const grid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
-    blocked.add(`${grid.x},${grid.y}`);
-  }
-  for (const player of ecs.entityManager.getEntitiesWithQuery(['player', 'position'])) {
-    const grid = pixelToGrid(player.components.position.x, player.components.position.y);
-    blocked.add(`${grid.x},${grid.y}`);
-  }
-  return blocked;
+function collectEnemyBlockedCells(ecs: GameEngine, frogId: number): Set<string> {
+  return new Set(
+    ecs.entityManager
+      .getEntitiesWithQuery(['enemy', 'position'])
+      .filter(enemy => enemy.id !== frogId)
+      .map(enemy => {
+        const grid = pixelToGrid(enemy.components.position.x, enemy.components.position.y);
+        return `${grid.x},${grid.y}`;
+      })
+  );
 }
 
 function initializeFrogTongue(frogId: number): void {
