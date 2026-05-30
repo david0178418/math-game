@@ -94,8 +94,8 @@ export function addAISystemToEngine(): void {
       const { enemies, player } = queries;
       if (!player) return;
 
-      // Shared per-frame blocker set: all enemy cells. A* treats each enemy's
-      // own start cell as passable, so no per-enemy filtering needed.
+      // Shared per-frame blocker set: all enemy cells plus destination cells
+      // already claimed by earlier enemy decisions this frame.
       const blocked = new Set(enemies.map(cellOf));
 
       for (const enemy of enemies) {
@@ -129,6 +129,8 @@ function processEnemyAI(
   const moved = newPixelPos.x !== enemyPos.x || newPixelPos.y !== enemyPos.y;
 
   if (moved) {
+    blocked.add(navGrid.cellFromXY(nextGridX, nextGridY));
+
     if (enemyData.enemyType === 'frog') {
       startFrogGridMovement(ecs, enemy.id, currentGrid, { x: nextGridX, y: nextGridY }, newPixelPos.x, newPixelPos.y);
     } else {
