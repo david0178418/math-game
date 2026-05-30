@@ -9,10 +9,9 @@ import {
   type PlayerEntity
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import type { AIBehavior, EnemyType } from '../../types/shared';
+import type { EnemyType } from '../../types/shared';
 
 const SPAWN_ORDER: readonly EnemyType[] = ['lizard', 'spider', 'frog'] as const;
-const BEHAVIORS: readonly AIBehavior[] = ['chase', 'random', 'patrol', 'guard'] as const;
 
 export function addEnemySpawnSystemToEngine(): void {
   gameEngine.addSystem('enemySpawnSystem')
@@ -65,7 +64,8 @@ function calculateSpawnInterval(player: PlayerEntity | undefined): number {
 function spawnEnemyFromEdge(ecs: GameEngine, enemyType: EnemyType): void {
   const edgePosition = getRandomEdgePosition();
   const pixelPos = gridToPixel(edgePosition.x, edgePosition.y);
-  const behavior = BEHAVIORS[Math.floor(Math.random() * BEHAVIORS.length)];
+  const behaviors = GAME_CONFIG.ENEMY_TYPES[enemyType].AI_BEHAVIORS;
+  const behavior = behaviors[Math.floor(Math.random() * behaviors.length)];
 
   createEnemy(ecs.commands, pixelPos.x, pixelPos.y, enemyType, behavior);
 }

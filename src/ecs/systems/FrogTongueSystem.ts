@@ -23,8 +23,11 @@ const DIRECTIONS = [
 
 const COOLDOWN_SECONDS = FROG_CONFIG.TONGUE_COOLDOWN / 1000;
 const HOLD_SECONDS = FROG_CONFIG.TONGUE_HOLD_DURATION / 1000;
-// Preserve original feel: probability is per 60Hz frame, not per second.
-const PER_FRAME_ATTACK_CHANCE = FROG_CONFIG.TONGUE_ATTACK_PROBABILITY * (1 / 60);
+const ATTACK_DELAY_MIN_SECONDS = FROG_CONFIG.TONGUE_ATTACK_DELAY_MIN / 1000;
+const ATTACK_DELAY_MAX_SECONDS = FROG_CONFIG.TONGUE_ATTACK_DELAY_MAX / 1000;
+
+const randomAttackDelaySeconds = (): number =>
+  ATTACK_DELAY_MIN_SECONDS + Math.random() * (ATTACK_DELAY_MAX_SECONDS - ATTACK_DELAY_MIN_SECONDS);
 
 // `initializeFrogTongue` guarantees the frogTongue component is attached
 // alongside the coroutine, so a missing component would indicate a logic bug.
@@ -48,8 +51,8 @@ function* tongueLifecycle(frogId: number): CoroutineGenerator {
     markTongueChanged(frogId);
 
     yield* waitSeconds(COOLDOWN_SECONDS);
-    yield* waitUntil(() =>
-      !isEntityAnimating(gameEngine, frogId) && Math.random() < PER_FRAME_ATTACK_CHANCE);
+    yield* waitSeconds(randomAttackDelaySeconds());
+    yield* waitUntil(() => !isEntityAnimating(gameEngine, frogId));
 
     const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
     tongue.direction = direction;
