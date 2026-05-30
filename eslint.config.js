@@ -6,7 +6,7 @@ import globals from 'globals';
 export default [
   js.configs.recommended,
   {
-    files: ['vite.config.ts', 'eslint.config.js', '*.config.{js,ts}'],
+    files: ['eslint.config.js', '*.config.{js,ts}', 'scripts/**/*.ts'],
     languageOptions: {
       globals: globals.node,
     },

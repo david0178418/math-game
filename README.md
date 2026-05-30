@@ -1,6 +1,6 @@
 # Math Munchers Game
 
-A modern educational math game inspired by the classic "Number Munchers", built with TypeScript, Vite, and the ECSpresso ECS library.
+A modern educational math game inspired by the classic "Number Munchers", built with TypeScript, Bun, and the ECSpresso ECS library.
 
 ## 🎮 Game Features
 
@@ -40,8 +40,7 @@ A modern educational math game inspired by the classic "Number Munchers", built 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
+- Bun 1.3 or higher
 
 ### Installation
 ```bash
@@ -50,16 +49,16 @@ git clone <repository-url>
 cd math
 
 # Install dependencies
-npm install
+bun install
 
 # Start development server
-npm run dev
+bun run dev
 
 # Build for production
-npm run build
+bun run build
 
 # Preview production build
-npm run preview
+bun run preview
 ```
 
 ## 🎯 Gameplay
@@ -139,13 +138,16 @@ Access performance data via the browser console or the `PerformanceMonitor` clas
 
 ```bash
 # Run linting
-npm run lint
+bun run lint
 
 # Type checking
-npm run type-check
+bun run typecheck
 
 # Build verification
-npm run build
+bun run build
+
+# Full project check
+bun run check
 ```
 
 ## 🚀 Deployment
@@ -158,9 +160,9 @@ This repository includes GitHub Actions for automatic deployment to GitHub Pages
    - Go to Settings → Pages
    - Set Source to "GitHub Actions"
 
-2. **Update Repository Name** in `vite.config.ts` if different from "math":
-   ```typescript
-   base: process.env.NODE_ENV === 'production' ? '/your-repo-name/' : '/',
+2. **Update Repository Base Path** if different from "/math-game/":
+   ```bash
+   BASE_PATH=/your-repo-name/ bun run build
    ```
 
 3. **Push to main branch** to trigger automatic deployment:
@@ -179,11 +181,9 @@ The game can also be deployed to any static hosting service:
 - Any static file server
 
 ```bash
-npm run build
+bun run build
 # Deploy the 'dist' folder to your hosting service
 ```
-
-For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## 🤝 Contributing
 
@@ -201,7 +201,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Inspired by the classic "Number Munchers" educational game
 - Built with [ECSpresso](https://github.com/pedronasser/ecspresso) ECS library
-- Powered by [Vite](https://vitejs.dev/) for development and build tooling
+- Powered by [Bun](https://bun.sh/) for development and build tooling
 
 ## 📈 Roadmap
 
@@ -219,4 +219,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - 🏆 Achievement system
 - 💾 Save game functionality
 - 🌐 Online leaderboards
-- �� Mobile app version 
+- Mobile app version

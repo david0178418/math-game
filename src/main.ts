@@ -1,4 +1,3 @@
-import './style.css';
 import { initializeGame } from './ecs/bootstrap';
 
 const renderInApp = (html: string): HTMLDivElement => {
