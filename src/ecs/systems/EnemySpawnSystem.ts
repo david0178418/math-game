@@ -2,21 +2,39 @@ import { gameEngine, type GameEngine } from '../Engine';
 import { createEnemy } from '../entities';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG } from '../../config';
-import { gridToPixel } from '../gameUtils';
+import { gridToPixel, pixelToGrid } from '../gameUtils';
 import {
   enemyQuery,
+  mathProblemQuery,
   playerQuery,
+  spiderWebQuery,
   type PlayerEntity
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import type { EnemyType } from '../../types/shared';
 
 const SPAWN_ORDER: readonly EnemyType[] = ['lizard', 'spider', 'frog'] as const;
+type GridPosition = { x: number; y: number };
+type PositionedEntity = { components: { position: { x: number; y: number } } };
+const EDGE_POSITIONS: readonly GridPosition[] = [
+  ...Array.from({ length: GAME_CONFIG.GRID.WIDTH }, (_, x) => ({ x, y: 0 })),
+  ...Array.from({ length: GAME_CONFIG.GRID.WIDTH }, (_, x) => ({
+    x,
+    y: GAME_CONFIG.GRID.HEIGHT - 1,
+  })),
+  ...Array.from({ length: Math.max(0, GAME_CONFIG.GRID.HEIGHT - 2) }, (_, index) => index + 1)
+    .flatMap(y => [
+      { x: 0, y },
+      { x: GAME_CONFIG.GRID.WIDTH - 1, y },
+    ]),
+];
 
 export function addEnemySpawnSystemToEngine(): void {
   gameEngine.addSystem('enemySpawnSystem')
     .setPriority(SYSTEM_PRIORITIES.ENEMY_SPAWN)
     .addQuery('enemies', enemyQuery)
+    .addQuery('mathProblems', mathProblemQuery)
+    .addQuery('spiderWebs', spiderWebQuery)
     .addSingleton('player', { ...playerQuery, mutates: ['timers'] } as const)
     .setProcess(({ queries, ecs }) => {
       const player = queries.player;
@@ -38,7 +56,20 @@ export function addEnemySpawnSystemToEngine(): void {
       const nextEnemyType = SPAWN_ORDER[index];
       if (!nextEnemyType) return;
 
-      spawnEnemyFromEdge(ecs, nextEnemyType);
+      const occupiedCells = collectGridCells([
+        player,
+        ...queries.enemies,
+        ...queries.spiderWebs,
+      ]);
+      const mathProblemCells = collectGridCells(
+        queries.mathProblems.filter(problem => !problem.components.mathProblem.consumed)
+      );
+      const spawned = spawnEnemyFromEdge(ecs, nextEnemyType, occupiedCells, mathProblemCells);
+      if (!spawned) {
+        player.components.timers.enemySpawn = createTimer(GAME_CONFIG.TIMING.SHORT_DELAY / 1000);
+        return;
+      }
+
       console.log(`Spawned ${nextEnemyType} (#${index + 1}/${SPAWN_ORDER.length})`);
 
       const nextIndex = index + 1;
@@ -61,37 +92,45 @@ function calculateSpawnInterval(player: PlayerEntity | undefined): number {
   return Math.max(adjusted, GAME_CONFIG.TIMING.MIN_SPAWN_INTERVAL);
 }
 
-function spawnEnemyFromEdge(ecs: GameEngine, enemyType: EnemyType): void {
-  const edgePosition = getRandomEdgePosition();
+function spawnEnemyFromEdge(
+  ecs: GameEngine,
+  enemyType: EnemyType,
+  occupiedCells: ReadonlySet<string>,
+  mathProblemCells: ReadonlySet<string>,
+): boolean {
+  const edgePosition = getRandomAvailableEdgePosition(occupiedCells, mathProblemCells);
+  if (!edgePosition) return false;
+
   const pixelPos = gridToPixel(edgePosition.x, edgePosition.y);
   const behaviors = GAME_CONFIG.ENEMY_TYPES[enemyType].AI_BEHAVIORS;
   const behavior = behaviors[Math.floor(Math.random() * behaviors.length)];
 
   createEnemy(ecs.commands, pixelPos.x, pixelPos.y, enemyType, behavior);
+  return true;
 }
 
-function getRandomEdgePosition(): { x: number; y: number } {
-  const edges = [];
+function gridKey({ x, y }: GridPosition): string {
+  return `${x},${y}`;
+}
 
-  // Top edge
-  for (let x = 0; x < GAME_CONFIG.GRID.WIDTH; x++) {
-    edges.push({ x, y: 0 });
-  }
+function collectGridCells(entities: readonly PositionedEntity[]): Set<string> {
+  return new Set(entities.map(entity =>
+    gridKey(pixelToGrid(entity.components.position.x, entity.components.position.y))
+  ));
+}
 
-  // Bottom edge
-  for (let x = 0; x < GAME_CONFIG.GRID.WIDTH; x++) {
-    edges.push({ x, y: GAME_CONFIG.GRID.HEIGHT - 1 });
-  }
+function randomEntry<T>(entries: readonly T[]): T | undefined {
+  return entries[Math.floor(Math.random() * entries.length)];
+}
 
-  // Left edge (excluding corners already added)
-  for (let y = 1; y < GAME_CONFIG.GRID.HEIGHT - 1; y++) {
-    edges.push({ x: 0, y });
-  }
+function getRandomAvailableEdgePosition(
+  occupiedCells: ReadonlySet<string>,
+  mathProblemCells: ReadonlySet<string>,
+): GridPosition | undefined {
+  const hardAvailable = EDGE_POSITIONS
+    .filter(position => !occupiedCells.has(gridKey(position)));
+  const preferred = hardAvailable
+    .filter(position => !mathProblemCells.has(gridKey(position)));
 
-  // Right edge (excluding corners already added)
-  for (let y = 1; y < GAME_CONFIG.GRID.HEIGHT - 1; y++) {
-    edges.push({ x: GAME_CONFIG.GRID.WIDTH - 1, y });
-  }
-
-  return edges[Math.floor(Math.random() * edges.length)];
+  return randomEntry(preferred.length > 0 ? preferred : hardAvailable);
 }
