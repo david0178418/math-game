@@ -64,7 +64,6 @@ export const GAME_CONFIG = {
       MOVE_SPEED_MULTIPLIER: 0.9,
       WEB_DURATION: 8000,
       WEB_PLACEMENT_CHANCE: 0.20,
-      WEB_COOLDOWN: 1000,
       FREEZE_DURATION: 2000,
       AI_BEHAVIORS: ['random', 'patrol'] as const,
     },
