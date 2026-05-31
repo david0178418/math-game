@@ -49,7 +49,6 @@ export const addRenderSystemToEngine = (): void => {
       ctx.translate(margins.left, margins.top);
 
       drawGrid(ctx);
-      drawPlayerHighlight(ctx, queries.player, queries.mathProblems);
 
       const sortedEntities = [...queries.renderableEntities].sort(
         (a, b) => a.components.renderable.layer - b.components.renderable.layer,
@@ -77,6 +76,7 @@ export const addRenderSystemToEngine = (): void => {
       }
 
       drawMathProblemLilyPads(ctx, queries.mathProblems);
+      drawPlayerHighlight(ctx, queries.player, queries.mathProblems);
       drawEnhancedSpiderWebs(ctx, queries.spiderWebs, currentTime);
       drawMathProblemNumbers(ctx, queries.mathProblems);
       drawEquationSelectionHighlights(
