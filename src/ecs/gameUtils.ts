@@ -2,6 +2,9 @@ import { GAME_CONFIG, SCORE_THRESHOLDS } from '../config';
 import type { GameTimer } from './types';
 import type { PlayerEntity } from './queries';
 
+type GridCell = { x: number; y: number };
+type Position = { x: number; y: number };
+
 /**
  * Fraction of a timer's duration still remaining, in [0, 1].
  * Returns 1 when the timer is absent — useful for entities that haven't been
@@ -25,6 +28,18 @@ export function sameGridPosition(
   return Math.round(pos1.x / cell) === Math.round(pos2.x / cell)
     && Math.round(pos1.y / cell) === Math.round(pos2.y / cell);
 }
+
+export const sameGridCell = (cellA: GridCell, cellB: GridCell): boolean =>
+  cellA.x === cellB.x && cellA.y === cellB.y;
+
+export const activePlayerGridCell = (player: PlayerEntity): GridCell => {
+  const { anchorGridX, anchorGridY, breadcrumbs } = player.components.pathFollower;
+  const head = breadcrumbs[0];
+  return head ? { x: head.x, y: head.y } : { x: anchorGridX, y: anchorGridY };
+};
+
+export const positionInGridCell = (position: Position, cell: GridCell): boolean =>
+  sameGridCell(pixelToGrid(position.x, position.y), cell);
 
 export function pixelToGrid(x: number, y: number): { x: number; y: number } {
   const cell = GAME_CONFIG.GRID.CELL_SIZE;

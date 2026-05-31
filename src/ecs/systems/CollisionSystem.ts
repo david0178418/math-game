@@ -1,6 +1,6 @@
 import { gameEngine } from '../Engine';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
-import { sameGridPosition } from '../gameUtils';
+import { activePlayerGridCell, positionInGridCell, sameGridPosition } from '../gameUtils';
 import {
   playerWithHealthQuery,
   mathProblemWithRenderableQuery,
@@ -75,6 +75,8 @@ export function addCollisionSystemToEngine(): void {
         }
       }
 
+      const activeProblemCell = activePlayerGridCell(player);
+
       // Check for math problems that can be consumed
       for (const problem of queries.mathProblems) {
         const mathProblemComp = problem.components.mathProblem;
@@ -84,8 +86,8 @@ export function addCollisionSystemToEngine(): void {
           continue;
         }
 
-        // Check if player is on the same grid position as a math problem
-        if (sameGridPosition(player.components.position, problem.components.position)) {
+        // Math problems follow the intended active tile, not the rendered midpoint.
+        if (positionInGridCell(problem.components.position, activeProblemCell)) {
           if (inputState.actions.justActivated('eat')) {
             handlePlayerProblemCollision(player, problem, queries.mathProblems);
           }

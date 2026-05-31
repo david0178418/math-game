@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from '../../../config';
-import { cellCenter, sameGridPosition } from '../../gameUtils';
+import { activePlayerGridCell, cellCenter, positionInGridCell } from '../../gameUtils';
 import type { MathProblemEntity, PlayerEntity } from '../../queries';
 
 const cell = GAME_CONFIG.GRID.CELL_SIZE;
@@ -79,10 +79,13 @@ const drawLilyPad = (
 const activeProblemAtPlayer = (
   player: PlayerEntity,
   mathProblems: MathProblemEntity[],
-): MathProblemEntity | undefined =>
-  mathProblems.find(p =>
-    !p.components.mathProblem.consumed && sameGridPosition(player.components.position, p.components.position),
+): MathProblemEntity | undefined => {
+  const activeCell = activePlayerGridCell(player);
+  return mathProblems.find(p =>
+    !p.components.mathProblem.consumed
+      && positionInGridCell(p.components.position, activeCell),
   );
+};
 
 export const drawPlayerHighlight = (
   ctx: CanvasRenderingContext2D,

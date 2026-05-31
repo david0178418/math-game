@@ -17,7 +17,7 @@ export const playerMovementQuery = {
 } as const;
 
 export const playerWithHealthQuery = {
-  with: ['position', 'player', 'collider', 'health', 'timers'],
+  with: ['position', 'player', 'pathFollower', 'collider', 'health', 'timers'],
 } as const;
 
 export const mathProblemQuery = {
