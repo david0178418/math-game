@@ -5,16 +5,30 @@ let ctx: CanvasRenderingContext2D | null = null;
 let observer: ResizeObserver | null = null;
 let observedTarget: Element | null = null;
 
-export const renderMargin = (): number =>
-	Math.ceil(GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.RENDER.PLAY_AREA_MARGIN_RATIO);
+export type RenderMargins = {
+	top: number;
+	right: number;
+	bottom: number;
+	left: number;
+};
+
+const marginPixels = (ratio: number): number =>
+	Math.ceil(GAME_CONFIG.GRID.CELL_SIZE * ratio);
+
+export const renderMargins = (): RenderMargins => ({
+	top: marginPixels(GAME_CONFIG.RENDER.PLAY_AREA_TOP_MARGIN_RATIO),
+	right: marginPixels(GAME_CONFIG.RENDER.PLAY_AREA_SIDE_MARGIN_RATIO),
+	bottom: marginPixels(GAME_CONFIG.RENDER.PLAY_AREA_BOTTOM_MARGIN_RATIO),
+	left: marginPixels(GAME_CONFIG.RENDER.PLAY_AREA_SIDE_MARGIN_RATIO),
+});
 
 const canvasPixelSize = (): { width: number; height: number } => {
-	const margin = renderMargin();
+	const margins = renderMargins();
 	const gridWidth = GAME_CONFIG.GRID.WIDTH * GAME_CONFIG.GRID.CELL_SIZE;
 	const gridHeight = GAME_CONFIG.GRID.HEIGHT * GAME_CONFIG.GRID.CELL_SIZE;
 	return {
-		width: gridWidth + margin * 2,
-		height: gridHeight + margin * 2,
+		width: gridWidth + margins.left + margins.right,
+		height: gridHeight + margins.top + margins.bottom,
 	};
 };
 

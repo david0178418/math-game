@@ -8,7 +8,7 @@ import {
   spiderWebQuery,
 } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { cleanupRenderSystem, getCtx, renderMargin } from './render/context';
+import { cleanupRenderSystem, getCtx, renderMargins } from './render/context';
 import { drawGrid } from './render/grid';
 import { drawEntity } from './render/entities';
 import { drawEquationSelectionHighlights, drawPlayerHighlight, drawMathProblemLilyPads, drawMathProblemNumbers } from './render/mathProblems';
@@ -36,17 +36,17 @@ export const addRenderSystemToEngine = (): void => {
       if (!ctx) return;
 
       const currentTime = performance.now();
-      const margin = renderMargin();
+      const margins = renderMargins();
 
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       drawBoardObjective(
         ctx,
         gameEngine.getResource('gameMode'),
         queries.mathProblems,
-        margin,
+        margins.top,
       );
       ctx.save();
-      ctx.translate(margin, margin);
+      ctx.translate(margins.left, margins.top);
 
       drawGrid(ctx);
       drawPlayerHighlight(ctx, queries.player, queries.mathProblems);
