@@ -127,8 +127,9 @@ export type AllComponents = Components
 // `Record<string, unknown>` screen-config constraint.
 export type PlayingScreenConfig = { level: number; isFreshGame: boolean };
 
-export type GameMode = 'multiples' | 'equations';
+export type GameMode = 'multiples' | 'equations' | 'equationResults';
 export type EquationOperation = 'add';
+export type EquationPromptKind = 'selectOperands' | 'selectResult';
 
 export interface EquationValueRange {
   min: number;
@@ -137,8 +138,10 @@ export interface EquationValueRange {
 
 export interface EquationModeState {
   operation: EquationOperation;
-  operandsRequired: 2;
+  promptKind: EquationPromptKind;
+  operandsRequired: number;
   target: number;
+  promptValues: number[];
   selectedProblemIds: number[];
   clearedThisLevel: number;
   level: number;

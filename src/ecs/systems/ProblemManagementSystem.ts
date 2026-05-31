@@ -7,6 +7,8 @@ import { generateMultiplesProblems } from '../../math/problems';
 import {
   chooseEquationCandidate,
   createEquationModeState,
+  equationPromptKindForMode,
+  equationResultRange,
   randomEquationValue,
 } from '../../math/equations';
 import {
@@ -24,6 +26,9 @@ interface ProblemPlacement {
   value: number;
   isCorrect?: boolean;
 }
+
+const usesEquationMode = (gameMode: Resources['gameMode']): boolean =>
+  gameMode === 'equations' || gameMode === 'equationResults';
 
 /**
  * Problem Management System
@@ -104,7 +109,11 @@ const problemsForMode = (
     return generateMultiplesProblems(currentLevel, PROBLEM_CONFIG.TOTAL_PROBLEMS);
   }
 
-  const range = ecs.getResource('equationMode').valueRange;
+  const equationMode = ecs.getResource('equationMode');
+  const range = equationMode.promptKind === 'selectResult'
+    ? equationResultRange(equationMode.operation, equationMode.valueRange)
+    : equationMode.valueRange;
+
   return Array.from({ length: PROBLEM_CONFIG.TOTAL_PROBLEMS }, () => ({
     value: randomEquationValue(range),
   }));
@@ -157,7 +166,7 @@ function checkLevelCompletion(
   gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
-  if (gameMode === 'equations') {
+  if (usesEquationMode(gameMode)) {
     checkEquationLevelCompletion(player, mathProblems, currentLevel);
     return;
   }
@@ -198,17 +207,17 @@ function updateEquationStateFromBoard(
   gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
-  if (gameMode !== 'equations') return;
+  if (!usesEquationMode(gameMode)) return;
 
   const currentState = ecs.getResource('equationMode');
   const state = currentState.level === currentLevel
     ? currentState
-    : createEquationModeState(currentLevel);
+    : createEquationModeState(currentLevel, equationPromptKindForMode(gameMode));
 
   if (state.target !== 0) return;
 
   const candidate = chooseEquationCandidate(
-    state.operation,
+    state,
     activeEquationProblems(mathProblems).map(problem => ({
       id: problem.id,
       value: problem.components.mathProblem.value,
@@ -220,6 +229,7 @@ function updateEquationStateFromBoard(
   ecs.setResource('equationMode', {
     ...state,
     target: candidate.target,
+    promptValues: candidate.operandValues,
     selectedProblemIds: [],
   });
 }
@@ -239,7 +249,10 @@ function checkEquationLevelCompletion(
   const nextLevel = currentLevel + 1;
   console.log(`Equation level ${currentLevel} completed. Advancing to level ${nextLevel}`);
   delete player.components.timers.problemSpawn;
-  gameEngine.setResource('equationMode', createEquationModeState(nextLevel));
+  gameEngine.setResource(
+    'equationMode',
+    createEquationModeState(nextLevel, equationMode.promptKind),
+  );
   void gameEngine.setScreen('playing', { level: nextLevel, isFreshGame: false });
 }
 

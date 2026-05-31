@@ -20,7 +20,7 @@ export function addUISystemToEngine(): void {
       const playerComp = player.components.player;
       const gameMode = gameEngine.getResource('gameMode');
       const currentLevel = gameEngine.getResource('currentLevel');
-      const level = gameMode === 'equations'
+      const level = gameMode !== 'multiples'
         ? currentLevel.toString()
         : getPlayerDifficultyLevel(player);
 

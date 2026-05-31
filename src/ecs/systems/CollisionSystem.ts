@@ -112,7 +112,7 @@ function handlePlayerProblemCollision(
   problem: MathProblemEntityWithRenderable,
   mathProblems: MathProblemEntityWithRenderable[],
 ): void {
-  if (gameEngine.getResource('gameMode') === 'equations') {
+  if (gameEngine.getResource('gameMode') !== 'multiples') {
     handleEquationProblemSelection(player, problem, mathProblems);
     return;
   }
@@ -237,12 +237,12 @@ function handleEquationProblemSelection(
   };
 
   const nextCandidate = chooseEquationCandidate(
-    nextMode.operation,
+    nextMode,
     activeEquationOperands(mathProblems),
   );
 
   gameEngine.setResource('equationMode', nextCandidate
-    ? { ...nextMode, target: nextCandidate.target }
+    ? { ...nextMode, target: nextCandidate.target, promptValues: nextCandidate.operandValues }
     : nextMode);
 }
 

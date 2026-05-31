@@ -95,7 +95,7 @@ const $ = <T extends HTMLElement = HTMLElement>(root: HTMLElement, sel: string):
 };
 
 const startGame = (mode: GameMode): void => {
-  const level = mode === 'equations' ? 1 : GAME_CONFIG.GAMEPLAY.STARTING_LEVEL;
+  const level = mode === 'multiples' ? GAME_CONFIG.GAMEPLAY.STARTING_LEVEL : 1;
   gameEngine.setResource('gameMode', mode);
   void gameEngine.setScreen('playing', {
     level,
@@ -195,7 +195,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           Choose a math challenge to begin your adventure!
         </p>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-4 gap-3 md:gap-6 items-stretch">
+        <div class="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-5 gap-3 md:gap-6 items-stretch">
           <div id="multiples-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
             <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🔢 Multiples</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
@@ -213,6 +213,16 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
             </p>
             <div class="text-xs opacity-70 landscape:hidden">
               Example: For _ + _ = 6, eat 2 then 4.
+            </div>
+          </div>
+
+          <div id="equation-results-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🧮 Results</h3>
+            <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
+              Solve each equation and eat the tile with the matching result.
+            </p>
+            <div class="text-xs opacity-70 landscape:hidden">
+              Example: For 2 + 4 = _, eat 6.
             </div>
           </div>
 
@@ -245,6 +255,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     wire: (root) => {
       $(root, '#multiples-mode').addEventListener('click', () => startGame('multiples'));
       $(root, '#equations-mode').addEventListener('click', () => startGame('equations'));
+      $(root, '#equation-results-mode').addEventListener('click', () => startGame('equationResults'));
       $(root, '#back-to-main-btn').addEventListener('click', goToMenu);
     },
     onCancel: goToMenu,
