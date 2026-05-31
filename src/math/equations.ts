@@ -24,7 +24,10 @@ interface EquationOperationDefinition {
   evaluate: (operands: readonly number[]) => number;
   resultRange: (ranges: EquationOperandRanges) => EquationValueRange;
   randomCandidate: (ranges: EquationOperandRanges) => EquationCandidate;
-  operandCandidates: (operands: readonly EquationOperandCandidate[]) => EquationCandidate[];
+  operandCandidates: (
+    operands: readonly EquationOperandCandidate[],
+    difficulty: MathDifficulty,
+  ) => EquationCandidate[];
   resultCandidates: (
     answers: readonly EquationOperandCandidate[],
     ranges: EquationOperandRanges,
@@ -135,6 +138,13 @@ const orderedOperandCandidates = (
       })),
   );
 
+const subtractOperandCandidates = (
+  operands: readonly EquationOperandCandidate[],
+  difficulty: MathDifficulty,
+): EquationCandidate[] =>
+  orderedOperandCandidates(operands, ([left, right]) => left - right)
+    .filter(candidate => difficulty !== 'easy' || candidate.target >= 0);
+
 const divideOperandCandidates = (operands: readonly EquationOperandCandidate[]): EquationCandidate[] =>
   orderedOperandCandidates(operands, ([left, right]) => left / right)
     .filter(candidate => Number.isInteger(candidate.target));
@@ -235,7 +245,7 @@ const operations: Record<EquationOperation, EquationOperationDefinition> = {
     evaluate: ([left, right]) => left - right,
     resultRange: ranges => ({ min: 0, max: ranges.left.max - ranges.right.min }),
     randomCandidate: randomSubtractCandidate,
-    operandCandidates: operands => orderedOperandCandidates(operands, ([left, right]) => left - right),
+    operandCandidates: subtractOperandCandidates,
     resultCandidates: subtractResultCandidates,
   },
   multiply: {
@@ -281,6 +291,7 @@ export const createEquationModeState = (
   return {
     operation,
     promptKind,
+    difficulty,
     operandsRequired: promptKind === 'selectResult' ? 1 : operations[operation].operandCount,
     target: 0,
     promptValues: [],
@@ -301,7 +312,7 @@ export const chooseEquationCandidate = (
   const operation = operations[state.operation];
   const candidates = state.promptKind === 'selectResult'
     ? operation.resultCandidates(operands, state.operandRanges)
-    : operation.operandCandidates(operands);
+    : operation.operandCandidates(operands, state.difficulty);
   return candidates[randomIndex(candidates.length)];
 };
 

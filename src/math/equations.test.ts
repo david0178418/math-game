@@ -3,6 +3,7 @@ import type { GameMode, MathDifficulty } from '../ecs/types';
 import {
   createEquationModeState,
   createRandomEquationCandidate,
+  chooseEquationCandidate,
   equationOperandRanges,
   evaluateEquationSelection,
   operationForMode,
@@ -73,6 +74,29 @@ describe('equation generation', () => {
       { ...division, target: divisionCandidate.target },
       [...divisionCandidate.operandValues].reverse(),
     )).toBe(divisionCandidate.operandValues[0] === divisionCandidate.operandValues[1]);
+  });
+
+  test('easy subtraction operand prompts do not target negative results', () => {
+    const originalRandom = Math.random;
+    const state = createEquationModeState(2, 'easy', 'subtraction');
+    const operands = [
+      { id: 1, value: 1 },
+      { id: 2, value: 2 },
+    ] as const;
+
+    Math.random = function random(): number {
+      return 0;
+    };
+
+    try {
+      const candidate = chooseEquationCandidate(state, operands);
+      if (!candidate) throw new Error('Expected subtraction operand candidate');
+
+      expect(candidate.target).toBeGreaterThanOrEqual(0);
+      expect(candidate.operandValues).toEqual([2, 1]);
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 
   test('division produces only integer-result equations', () => {

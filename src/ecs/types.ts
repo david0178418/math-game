@@ -145,6 +145,7 @@ export interface EquationOperandRanges {
 export interface EquationModeState {
   operation: EquationOperation;
   promptKind: EquationPromptKind;
+  difficulty: MathDifficulty;
   operandsRequired: number;
   target: number;
   promptValues: number[];
