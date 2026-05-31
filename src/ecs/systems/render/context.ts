@@ -56,6 +56,8 @@ const resizeCanvas = (): void => {
 		ctx.setTransform(1, 0, 0, 1, 0, 0);
 		ctx.imageSmoothingEnabled = false;
 	}
+
+	window.dispatchEvent(new Event('math-game:canvas-resize'));
 };
 
 // ResizeObserver fires after the browser has committed the new layout, so the

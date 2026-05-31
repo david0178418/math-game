@@ -480,6 +480,7 @@ export const showScreen = (screen: UIScreen): void => {
   // there would show a focus ring on the pause button during play.
   if (screen !== 'playing') return focusFirstOn(screen);
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+  requestCanvasResize();
 };
 
 const focusedIndex = (focusables: HTMLElement[]): number => {
