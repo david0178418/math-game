@@ -66,11 +66,6 @@ const drawLilyPad = (
   ctx.rotate(-0.18);
   ctx.translate(-centerX, -centerY);
 
-  ctx.fillStyle = 'rgba(11, 61, 66, 0.26)';
-  ctx.beginPath();
-  ctx.ellipse(centerX + 4, centerY + 6, lilyPadRadius * 0.98, lilyPadRadius * 0.74, 0.1, 0, Math.PI * 2);
-  ctx.fill();
-
   drawLilyPadShape(ctx, centerX, centerY, lilyPadRadius);
   drawLilyPadVeins(ctx, centerX, centerY, lilyPadRadius);
   ctx.restore();

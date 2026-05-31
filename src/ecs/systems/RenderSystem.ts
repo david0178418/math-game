@@ -71,6 +71,7 @@ export const addRenderSystemToEngine = (): void => {
       };
 
       for (const entity of sortedEntities) {
+        if ('mathProblem' in entity.components) continue;
         if (entity.components.renderable.layer >= GAME_CONFIG.LAYERS.ENTITIES) continue;
         drawRenderableEntity(entity);
       }
