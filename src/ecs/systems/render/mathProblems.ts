@@ -143,6 +143,27 @@ export const drawEquationSelectionHighlights = (
   ctx.restore();
 };
 
+function forEachVisibleMathProblem(
+  mathProblems: MathProblemEntity[],
+  drawProblem: (center: { x: number; y: number }, problem: MathProblemEntity) => void,
+): void {
+  mathProblems.forEach(problem => {
+    if (problem.components.mathProblem.consumed) return;
+    drawProblem(cellCenter(problem.components.position), problem);
+  });
+}
+
+export const drawMathProblemLilyPads = (
+  ctx: CanvasRenderingContext2D,
+  mathProblems: MathProblemEntity[],
+): void => {
+  ctx.save();
+  forEachVisibleMathProblem(mathProblems, center => {
+    drawLilyPad(ctx, center.x, center.y);
+  });
+  ctx.restore();
+};
+
 export const drawMathProblemNumbers = (
   ctx: CanvasRenderingContext2D,
   mathProblems: MathProblemEntity[],
@@ -152,21 +173,15 @@ export const drawMathProblemNumbers = (
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  mathProblems.forEach(problem => {
-    const mathProblemComp = problem.components.mathProblem;
-    if (mathProblemComp.consumed) return;
-
-    const { x: centerX, y: centerY } = cellCenter(problem.components.position);
-    const text = mathProblemComp.value.toString();
-
-    drawLilyPad(ctx, centerX, centerY);
+  forEachVisibleMathProblem(mathProblems, (center, problem) => {
+    const text = problem.components.mathProblem.value.toString();
 
     ctx.strokeStyle = 'rgba(12, 54, 28, 0.9)';
     ctx.lineWidth = 7;
-    ctx.strokeText(text, centerX, centerY);
+    ctx.strokeText(text, center.x, center.y);
 
     ctx.fillStyle = '#fff7c6';
-    ctx.fillText(text, centerX, centerY);
+    ctx.fillText(text, center.x, center.y);
   });
 
   ctx.restore();
