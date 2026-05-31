@@ -6,10 +6,17 @@ import { GAME_CONFIG } from '../../config';
 import type { AIBehavior, EnemyType } from '../../types/shared';
 import {
   enemyQuery,
+  mathProblemQuery,
   playerQuery,
   type EnemyEntity,
   type PlayerEntity
 } from '../queries';
+import {
+  activeLilyPadCellKeys,
+  gridCells,
+  isActiveLilyPadCell,
+  type GridCell,
+} from '../lilyPads';
 import { AI_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 import { isEntityAnimating } from './AnimationSystem';
 import { createSpiderWeb } from './SpiderWebSystem';
@@ -30,7 +37,6 @@ const DIRECTIONS = [
   { x: 0, y: 1 },
   { x: -1, y: 0 },
   { x: 1, y: 0 },
-  { x: 0, y: 0 },
 ] as const;
 
 const BEHAVIOR_MULTIPLIERS: Record<AIBehavior, number> = {
@@ -62,22 +68,23 @@ function nextStepTowards(
   startCell: number,
   goalCell: number,
   blocked: Set<number>
-): { x: number; y: number } {
+): GridCell | undefined {
   if (startCell === goalCell) return navGrid.cellToXY(startCell);
   const path = findPath(navGrid, startCell, goalCell, { blockedCells: blocked });
-  if (!path || path.length < 2) return navGrid.cellToXY(startCell);
+  if (!path || path.length < 2) return undefined;
   return navGrid.cellToXY(path[1]);
 }
 
 interface AIContext {
   enemy: EnemyEntity;
   player: PlayerEntity;
-  currentGrid: { x: number; y: number };
+  currentGrid: GridCell;
   startCell: number;
   blocked: Set<number>;
+  activeLilyPadCells: ReadonlySet<string>;
 }
 
-const AI_PROCESSORS: Record<AIBehavior, (ctx: AIContext) => { x: number; y: number }> = {
+const AI_PROCESSORS: Record<AIBehavior, (ctx: AIContext) => GridCell> = {
   chase: processChaseAI,
   patrol: processPatrolAI,
   random: processRandomAI,
@@ -89,6 +96,7 @@ export function addAISystemToEngine(): void {
     .setPriority(SYSTEM_PRIORITIES.AI)
     .inPhase('preUpdate')
     .addQuery('enemies', { ...enemyQuery, optional: ['frogTongue'], mutates: ['enemy', 'timers'] } as const)
+    .addQuery('mathProblems', mathProblemQuery)
     .addSingleton('player', playerQuery)
     .setProcess(({ queries, ecs }) => {
       const { enemies, player } = queries;
@@ -97,11 +105,12 @@ export function addAISystemToEngine(): void {
       // Shared per-frame blocker set: all enemy cells plus destination cells
       // already claimed by earlier enemy decisions this frame.
       const blocked = new Set(enemies.map(cellOf));
+      const activeLilyPadCells = activeLilyPadCellKeys(queries.mathProblems);
 
       for (const enemy of enemies) {
         if (isEntityAnimating(ecs, enemy.id)) continue;
         if (isFrogAttacking(enemy.components.frogTongue)) continue;
-        processEnemyAI(ecs, enemy, player, blocked);
+        processEnemyAI(ecs, enemy, player, blocked, activeLilyPadCells);
       }
     });
 }
@@ -110,7 +119,8 @@ function processEnemyAI(
   ecs: GameEngine,
   enemy: EnemyEntity,
   player: PlayerEntity,
-  blocked: Set<number>
+  blocked: Set<number>,
+  activeLilyPadCells: ReadonlySet<string>,
 ): void {
   const enemyPos = enemy.components.position;
   const enemyData = enemy.components.enemy;
@@ -122,7 +132,7 @@ function processEnemyAI(
   const startCell = navGrid.cellFromXY(currentGrid.x, currentGrid.y);
 
   const { x: nextGridX, y: nextGridY } = AI_PROCESSORS[enemyData.behaviorType]({
-    enemy, player, currentGrid, startCell, blocked,
+    enemy, player, currentGrid, startCell, blocked, activeLilyPadCells,
   });
 
   const newPixelPos = gridToPixel(nextGridX, nextGridY);
@@ -164,18 +174,57 @@ function calculateMoveInterval(behaviorType: AIBehavior, player: PlayerEntity, e
   return Math.round(adjustedInterval * multiplier);
 }
 
-function processChaseAI({ player, currentGrid, startCell, blocked, enemy }: AIContext): { x: number; y: number } {
+const randomEntry = <T>(entries: readonly T[]): T | undefined =>
+  entries[Math.floor(Math.random() * entries.length)];
+
+const cellIndex = ({ x, y }: GridCell): number => navGrid.cellFromXY(x, y);
+
+const pathBlockedCells = (
+  activeLilyPadCells: ReadonlySet<string>,
+  occupiedCells: ReadonlySet<number>,
+): Set<number> =>
+  new Set([
+    ...gridCells()
+      .filter(cell => !isActiveLilyPadCell(cell, activeLilyPadCells))
+      .map(cellIndex),
+    ...occupiedCells,
+  ]);
+
+const adjacentLilyPadMoves = (
+  currentGrid: GridCell,
+  activeLilyPadCells: ReadonlySet<string>,
+  blocked: ReadonlySet<number>,
+): GridCell[] =>
+  DIRECTIONS
+    .map(({ x, y }) => ({ x: currentGrid.x + x, y: currentGrid.y + y }))
+    .filter(({ x, y }) => x >= 0 && x < navGrid.width && y >= 0 && y < navGrid.height)
+    .filter(cell => isActiveLilyPadCell(cell, activeLilyPadCells))
+    .filter(cell => !blocked.has(cellIndex(cell)));
+
+const nextLilyPadStepTowards = (
+  ctx: AIContext,
+  target: GridCell,
+): GridCell =>
+  nextStepTowards(
+    ctx.startCell,
+    navGrid.cellFromXY(target.x, target.y),
+    pathBlockedCells(ctx.activeLilyPadCells, ctx.blocked),
+  ) ?? processRandomAI(ctx);
+
+function processChaseAI(ctx: AIContext): GridCell {
+  const { player, currentGrid, activeLilyPadCells } = ctx;
   const playerGrid = pixelToGrid(player.components.position.x, player.components.position.y);
   const distance = Math.abs(currentGrid.x - playerGrid.x) + Math.abs(currentGrid.y - playerGrid.y);
 
-  if (distance > AI_CONFIG.DETECTION_RANGE) {
-    return processRandomAI({ enemy, player, currentGrid, startCell, blocked });
+  if (distance > AI_CONFIG.DETECTION_RANGE || !isActiveLilyPadCell(playerGrid, activeLilyPadCells)) {
+    return processRandomAI(ctx);
   }
 
-  return nextStepTowards(startCell, navGrid.cellFromXY(playerGrid.x, playerGrid.y), blocked);
+  return nextLilyPadStepTowards(ctx, playerGrid);
 }
 
-function processPatrolAI({ enemy, currentGrid, startCell, blocked }: AIContext): { x: number; y: number } {
+function processPatrolAI(ctx: AIContext): GridCell {
+  const { enemy, currentGrid, activeLilyPadCells } = ctx;
   const enemyData = enemy.components.enemy;
 
   if (!enemyData.waypoints || enemyData.waypoints.length === 0) {
@@ -192,22 +241,17 @@ function processPatrolAI({ enemy, currentGrid, startCell, blocked }: AIContext):
     return currentGrid;
   }
 
-  return nextStepTowards(startCell, navGrid.cellFromXY(target.x, target.y), blocked);
+  if (!isActiveLilyPadCell(target, activeLilyPadCells)) return processRandomAI(ctx);
+
+  return nextLilyPadStepTowards(ctx, target);
 }
 
-function processRandomAI({ currentGrid, blocked }: AIContext): { x: number; y: number } {
-  const dir = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
-  const nextX = currentGrid.x + dir.x;
-  const nextY = currentGrid.y + dir.y;
-
-  const inBounds = nextX >= 0 && nextX < navGrid.width && nextY >= 0 && nextY < navGrid.height;
-  if (!inBounds) return currentGrid;
-  if (blocked.has(navGrid.cellFromXY(nextX, nextY))) return currentGrid;
-  return { x: nextX, y: nextY };
+function processRandomAI({ currentGrid, blocked, activeLilyPadCells }: AIContext): GridCell {
+  return randomEntry(adjacentLilyPadMoves(currentGrid, activeLilyPadCells, blocked)) ?? currentGrid;
 }
 
-function processGuardAI(ctx: AIContext): { x: number; y: number } {
-  const { enemy, currentGrid, startCell, blocked } = ctx;
+function processGuardAI(ctx: AIContext): GridCell {
+  const { enemy, currentGrid, activeLilyPadCells } = ctx;
   const enemyData = enemy.components.enemy;
 
   if (!enemyData.guardPosition) {
@@ -217,7 +261,9 @@ function processGuardAI(ctx: AIContext): { x: number; y: number } {
   const distance = Math.abs(currentGrid.x - guardPos.x) + Math.abs(currentGrid.y - guardPos.y);
 
   if (distance > GUARD_RADIUS) {
-    return nextStepTowards(startCell, navGrid.cellFromXY(guardPos.x, guardPos.y), blocked);
+    if (!isActiveLilyPadCell(guardPos, activeLilyPadCells)) return processRandomAI(ctx);
+
+    return nextLilyPadStepTowards(ctx, guardPos);
   }
 
   if (Math.random() >= GUARD_MOVE_CHANCE) return currentGrid;

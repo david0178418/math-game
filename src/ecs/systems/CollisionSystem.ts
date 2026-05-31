@@ -1,6 +1,7 @@
 import { gameEngine } from '../Engine';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { activePlayerGridCell, positionInGridCell, sameGridPosition } from '../gameUtils';
+import { collectGridCellKeys, positionedEntityGridCellKey } from '../lilyPads';
 import {
   playerWithHealthQuery,
   mathProblemWithRenderableQuery,
@@ -80,20 +81,17 @@ export function addCollisionSystemToEngine(): void {
       }
 
       const activeProblemCell = activePlayerGridCell(player);
+      const enemyOccupiedCells = collectGridCellKeys(queries.enemies);
+      const selectableMathProblems = queries.mathProblems
+        .filter(problem => !problem.components.mathProblem.consumed)
+        .filter(problem => !enemyOccupiedCells.has(positionedEntityGridCellKey(problem)));
 
       // Check for math problems that can be consumed
-      for (const problem of queries.mathProblems) {
-        const mathProblemComp = problem.components.mathProblem;
-
-        // Skip already consumed problems
-        if (mathProblemComp.consumed) {
-          continue;
-        }
-
+      for (const problem of selectableMathProblems) {
         // Math problems follow the intended active tile, not the rendered midpoint.
         if (positionInGridCell(problem.components.position, activeProblemCell)) {
           if (inputState.actions.justActivated('eat')) {
-            handlePlayerProblemCollision(player, problem, queries.mathProblems);
+            handlePlayerProblemCollision(player, problem, selectableMathProblems);
           }
         }
       }
@@ -157,9 +155,12 @@ function handleEquationProblemSelection(
   const equationMode = gameEngine.getResource('equationMode');
   if (equationMode.target === 0) return;
 
-  const selectedProblemIds = equationMode.selectedProblemIds.includes(problem.id)
-    ? equationMode.selectedProblemIds.filter(id => id !== problem.id)
-    : [...equationMode.selectedProblemIds, problem.id].slice(0, equationMode.operandsRequired);
+  const selectableProblemIds = new Set(mathProblems.map(candidate => candidate.id));
+  const currentSelectedProblemIds = equationMode.selectedProblemIds
+    .filter(id => selectableProblemIds.has(id));
+  const selectedProblemIds = currentSelectedProblemIds.includes(problem.id)
+    ? currentSelectedProblemIds.filter(id => id !== problem.id)
+    : [...currentSelectedProblemIds, problem.id].slice(0, equationMode.operandsRequired);
 
   const pendingMode = {
     ...equationMode,

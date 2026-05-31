@@ -1,5 +1,6 @@
 import { GAME_CONFIG } from '../../../config';
 import { activePlayerGridCell, cellCenter, positionInGridCell } from '../../gameUtils';
+import { gridCellKey, positionedEntityGridCellKey } from '../../lilyPads';
 import type { MathProblemEntity, PlayerEntity } from '../../queries';
 
 const cell = GAME_CONFIG.GRID.CELL_SIZE;
@@ -74,10 +75,12 @@ const drawLilyPad = (
 const activeProblemAtPlayer = (
   player: PlayerEntity,
   mathProblems: MathProblemEntity[],
+  blockedCells: ReadonlySet<string>,
 ): MathProblemEntity | undefined => {
   const activeCell = activePlayerGridCell(player);
   return mathProblems.find(p =>
     !p.components.mathProblem.consumed
+      && !blockedCells.has(gridCellKey(activeCell))
       && positionInGridCell(p.components.position, activeCell),
   );
 };
@@ -86,10 +89,11 @@ export const drawPlayerHighlight = (
   ctx: CanvasRenderingContext2D,
   player: PlayerEntity | undefined,
   mathProblems: MathProblemEntity[],
+  blockedCells: ReadonlySet<string>,
 ): void => {
   if (!player) return;
 
-  const problem = activeProblemAtPlayer(player, mathProblems);
+  const problem = activeProblemAtPlayer(player, mathProblems, blockedCells);
   if (!problem) return;
 
   const { x: centerX, y: centerY } = cellCenter(problem.components.position);
@@ -109,6 +113,7 @@ export const drawEquationSelectionHighlights = (
   ctx: CanvasRenderingContext2D,
   mathProblems: MathProblemEntity[],
   selectedProblemIds: readonly number[],
+  blockedCells: ReadonlySet<string>,
 ): void => {
   if (selectedProblemIds.length === 0) return;
 
@@ -116,6 +121,7 @@ export const drawEquationSelectionHighlights = (
   selectedProblemIds.forEach((id, index) => {
     const problem = mathProblems.find(candidate => candidate.id === id);
     if (!problem || problem.components.mathProblem.consumed) return;
+    if (blockedCells.has(positionedEntityGridCellKey(problem))) return;
 
     const { x: centerX, y: centerY } = cellCenter(problem.components.position);
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';

@@ -6,7 +6,9 @@ import {
   mathProblemQuery,
   frogTongueQuery,
   spiderWebQuery,
+  enemyQuery,
 } from '../queries';
+import { collectGridCellKeys } from '../lilyPads';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { cleanupRenderSystem, getCtx, renderMargins } from './render/context';
 import { drawGrid } from './render/grid';
@@ -28,6 +30,7 @@ export const addRenderSystemToEngine = (): void => {
     .addQuery('renderableEntities', renderableEntityQuery)
     .addSingleton('player', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)
+    .addQuery('enemies', enemyQuery)
     .addQuery('frogTongues', frogTongueQuery)
     .addQuery('spiderWebs', spiderWebQuery)
     .setOnDetach(cleanupRenderSystem)
@@ -37,6 +40,7 @@ export const addRenderSystemToEngine = (): void => {
 
       const currentTime = performance.now();
       const margins = renderMargins();
+      const enemyOccupiedCells = collectGridCellKeys(queries.enemies);
 
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       drawBoardObjective(
@@ -76,13 +80,14 @@ export const addRenderSystemToEngine = (): void => {
       }
 
       drawMathProblemLilyPads(ctx, queries.mathProblems);
-      drawPlayerHighlight(ctx, queries.player, queries.mathProblems);
+      drawPlayerHighlight(ctx, queries.player, queries.mathProblems, enemyOccupiedCells);
       drawEnhancedSpiderWebs(ctx, queries.spiderWebs, currentTime);
       drawMathProblemNumbers(ctx, queries.mathProblems);
       drawEquationSelectionHighlights(
         ctx,
         queries.mathProblems,
         gameEngine.getResource('equationMode').selectedProblemIds,
+        enemyOccupiedCells,
       );
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'behindFrog');
 
