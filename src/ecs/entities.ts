@@ -72,7 +72,7 @@ const mathProblemComponents = (
   x: number,
   y: number,
   value: number,
-  isCorrect: boolean,
+  isCorrect: boolean | undefined,
   difficulty: number
 ): Partial<AllComponents> => ({
   position: { x, y },
@@ -115,7 +115,7 @@ export const createMathProblem = (
   x: number,
   y: number,
   value: number,
-  isCorrect: boolean,
+  isCorrect: boolean | undefined,
   difficulty: number,
 ): void => {
   commands.spawn(mathProblemComponents(x, y, value, isCorrect, difficulty));

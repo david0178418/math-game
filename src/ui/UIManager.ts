@@ -95,9 +95,10 @@ const $ = <T extends HTMLElement = HTMLElement>(root: HTMLElement, sel: string):
 };
 
 const startGame = (mode: GameMode): void => {
+  const level = mode === 'equations' ? 1 : GAME_CONFIG.GAMEPLAY.STARTING_LEVEL;
   gameEngine.setResource('gameMode', mode);
   void gameEngine.setScreen('playing', {
-    level: GAME_CONFIG.GAMEPLAY.STARTING_LEVEL,
+    level,
     isFreshGame: true,
   });
 };
@@ -194,7 +195,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           Choose a math challenge to begin your adventure!
         </p>
 
-        <div class="grid grid-cols-1 landscape:grid-cols-3 gap-3 md:gap-6 items-stretch">
+        <div class="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-4 gap-3 md:gap-6 items-stretch">
           <div id="multiples-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
             <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🔢 Multiples</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
@@ -202,6 +203,16 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
             </p>
             <div class="text-xs opacity-70 landscape:hidden">
               Example: For multiples of 2, eat 2, 4, 6, 8, 10, 12...
+            </div>
+          </div>
+
+          <div id="equations-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">➕ Equations</h3>
+            <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
+              Select tiles in order to complete each equation before moving to the next level.
+            </p>
+            <div class="text-xs opacity-70 landscape:hidden">
+              Example: For _ + _ = 6, eat 2 then 4.
             </div>
           </div>
 
@@ -233,6 +244,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     `,
     wire: (root) => {
       $(root, '#multiples-mode').addEventListener('click', () => startGame('multiples'));
+      $(root, '#equations-mode').addEventListener('click', () => startGame('equations'));
       $(root, '#back-to-main-btn').addEventListener('click', goToMenu);
     },
     onCancel: goToMenu,
@@ -506,7 +518,19 @@ export const triggerCancel = (): void => {
   SCREENS[currentScreen].onCancel?.();
 };
 
-export const updateGameplayUI = (score: number, lives: number, level: string): void => {
+const updateObjectiveElements = (fullText: string, inlineText: string): void => {
+  const full = document.getElementById('objective-display');
+  if (full) full.textContent = fullText;
+  const inline = document.getElementById('objective-inline');
+  if (inline) inline.textContent = inlineText;
+};
+
+export const updateGameplayUI = (
+  score: number,
+  lives: number,
+  level: string,
+  objective?: { full: string; inline: string },
+): void => {
   if (gameplayHud.score && score !== gameplayHud.lastScore) {
     gameplayHud.score.textContent = `Score: ${score}`;
     gameplayHud.lastScore = score;
@@ -519,13 +543,15 @@ export const updateGameplayUI = (score: number, lives: number, level: string): v
     gameplayHud.level.textContent = `Level: ${level}`;
     gameplayHud.lastLevel = level;
   }
+  if (objective) updateObjectiveElements(objective.full, objective.inline);
 };
 
 export const updateObjective = (level: number): void => {
-  const full = document.getElementById('objective-display');
-  if (full) full.textContent = `Find multiples of ${level}!`;
-  const inline = document.getElementById('objective-inline');
-  if (inline) inline.textContent = `Multiples of ${level}`;
+  if (gameEngine.getResource('gameMode') === 'equations') {
+    updateObjectiveElements('Complete the equation', 'Equation');
+    return;
+  }
+  updateObjectiveElements(`Find multiples of ${level}!`, `Multiples of ${level}`);
 };
 
 export const setFinalScore = (score: number): void => {

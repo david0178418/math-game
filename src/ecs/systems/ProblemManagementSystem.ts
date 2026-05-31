@@ -5,6 +5,11 @@ import { GAME_CONFIG } from '../../config';
 import { gridToPixel } from '../gameUtils';
 import { generateMultiplesProblems } from '../../math/problems';
 import {
+  chooseEquationCandidate,
+  createEquationModeState,
+  randomEquationValue,
+} from '../../math/equations';
+import {
   mathProblemWithRenderableQuery,
   playerQuery,
   positionEntityQuery,
@@ -14,6 +19,11 @@ import {
 } from '../queries';
 import { PROBLEM_CONFIG, SYSTEM_PRIORITIES } from '../systemConfigs';
 import type { Resources } from '../types';
+
+interface ProblemPlacement {
+  value: number;
+  isCorrect?: boolean;
+}
 
 /**
  * Problem Management System
@@ -36,12 +46,16 @@ export function addProblemManagementSystemToEngine(): void {
       if (player) {
         const gameMode = ecs.getResource('gameMode');
         const currentLevel = ecs.getResource('currentLevel');
+        const shouldPopulate = gameMode === 'multiples'
+          ? activeProblems.length === 0
+          : queries.mathProblems.length === 0;
 
-        if (activeProblems.length === 0 && !player.components.timers.problemSpawn?.active) {
+        if (shouldPopulate && !player.components.timers.problemSpawn?.active) {
           populateFullGrid(ecs, queries.allPositions, gameMode, currentLevel);
           player.components.timers.problemSpawn = createTimer(GAME_CONFIG.TIMING.SHORT_DELAY / 1000);
         }
 
+        updateEquationStateFromBoard(ecs, queries.mathProblems, gameMode, currentLevel);
         checkLevelCompletion(player, queries.mathProblems, gameMode, currentLevel);
       }
       cleanupConsumedProblems(ecs, queries.mathProblems);
@@ -57,19 +71,14 @@ function populateFullGrid(
   gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
-  if (gameMode !== 'multiples') return;
-  
-  // Get all problems needed for this level (30 problems for full grid)
-  const allProblems = generateMultiplesProblems(currentLevel, PROBLEM_CONFIG.TOTAL_PROBLEMS);
+  const allProblems = problemsForMode(ecs, gameMode, currentLevel);
   
   // Get ALL grid positions that don't already have math problems
   const availablePositions = getAllGridPositionsWithoutMathProblems(allPositionEntities);
   
-  // Place problems in all available positions
   const problemsToPlace = Math.min(allProblems.length, availablePositions.length);
-  
-  for (let i = 0; i < problemsToPlace; i++) {
-    const problem = allProblems[i];
+
+  allProblems.slice(0, problemsToPlace).forEach((problem, i) => {
     const gridPos = availablePositions[i];
     const pixelPos = gridToPixel(gridPos.x, gridPos.y);
     
@@ -81,10 +90,25 @@ function populateFullGrid(
       problem.isCorrect,
       1
     );
-  }
+  });
   
-  console.log(`Populated grid with ${problemsToPlace} problems for multiples of ${currentLevel} - ALL grid positions filled`);
+  console.log(`Populated grid with ${problemsToPlace} problems for ${gameMode} level ${currentLevel} - ALL grid positions filled`);
 }
+
+const problemsForMode = (
+  ecs: GameEngine,
+  gameMode: Resources['gameMode'],
+  currentLevel: number,
+): ProblemPlacement[] => {
+  if (gameMode === 'multiples') {
+    return generateMultiplesProblems(currentLevel, PROBLEM_CONFIG.TOTAL_PROBLEMS);
+  }
+
+  const range = ecs.getResource('equationMode').valueRange;
+  return Array.from({ length: PROBLEM_CONFIG.TOTAL_PROBLEMS }, () => ({
+    value: randomEquationValue(range),
+  }));
+};
 
 /**
  * Get all grid positions that don't already have math problems
@@ -133,7 +157,10 @@ function checkLevelCompletion(
   gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
-  if (gameMode !== 'multiples') return;
+  if (gameMode === 'equations') {
+    checkEquationLevelCompletion(player, mathProblems, currentLevel);
+    return;
+  }
 
   const correctMultiples: number[] = [];
   for (let i = 1; i <= 12; i++) {
@@ -159,6 +186,61 @@ function checkLevelCompletion(
 
     void gameEngine.setScreen('playing', { level: nextLevel, isFreshGame: false });
   }
+}
+
+function activeEquationProblems(mathProblems: MathProblemEntityWithRenderable[]): MathProblemEntityWithRenderable[] {
+  return mathProblems.filter(problem => !problem.components.mathProblem.consumed);
+}
+
+function updateEquationStateFromBoard(
+  ecs: GameEngine,
+  mathProblems: MathProblemEntityWithRenderable[],
+  gameMode: Resources['gameMode'],
+  currentLevel: number,
+): void {
+  if (gameMode !== 'equations') return;
+
+  const currentState = ecs.getResource('equationMode');
+  const state = currentState.level === currentLevel
+    ? currentState
+    : createEquationModeState(currentLevel);
+
+  if (state.target !== 0) return;
+
+  const candidate = chooseEquationCandidate(
+    state.operation,
+    activeEquationProblems(mathProblems).map(problem => ({
+      id: problem.id,
+      value: problem.components.mathProblem.value,
+    })),
+  );
+
+  if (!candidate) return;
+
+  ecs.setResource('equationMode', {
+    ...state,
+    target: candidate.target,
+    selectedProblemIds: [],
+  });
+}
+
+function checkEquationLevelCompletion(
+  player: PlayerEntity,
+  mathProblems: MathProblemEntityWithRenderable[],
+  currentLevel: number,
+): void {
+  const equationMode = gameEngine.getResource('equationMode');
+  const activeCount = activeEquationProblems(mathProblems).length;
+  const shouldAdvance = equationMode.clearedThisLevel >= 10
+    || (mathProblems.length > 0 && activeCount < equationMode.operandsRequired);
+
+  if (!shouldAdvance) return;
+
+  const nextLevel = currentLevel + 1;
+  console.log(`Equation level ${currentLevel} completed. Advancing to level ${nextLevel}`);
+  delete player.components.timers.problemSpawn;
+  gameEngine.setResource('equationMode', createEquationModeState(nextLevel));
+  void gameEngine.setScreen('playing', { level: nextLevel, isFreshGame: false });
 }
 
 /**

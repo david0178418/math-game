@@ -15,6 +15,8 @@ import {
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG, GAME_CONFIG } from '../../config';
 import { startShake, startDeathAnimation } from './AnimationSystem';
+import { chooseEquationCandidate, evaluateEquationSelection } from '../../math/equations';
+import type { EquationModeState } from '../types';
 
 const triggerGameOver = (player: PlayerEntityWithHealth, reason: string): void => {
   console.log(reason);
@@ -85,7 +87,7 @@ export function addCollisionSystemToEngine(): void {
         // Check if player is on the same grid position as a math problem
         if (sameGridPosition(player.components.position, problem.components.position)) {
           if (inputState.actions.justActivated('eat')) {
-            handlePlayerProblemCollision(player, problem);
+            handlePlayerProblemCollision(player, problem, queries.mathProblems);
           }
         }
       }
@@ -105,7 +107,19 @@ export function addCollisionSystemToEngine(): void {
  */
 function handlePlayerProblemCollision(
   player: PlayerEntityWithHealth, 
-  problem: MathProblemEntityWithRenderable
+  problem: MathProblemEntityWithRenderable,
+  mathProblems: MathProblemEntityWithRenderable[],
+): void {
+  if (gameEngine.getResource('gameMode') === 'equations') {
+    handleEquationProblemSelection(player, problem, mathProblems);
+    return;
+  }
+  handleMultiplesProblemCollision(player, problem);
+}
+
+function handleMultiplesProblemCollision(
+  player: PlayerEntityWithHealth,
+  problem: MathProblemEntityWithRenderable,
 ): void {
   const playerComp = player.components.player;
   const mathProblemComp = problem.components.mathProblem;
@@ -117,7 +131,7 @@ function handlePlayerProblemCollision(
   mathProblemComp.consumed = true;
 
   // Update score based on correctness
-  if (mathProblemComp.isCorrect) {
+  if (mathProblemComp.isCorrect === true) {
     // Correct answer: increase score
     const pointsEarned = mathProblemComp.value * mathProblemComp.difficulty;
     playerComp.score += pointsEarned;
@@ -145,6 +159,113 @@ function handlePlayerProblemCollision(
   // Hide the consumed problem by making it invisible
   problemRenderable.color = 'transparent';
   problemRenderable.size = 0;
+}
+
+const hideProblem = (problem: MathProblemEntityWithRenderable): void => {
+  problem.components.mathProblem.consumed = true;
+  problem.components.renderable.color = 'transparent';
+  problem.components.renderable.size = 0;
+};
+
+const selectedProblemValues = (
+  selectedProblems: readonly MathProblemEntityWithRenderable[],
+): number[] =>
+  selectedProblems.map(selectedProblem => selectedProblem.components.mathProblem.value);
+
+const findSelectedProblems = (
+  selectedProblemIds: readonly number[],
+  mathProblems: readonly MathProblemEntityWithRenderable[],
+): MathProblemEntityWithRenderable[] =>
+  selectedProblemIds.flatMap((id) => {
+    const selectedProblem = mathProblems.find(candidate => candidate.id === id);
+    return selectedProblem ? [selectedProblem] : [];
+  });
+
+const activeEquationOperands = (
+  mathProblems: readonly MathProblemEntityWithRenderable[],
+): Array<{ id: number; value: number }> =>
+  mathProblems
+    .filter(candidate => !candidate.components.mathProblem.consumed)
+    .map(candidate => ({
+      id: candidate.id,
+      value: candidate.components.mathProblem.value,
+    }));
+
+function handleEquationProblemSelection(
+  player: PlayerEntityWithHealth,
+  problem: MathProblemEntityWithRenderable,
+  mathProblems: MathProblemEntityWithRenderable[],
+): void {
+  const equationMode = gameEngine.getResource('equationMode');
+  if (equationMode.target === 0) return;
+
+  const selectedProblemIds = equationMode.selectedProblemIds.includes(problem.id)
+    ? equationMode.selectedProblemIds.filter(id => id !== problem.id)
+    : [...equationMode.selectedProblemIds, problem.id].slice(0, equationMode.operandsRequired);
+
+  const pendingMode = {
+    ...equationMode,
+    selectedProblemIds,
+  };
+
+  if (selectedProblemIds.length < equationMode.operandsRequired) {
+    gameEngine.setResource('equationMode', pendingMode);
+    return;
+  }
+
+  const selectedProblems = findSelectedProblems(selectedProblemIds, mathProblems);
+  const selectedValues = selectedProblemValues(selectedProblems);
+  const isCorrect = evaluateEquationSelection(pendingMode, selectedValues);
+
+  if (!isCorrect) {
+    handleIncorrectEquationSelection(player, pendingMode);
+    return;
+  }
+
+  selectedProblems.forEach(hideProblem);
+
+  const pointsEarned = pendingMode.target * problem.components.mathProblem.difficulty;
+  player.components.player.score += pointsEarned;
+
+  const nextMode = {
+    ...pendingMode,
+    selectedProblemIds: [],
+    clearedThisLevel: pendingMode.clearedThisLevel + selectedProblemIds.length,
+    target: 0,
+  };
+
+  const nextCandidate = chooseEquationCandidate(
+    nextMode.operation,
+    activeEquationOperands(mathProblems),
+  );
+
+  gameEngine.setResource('equationMode', nextCandidate
+    ? { ...nextMode, target: nextCandidate.target }
+    : nextMode);
+}
+
+function handleIncorrectEquationSelection(
+  player: PlayerEntityWithHealth,
+  equationMode: EquationModeState,
+): void {
+  const playerComp = player.components.player;
+  playerComp.lives -= 1;
+
+  startShake(
+    gameEngine,
+    player.id,
+    ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.INTENSITY,
+    ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.DURATION
+  );
+
+  gameEngine.setResource('equationMode', {
+    ...equationMode,
+    selectedProblemIds: [],
+  });
+
+  if (playerComp.lives <= 0) {
+    triggerGameOver(player, 'Game Over!');
+  }
 }
 
 /**
@@ -257,4 +378,4 @@ function checkPlayerTongueCollision(
     console.error(`🐸 ERROR: Exception in tongue collision detection:`, error);
     return false;
   }
-} 
+}

@@ -107,6 +107,39 @@ export const drawPlayerHighlight = (
   ctx.restore();
 };
 
+export const drawEquationSelectionHighlights = (
+  ctx: CanvasRenderingContext2D,
+  mathProblems: MathProblemEntity[],
+  selectedProblemIds: readonly number[],
+): void => {
+  if (selectedProblemIds.length === 0) return;
+
+  ctx.save();
+  selectedProblemIds.forEach((id, index) => {
+    const problem = mathProblems.find(candidate => candidate.id === id);
+    if (!problem || problem.components.mathProblem.consumed) return;
+
+    const { x: centerX, y: centerY } = cellCenter(problem.components.position);
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, lilyPadRadius + 14, lilyPadRadius * 0.76 + 12, -0.18, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(8, 47, 73, 0.9)';
+    ctx.beginPath();
+    ctx.arc(centerX + lilyPadRadius * 0.62, centerY - lilyPadRadius * 0.62, 13, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#e0f2fe';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((index + 1).toString(), centerX + lilyPadRadius * 0.62, centerY - lilyPadRadius * 0.62);
+  });
+  ctx.restore();
+};
+
 export const drawMathProblemNumbers = (
   ctx: CanvasRenderingContext2D,
   mathProblems: MathProblemEntity[],

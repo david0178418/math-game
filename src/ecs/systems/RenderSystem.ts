@@ -11,7 +11,7 @@ import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { cleanupRenderSystem, getCtx, renderMargin } from './render/context';
 import { drawGrid } from './render/grid';
 import { drawEntity } from './render/entities';
-import { drawPlayerHighlight, drawMathProblemNumbers } from './render/mathProblems';
+import { drawEquationSelectionHighlights, drawPlayerHighlight, drawMathProblemNumbers } from './render/mathProblems';
 import { drawEnhancedSpiderWebs } from './render/spiderWebs';
 import { drawEnhancedFrogTongues } from './render/frogTongues';
 import { drawFrozenPlayerEffect } from './render/frozenPlayer';
@@ -70,6 +70,13 @@ export const addRenderSystemToEngine = (): void => {
       }
 
       drawMathProblemNumbers(ctx, queries.mathProblems);
+      if (gameEngine.getResource('gameMode') === 'equations') {
+        drawEquationSelectionHighlights(
+          ctx,
+          queries.mathProblems,
+          gameEngine.getResource('equationMode').selectedProblemIds,
+        );
+      }
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'behindFrog');
 
       for (const entity of sortedEntities) {

@@ -15,6 +15,7 @@ import { addUINavigationSystemToEngine } from './systems/UINavigationSystem';
 import { gameplayPlugin } from './gameplayPlugin';
 import { playerQuery } from './queries';
 import { showScreen, updateObjective, setFinalScore } from '../ui/UIManager';
+import { createEquationModeState } from '../math/equations';
 
 const setupCanvas = (): void => {
   const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
@@ -31,6 +32,9 @@ const setupCanvas = (): void => {
  */
 const enterPlayingScreen = ({ level, isFreshGame }: PlayingScreenConfig): void => {
   gameEngine.setResource('currentLevel', level);
+  if (gameEngine.getResource('gameMode') === 'equations') {
+    gameEngine.setResource('equationMode', createEquationModeState(level));
+  }
 
   if (isFreshGame) {
     const existingPlayer = gameEngine.tryGetSingleton(playerQuery.with);

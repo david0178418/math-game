@@ -6,6 +6,7 @@ import { createCoroutinePlugin } from 'ecspresso/plugins/scripting/coroutine';
 import { SYSTEM_PRIORITIES } from './systemConfigs';
 import { configureImageAssets } from './assets';
 import { GAME_CONFIG } from '../config';
+import { createEquationModeState } from '../math/equations';
 import type {
   Components,
   Resources,
@@ -49,6 +50,7 @@ export const gameEngine = ECSpresso.create()
   .withResource('gameMode', 'multiples')
   .withResource('currentLevel', GAME_CONFIG.GAMEPLAY.STARTING_LEVEL)
   .withResource('enemySpawn', { index: 0 })
+  .withResource('equationMode', createEquationModeState(1))
   .withRequired('player', 'timers', () => ({}))
   .withRequired('player', 'health', (p) => ({ current: p.lives, max: p.lives }))
   .withRequired('enemy', 'timers', () => ({}))
