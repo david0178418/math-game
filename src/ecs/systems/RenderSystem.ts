@@ -15,7 +15,6 @@ import { drawEquationSelectionHighlights, drawPlayerHighlight, drawMathProblemNu
 import { drawEnhancedSpiderWebs } from './render/spiderWebs';
 import { drawEnhancedFrogTongues } from './render/frogTongues';
 import { drawFrozenPlayerEffect } from './render/frozenPlayer';
-import { drawTargetHighlight } from './render/targetHighlight';
 import { IMAGE_ASSET_KEYS } from '../assets';
 
 export { initializeRenderSystem } from './render/context';
@@ -86,7 +85,6 @@ export const addRenderSystemToEngine = (): void => {
 
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'aboveFrog');
       if (queries.player) drawFrozenPlayerEffect(ctx, queries.player, currentTime);
-      drawTargetHighlight(ctx, queries.player);
       ctx.restore();
     });
 };

@@ -90,9 +90,9 @@ export const MOVEMENT_CONFIG = {
   ACCEL: 2000,
   // Duration of the rotation-only tween triggered at corners.
   ROTATION_TWEEN_MS: 100,
-  // Hard cap on queued breadcrumbs so a mash doesn't commit the fly to a
-  // long uncancelable path. Rewrite-on-reversal handles the common case.
-  MAX_QUEUE_LENGTH: 8,
+  // Hard cap on queued breadcrumbs so a mash doesn't overcommit the fly.
+  // Rewrite-on-reversal handles the common case.
+  MAX_QUEUE_LENGTH: 2,
 } as const;
 
 export const ANIMATION_CONFIG = {
