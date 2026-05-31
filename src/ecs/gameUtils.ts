@@ -1,4 +1,4 @@
-import { GAME_CONFIG, SCORE_THRESHOLDS } from '../config';
+import { GAME_CONFIG } from '../config';
 import type { GameTimer } from './types';
 import type { PlayerEntity } from './queries';
 
@@ -12,13 +12,6 @@ type Position = { x: number; y: number };
  */
 export const timerProgress = (timer: GameTimer | undefined): number =>
   timer ? Math.max(0, 1 - timer.elapsed / timer.duration) : 1;
-
-export function getPlayerDifficultyLevel(player: PlayerEntity): 'Easy' | 'Medium' | 'Hard' {
-  const score = player.components.player.score;
-  if (score < SCORE_THRESHOLDS.MEDIUM_DIFFICULTY_SCORE) return 'Easy';
-  if (score < SCORE_THRESHOLDS.HARD_DIFFICULTY_SCORE) return 'Medium';
-  return 'Hard';
-}
 
 export function sameGridPosition(
   pos1: { x: number; y: number },

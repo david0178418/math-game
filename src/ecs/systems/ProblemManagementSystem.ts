@@ -3,13 +3,11 @@ import { createMathProblem } from '../entities';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG } from '../../config';
 import { gridToPixel } from '../gameUtils';
-import { generateMultiplesProblems } from '../../math/problems';
 import {
   chooseEquationCandidate,
   createEquationModeState,
-  equationPromptKindForMode,
-  equationResultRange,
-  randomEquationValue,
+  createRandomEquationCandidate,
+  equationProblemValuesForCandidate,
 } from '../../math/equations';
 import {
   mathProblemWithRenderableQuery,
@@ -26,9 +24,6 @@ interface ProblemPlacement {
   value: number;
   isCorrect?: boolean;
 }
-
-const usesEquationMode = (gameMode: Resources['gameMode']): boolean =>
-  gameMode === 'equations' || gameMode === 'equationResults';
 
 /**
  * Problem Management System
@@ -51,17 +46,15 @@ export function addProblemManagementSystemToEngine(): void {
       if (player) {
         const gameMode = ecs.getResource('gameMode');
         const currentLevel = ecs.getResource('currentLevel');
-        const shouldPopulate = gameMode === 'multiples'
-          ? activeProblems.length === 0
-          : queries.mathProblems.length === 0;
+        const shouldPopulate = activeProblems.length === 0;
 
         if (shouldPopulate && !player.components.timers.problemSpawn?.active) {
-          populateFullGrid(ecs, queries.allPositions, gameMode, currentLevel);
+          populateFullGrid(ecs, queries.allPositions, currentLevel);
           player.components.timers.problemSpawn = createTimer(GAME_CONFIG.TIMING.SHORT_DELAY / 1000);
         }
 
         updateEquationStateFromBoard(ecs, queries.mathProblems, gameMode, currentLevel);
-        checkLevelCompletion(player, queries.mathProblems, gameMode, currentLevel);
+        checkEquationLevelCompletion(player, queries.mathProblems, gameMode, currentLevel);
       }
       cleanupConsumedProblems(ecs, queries.mathProblems);
     });
@@ -73,10 +66,9 @@ export function addProblemManagementSystemToEngine(): void {
 function populateFullGrid(
   ecs: GameEngine,
   allPositionEntities: PositionEntity[],
-  gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
-  const allProblems = problemsForMode(ecs, gameMode, currentLevel);
+  const allProblems = createBoardProblems(ecs);
   
   // Get ALL grid positions that don't already have math problems
   const availablePositions = getAllGridPositionsWithoutMathProblems(allPositionEntities);
@@ -97,104 +89,54 @@ function populateFullGrid(
     );
   });
   
-  console.log(`Populated grid with ${problemsToPlace} problems for ${gameMode} level ${currentLevel} - ALL grid positions filled`);
+  console.log(`Populated grid with ${problemsToPlace} problems for level ${currentLevel} - ALL grid positions filled`);
 }
 
-const problemsForMode = (
+const createBoardProblems = (
   ecs: GameEngine,
-  gameMode: Resources['gameMode'],
-  currentLevel: number,
 ): ProblemPlacement[] => {
-  if (gameMode === 'multiples') {
-    return generateMultiplesProblems(currentLevel, PROBLEM_CONFIG.TOTAL_PROBLEMS);
-  }
-
   const equationMode = ecs.getResource('equationMode');
-  const range = equationMode.promptKind === 'selectResult'
-    ? equationResultRange(equationMode.operation, equationMode.valueRange)
-    : equationMode.valueRange;
+  const candidate = createRandomEquationCandidate(equationMode);
 
-  return Array.from({ length: PROBLEM_CONFIG.TOTAL_PROBLEMS }, () => ({
-    value: randomEquationValue(range),
-  }));
+  ecs.setResource('equationMode', {
+    ...equationMode,
+    target: candidate.target,
+    promptValues: candidate.operandValues,
+    selectedProblemIds: [],
+  });
+
+  return equationProblemValuesForCandidate(equationMode, candidate, PROBLEM_CONFIG.TOTAL_PROBLEMS)
+    .map(value => ({ value }));
 };
 
 /**
  * Get all grid positions that don't already have math problems
  * This allows players and enemies to coexist with math problems on the same tiles
  */
-function getAllGridPositionsWithoutMathProblems(allPositionEntities: PositionEntity[]): { x: number; y: number }[] {
-  const mathProblemPositions = new Set<string>();
-  
-  // Get all positions that already have math problems
-  for (const entity of allPositionEntities) {
-    const position = entity.components.position;
-    const hasMathProblem = entity.components.mathProblem;
-    
-    if (position && hasMathProblem) {
-      const gridX = Math.round(position.x / GAME_CONFIG.GRID.CELL_SIZE);
-      const gridY = Math.round(position.y / GAME_CONFIG.GRID.CELL_SIZE);
-      mathProblemPositions.add(`${gridX},${gridY}`);
-    }
-  }
-  
-  // Get all positions that don't have math problems yet
-  const availablePositions: { x: number; y: number }[] = [];
-  for (let y = 0; y < GAME_CONFIG.GRID.HEIGHT; y++) {
-    for (let x = 0; x < GAME_CONFIG.GRID.WIDTH; x++) {
-      const key = `${x},${y}`;
-      if (!mathProblemPositions.has(key)) {
-        availablePositions.push({ x, y });
-      }
-    }
-  }
-  
-  return availablePositions;
-}
+const gridKey = (x: number, y: number): string => `${x},${y}`;
 
-/**
- * Check if all correct answers have been consumed (level completion).
- *
- * Triggers a `setScreen('playing', { level: nextLevel })` round-trip — the
- * exit clears playing-scoped entities (problems, enemies, webs)
- * and the re-entry rebuilds the board via `bootstrap.ts`'s screen hook.
- * The player entity is unscoped, so score and lives persist into the new level.
- */
-function checkLevelCompletion(
-  player: PlayerEntity,
-  mathProblems: MathProblemEntityWithRenderable[],
-  gameMode: Resources['gameMode'],
-  currentLevel: number,
-): void {
-  if (usesEquationMode(gameMode)) {
-    checkEquationLevelCompletion(player, mathProblems, currentLevel);
-    return;
-  }
-
-  const correctMultiples: number[] = [];
-  for (let i = 1; i <= 12; i++) {
-    correctMultiples.push(currentLevel * i);
-  }
-
-  const correctProblemsOnBoard = mathProblems.filter(problem => {
-    const mathProblem = problem.components.mathProblem;
-    return correctMultiples.includes(mathProblem.value) && mathProblem.isCorrect;
-  });
-
-  const allCorrectConsumed = correctProblemsOnBoard.every(problem =>
-    problem.components.mathProblem.consumed
+const gridPositions = (): Array<{ x: number; y: number }> =>
+  Array.from(
+    { length: GAME_CONFIG.GRID.WIDTH * GAME_CONFIG.GRID.HEIGHT },
+    (_, index) => ({
+      x: index % GAME_CONFIG.GRID.WIDTH,
+      y: Math.floor(index / GAME_CONFIG.GRID.WIDTH),
+    }),
   );
 
-  if (allCorrectConsumed && correctProblemsOnBoard.length > 0) {
-    const nextLevel = currentLevel + 1;
+function getAllGridPositionsWithoutMathProblems(allPositionEntities: PositionEntity[]): { x: number; y: number }[] {
+  const mathProblemPositions = new Set(
+    allPositionEntities
+      .filter(entity => entity.components.mathProblem)
+      .map(({ components: { position } }) =>
+        gridKey(
+          Math.round(position.x / GAME_CONFIG.GRID.CELL_SIZE),
+          Math.round(position.y / GAME_CONFIG.GRID.CELL_SIZE),
+        ),
+      ),
+  );
 
-    console.log(`🎉 Level ${currentLevel} completed! Advancing to multiples of ${nextLevel}`);
-
-    // Skip the SHORT_DELAY debounce so the next tick repopulates immediately on re-entry.
-    delete player.components.timers.problemSpawn;
-
-    void gameEngine.setScreen('playing', { level: nextLevel, isFreshGame: false });
-  }
+  return gridPositions().filter(({ x, y }) => !mathProblemPositions.has(gridKey(x, y)));
 }
 
 function activeEquationProblems(mathProblems: MathProblemEntityWithRenderable[]): MathProblemEntityWithRenderable[] {
@@ -207,12 +149,11 @@ function updateEquationStateFromBoard(
   gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
-  if (!usesEquationMode(gameMode)) return;
-
   const currentState = ecs.getResource('equationMode');
+  const mathDifficulty = ecs.getResource('mathDifficulty');
   const state = currentState.level === currentLevel
     ? currentState
-    : createEquationModeState(currentLevel, equationPromptKindForMode(gameMode));
+    : createEquationModeState(currentLevel, mathDifficulty, gameMode);
 
   if (state.target !== 0) return;
 
@@ -234,24 +175,36 @@ function updateEquationStateFromBoard(
   });
 }
 
+/**
+ * Triggers a `setScreen('playing', { level: nextLevel })` round-trip — the
+ * exit clears playing-scoped entities (problems, enemies, webs)
+ * and the re-entry rebuilds the board via `bootstrap.ts`'s screen hook.
+ * The player entity is unscoped, so score and lives persist into the new level.
+ */
 function checkEquationLevelCompletion(
   player: PlayerEntity,
   mathProblems: MathProblemEntityWithRenderable[],
+  gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
   const equationMode = gameEngine.getResource('equationMode');
   const activeCount = activeEquationProblems(mathProblems).length;
+  const noPromptAvailable = mathProblems.length > 0
+    && activeCount > 0
+    && equationMode.target === 0;
   const shouldAdvance = equationMode.clearedThisLevel >= 10
-    || (mathProblems.length > 0 && activeCount < equationMode.operandsRequired);
+    || (mathProblems.length > 0 && activeCount < equationMode.operandsRequired)
+    || noPromptAvailable;
 
   if (!shouldAdvance) return;
 
   const nextLevel = currentLevel + 1;
   console.log(`Equation level ${currentLevel} completed. Advancing to level ${nextLevel}`);
   delete player.components.timers.problemSpawn;
+  const mathDifficulty = gameEngine.getResource('mathDifficulty');
   gameEngine.setResource(
     'equationMode',
-    createEquationModeState(nextLevel, equationMode.promptKind),
+    createEquationModeState(nextLevel, mathDifficulty, gameMode),
   );
   void gameEngine.setScreen('playing', { level: nextLevel, isFreshGame: false });
 }

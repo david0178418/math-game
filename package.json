@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "bun --port 3000 --console index.html",
     "build": "bun run typecheck && bun run scripts/build.ts",
-    "check": "bun run lint && bun run build",
+    "check": "bun run lint && bun run test && bun run build",
     "typecheck": "tsc --noEmit",
+    "test": "bun test",
     "preview": "bun run scripts/preview.ts",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",

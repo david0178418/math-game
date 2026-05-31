@@ -7,13 +7,9 @@ const textColor = '#fff7c6';
 const shadowColor = 'rgba(9, 41, 44, 0.9)';
 
 const objectiveTextForMode = (
-  gameMode: GameMode,
+  _gameMode: GameMode,
   mathProblems: readonly MathProblemEntity[],
 ): string => {
-  if (gameMode === 'multiples') {
-    return `Multiples of ${gameEngine.getResource('currentLevel')}`;
-  }
-
   const equationMode = gameEngine.getResource('equationMode');
   const selectedValues = equationMode.selectedProblemIds.flatMap((id) => {
     const problem = mathProblems.find(candidate => candidate.id === id);

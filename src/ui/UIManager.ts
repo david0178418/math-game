@@ -1,6 +1,5 @@
 import { gameEngine } from '../ecs/Engine';
-import type { GameMode } from '../ecs/types';
-import { GAME_CONFIG } from '../config';
+import type { GameMode, MathDifficulty } from '../ecs/types';
 import {
   applyTouchControlsVisibility,
   bindTouchControls,
@@ -94,14 +93,65 @@ const $ = <T extends HTMLElement = HTMLElement>(root: HTMLElement, sel: string):
   return el;
 };
 
-const startGame = (mode: GameMode): void => {
-  const level = mode === 'multiples' ? GAME_CONFIG.GAMEPLAY.STARTING_LEVEL : 1;
+const modeLabels: Record<GameMode, string> = {
+  addition: 'Addition',
+  subtraction: 'Subtraction',
+  multiplication: 'Multiplication',
+  division: 'Division',
+  anything: 'Anything',
+} as const;
+
+const difficultyLabels: Record<MathDifficulty, string> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  expert: 'Expert',
+} as const;
+
+const startGame = (mode: GameMode, difficulty: MathDifficulty): void => {
+  gameEngine.setResource('mathDifficulty', difficulty);
   gameEngine.setResource('gameMode', mode);
   void gameEngine.setScreen('playing', {
-    level,
+    level: 1,
     isFreshGame: true,
   });
 };
+
+const isGameMode = (value: string | undefined): value is GameMode =>
+  value !== undefined && value in modeLabels;
+
+const isMathDifficulty = (value: string | undefined): value is MathDifficulty =>
+  value !== undefined && value in difficultyLabels;
+
+const resetModeSelect = (root: HTMLElement): void => {
+  root.querySelectorAll<HTMLElement>('.mode-card').forEach(card => {
+    card.classList.remove('ring-2', 'ring-yellow-300');
+    card.setAttribute('aria-pressed', 'false');
+  });
+  const difficultySelect = root.querySelector<HTMLElement>('#difficulty-select');
+  difficultySelect?.classList.add('hidden');
+  if (difficultySelect) delete difficultySelect.dataset.selectedMode;
+};
+
+const selectMode = (root: HTMLElement, mode: GameMode): void => {
+  root.querySelectorAll<HTMLElement>('.mode-card').forEach(card => {
+    const selected = card.dataset.mode === mode;
+    card.classList.toggle('ring-2', selected);
+    card.classList.toggle('ring-yellow-300', selected);
+    card.setAttribute('aria-pressed', String(selected));
+  });
+  const difficultySelect = $<HTMLElement>(root, '#difficulty-select');
+  $<HTMLElement>(root, '#selected-mode-label').textContent = modeLabels[mode];
+  difficultySelect.dataset.selectedMode = mode;
+  difficultySelect.classList.remove('hidden');
+  $<HTMLButtonElement>(root, '#easy-difficulty').focus();
+};
+
+export const gameplayLevelLabel = (
+  mode: GameMode,
+  difficulty: MathDifficulty,
+  level: number,
+): string =>
+  `${modeLabels[mode]} - ${difficultyLabels[difficulty]} - Level ${level}`;
 
 // popScreen doesn't fire onScreenEnter on the screen now at the top, so
 // resuming play needs to explicitly re-show the gameplay UI.
@@ -188,62 +238,73 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     html: `
       <div class="text-center max-w-sm md:max-w-3xl landscape:max-w-6xl px-4 md:px-8 py-4 sm:py-6 md:py-12 landscape:py-3 w-full">
         <h1 class="text-2xl sm:text-3xl md:text-5xl lg:text-6xl landscape:text-2xl landscape:md:text-3xl font-bold mb-3 sm:mb-4 md:mb-6 landscape:mb-2 text-gold drop-shadow-lg">
-          Select Game Mode
+          Select Math Mode
         </h1>
 
         <p class="text-sm sm:text-base md:text-xl mb-4 sm:mb-6 md:mb-12 opacity-90 leading-relaxed px-2 landscape:hidden">
-          Choose a math challenge to begin your adventure!
+          Choose an operation, then choose a difficulty.
         </p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-5 gap-3 md:gap-6 items-stretch">
-          <div id="multiples-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
-            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🔢 Multiples</h3>
+          <button type="button" data-mode="addition" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Addition</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
-              Find all multiples of the given number! Start with multiples of 2 and work your way up.
+              Solve addition equations with result and operand prompts.
             </p>
             <div class="text-xs opacity-70 landscape:hidden">
-              Example: For multiples of 2, eat 2, 4, 6, 8, 10, 12...
+              Example: 2 + 3 = _
             </div>
-          </div>
+          </button>
 
-          <div id="equations-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
-            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">➕ Equations</h3>
+          <button type="button" data-mode="subtraction" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Subtraction</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
-              Select tiles in order to complete each equation before moving to the next level.
+              Select subtraction operands in order on operand levels.
             </p>
             <div class="text-xs opacity-70 landscape:hidden">
-              Example: For _ + _ = 6, eat 2 then 4.
+              Example: _ - _ = 4
             </div>
-          </div>
+          </button>
 
-          <div id="equation-results-mode" tabindex="0" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
-            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🧮 Results</h3>
+          <button type="button" data-mode="multiplication" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Multiplication</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
-              Solve each equation and eat the tile with the matching result.
+              Build products or find the result tile.
             </p>
             <div class="text-xs opacity-70 landscape:hidden">
-              Example: For 2 + 4 = _, eat 6.
+              Example: 3 x 4 = _
             </div>
-          </div>
+          </button>
 
-          <div id="factors-mode" class="mode-card disabled text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg text-left">
-            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🧮 Factors (Coming Soon)</h3>
+          <button type="button" data-mode="division" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Division</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
-              Find all factors of the given number! This mode will be available in a future update.
+              Solve whole-number division equations.
             </p>
             <div class="text-xs opacity-70 landscape:hidden">
-              Example: For factors of 12, eat 1, 2, 3, 4, 6, 12...
+              Example: 12 / 3 = _
             </div>
-          </div>
+          </button>
 
-          <div id="prime-mode" class="mode-card disabled text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg text-left">
-            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">🔑 Prime Numbers (Coming Soon)</h3>
+          <button type="button" data-mode="anything" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Anything</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
-              Find all prime numbers! Only eat numbers that have exactly two factors.
+              Mix addition, subtraction, multiplication, and division prompts.
             </p>
             <div class="text-xs opacity-70 landscape:hidden">
-              Example: Eat 2, 3, 5, 7, 11, 13...
+              Operation changes from prompt to prompt.
             </div>
+          </button>
+        </div>
+
+        <div id="difficulty-select" class="hidden mt-4 md:mt-8 landscape:mt-3 bg-white/10 p-3 md:p-5 rounded-xl backdrop-blur-sm">
+          <h2 class="text-base md:text-xl font-semibold mb-3">
+            <span id="selected-mode-label">Addition</span> Difficulty
+          </h2>
+          <div class="flex flex-col sm:flex-row gap-2 md:gap-3 justify-center">
+            <button id="easy-difficulty" type="button" class="difficulty-choice bg-green-600 text-white border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-green-700 btn-mobile" data-difficulty="easy">Easy</button>
+            <button type="button" class="difficulty-choice bg-orange-600 text-white border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-orange-700 btn-mobile" data-difficulty="medium">Medium</button>
+            <button type="button" class="difficulty-choice bg-red-600 text-white border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-red-700 btn-mobile" data-difficulty="expert">Expert</button>
           </div>
         </div>
 
@@ -253,9 +314,20 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       </div>
     `,
     wire: (root) => {
-      $(root, '#multiples-mode').addEventListener('click', () => startGame('multiples'));
-      $(root, '#equations-mode').addEventListener('click', () => startGame('equations'));
-      $(root, '#equation-results-mode').addEventListener('click', () => startGame('equationResults'));
+      root.querySelectorAll<HTMLElement>('.mode-card').forEach(card => {
+        card.addEventListener('click', () => {
+          if (!isGameMode(card.dataset.mode)) return;
+          selectMode(root, card.dataset.mode);
+        });
+      });
+      root.querySelectorAll<HTMLButtonElement>('.difficulty-choice').forEach(button => {
+        button.addEventListener('click', () => {
+          const mode = $<HTMLElement>(root, '#difficulty-select').dataset.selectedMode;
+          if (!isGameMode(mode)) return;
+          if (!isMathDifficulty(button.dataset.difficulty)) return;
+          startGame(mode, button.dataset.difficulty);
+        });
+      });
       $(root, '#back-to-main-btn').addEventListener('click', goToMenu);
     },
     onCancel: goToMenu,
@@ -278,7 +350,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           <button id="pause-btn" class="bg-gray-600/90 text-white border-none px-3 md:px-4 py-2 rounded-md cursor-pointer text-sm md:text-base transition-colors duration-200 hover:bg-gray-600 min-h-10 min-w-10 flex items-center justify-center">
             ⏸️
           </button>
-          <div id="level-display" class="text-xs md:text-sm lg:text-base bg-blue-600/90 px-2 md:px-3 py-1 md:py-2 rounded-lg shadow-md whitespace-nowrap">Level: Easy</div>
+          <div id="level-display" class="text-xs md:text-sm lg:text-base bg-blue-600/90 px-2 md:px-3 py-1 md:py-2 rounded-lg shadow-md whitespace-nowrap">Addition - Easy - Level 1</div>
         </div>
       </div>
 
@@ -322,12 +394,8 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
 
         <div class="grid grid-cols-1 landscape:grid-cols-2 gap-3 md:gap-6 landscape:gap-3 text-left items-stretch">
           <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
-            <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">🎯 Game Difficulty</h3>
-            <div class="flex flex-col md:flex-row gap-2 md:gap-3">
-              <button class="difficulty-btn flex-1 bg-green-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-green-700 btn-mobile" data-difficulty="easy">Easy</button>
-              <button class="difficulty-btn flex-1 bg-orange-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-orange-700 btn-mobile" data-difficulty="medium">Medium</button>
-              <button class="difficulty-btn flex-1 bg-red-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-red-700 btn-mobile" data-difficulty="hard">Hard</button>
-            </div>
+            <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">🎯 Math Challenge</h3>
+            <p class="text-xs md:text-base landscape:text-xs opacity-90">Mode and difficulty are selected when starting a game.</p>
           </div>
 
           <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
@@ -401,7 +469,9 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       </div>
     `,
     wire: (root) => {
-      $(root, '#play-again-btn').addEventListener('click', () => { startGame(gameEngine.getResource('gameMode')); });
+      $(root, '#play-again-btn').addEventListener('click', () => {
+        startGame(gameEngine.getResource('gameMode'), gameEngine.getResource('mathDifficulty'));
+      });
       $(root, '#main-menu-btn').addEventListener('click', goToMenu);
     },
     onCancel: goToMenu,
@@ -487,6 +557,7 @@ export const showScreen = (screen: UIScreen): void => {
   const root = screenElements.get(screen) ?? createScreen(screen);
   root.style.display = 'flex';
   currentScreen = screen;
+  if (screen === 'modeSelect') resetModeSelect(root);
   // Gameplay screen is driven by inputState, not DOM focus — leaving focus
   // there would show a focus ring on the pause button during play.
   if (screen !== 'playing') return focusFirstOn(screen);
@@ -537,7 +608,7 @@ export const updateGameplayUI = (
     gameplayHud.lastLives = lives;
   }
   if (gameplayHud.level && level !== gameplayHud.lastLevel) {
-    gameplayHud.level.textContent = `Level: ${level}`;
+    gameplayHud.level.textContent = level;
     gameplayHud.lastLevel = level;
   }
 };

@@ -78,13 +78,11 @@ export const addRenderSystemToEngine = (): void => {
       drawMathProblemLilyPads(ctx, queries.mathProblems);
       drawEnhancedSpiderWebs(ctx, queries.spiderWebs, currentTime);
       drawMathProblemNumbers(ctx, queries.mathProblems);
-      if (gameEngine.getResource('gameMode') !== 'multiples') {
-        drawEquationSelectionHighlights(
-          ctx,
-          queries.mathProblems,
-          gameEngine.getResource('equationMode').selectedProblemIds,
-        );
-      }
+      drawEquationSelectionHighlights(
+        ctx,
+        queries.mathProblems,
+        gameEngine.getResource('equationMode').selectedProblemIds,
+      );
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'behindFrog');
 
       for (const entity of sortedEntities) {

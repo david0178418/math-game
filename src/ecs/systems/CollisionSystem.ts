@@ -15,7 +15,11 @@ import {
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG, GAME_CONFIG } from '../../config';
 import { startShake, startDeathAnimation } from './AnimationSystem';
-import { chooseEquationCandidate, evaluateEquationSelection } from '../../math/equations';
+import {
+  chooseEquationCandidate,
+  createEquationModeState,
+  evaluateEquationSelection,
+} from '../../math/equations';
 import type { EquationModeState } from '../types';
 
 const triggerGameOver = (player: PlayerEntityWithHealth, reason: string): void => {
@@ -112,55 +116,7 @@ function handlePlayerProblemCollision(
   problem: MathProblemEntityWithRenderable,
   mathProblems: MathProblemEntityWithRenderable[],
 ): void {
-  if (gameEngine.getResource('gameMode') !== 'multiples') {
-    handleEquationProblemSelection(player, problem, mathProblems);
-    return;
-  }
-  handleMultiplesProblemCollision(player, problem);
-}
-
-function handleMultiplesProblemCollision(
-  player: PlayerEntityWithHealth,
-  problem: MathProblemEntityWithRenderable,
-): void {
-  const playerComp = player.components.player;
-  const mathProblemComp = problem.components.mathProblem;
-  const problemRenderable = problem.components.renderable;
-  
-  console.log(`Player collided with math problem: ${mathProblemComp.value} (${mathProblemComp.isCorrect ? 'correct' : 'incorrect'})`);
-  
-  // Mark problem as consumed
-  mathProblemComp.consumed = true;
-
-  // Update score based on correctness
-  if (mathProblemComp.isCorrect === true) {
-    // Correct answer: increase score
-    const pointsEarned = mathProblemComp.value * mathProblemComp.difficulty;
-    playerComp.score += pointsEarned;
-    
-    console.log(`Correct! +${pointsEarned} points. Total score: ${playerComp.score}`);
-  } else {
-    // Wrong answer: lose a life
-    playerComp.lives -= 1;
-    
-    console.log(`Wrong! -1 life. Lives remaining: ${playerComp.lives}`);
-    
-    // Shake the player for wrong answer
-    startShake(
-      gameEngine,
-      player.id,
-      ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.INTENSITY,
-      ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.DURATION
-    );
-    
-    if (playerComp.lives <= 0) {
-      triggerGameOver(player, 'Game Over!');
-    }
-  }
-
-  // Hide the consumed problem by making it invisible
-  problemRenderable.color = 'transparent';
-  problemRenderable.size = 0;
+  handleEquationProblemSelection(player, problem, mathProblems);
 }
 
 const hideProblem = (problem: MathProblemEntityWithRenderable): void => {
@@ -228,13 +184,15 @@ function handleEquationProblemSelection(
 
   const pointsEarned = pendingMode.target * problem.components.mathProblem.difficulty;
   player.components.player.score += pointsEarned;
+  const gameMode = gameEngine.getResource('gameMode');
+  const mathDifficulty = gameEngine.getResource('mathDifficulty');
 
-  const nextMode = {
-    ...pendingMode,
-    selectedProblemIds: [],
-    clearedThisLevel: pendingMode.clearedThisLevel + selectedProblemIds.length,
-    target: 0,
-  };
+  const nextMode = createEquationModeState(
+    pendingMode.level,
+    mathDifficulty,
+    gameMode,
+    pendingMode.clearedThisLevel + selectedProblemIds.length,
+  );
 
   const nextCandidate = chooseEquationCandidate(
     nextMode,

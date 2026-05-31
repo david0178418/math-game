@@ -1,8 +1,7 @@
 import { gameEngine } from '../Engine';
-import { updateGameplayUI } from '../../ui/UIManager';
+import { gameplayLevelLabel, updateGameplayUI } from '../../ui/UIManager';
 import { playerQuery } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { getPlayerDifficultyLevel } from '../gameUtils';
 
 /**
  * UI System
@@ -19,10 +18,9 @@ export function addUISystemToEngine(): void {
 
       const playerComp = player.components.player;
       const gameMode = gameEngine.getResource('gameMode');
+      const mathDifficulty = gameEngine.getResource('mathDifficulty');
       const currentLevel = gameEngine.getResource('currentLevel');
-      const level = gameMode !== 'multiples'
-        ? currentLevel.toString()
-        : getPlayerDifficultyLevel(player);
+      const level = gameplayLevelLabel(gameMode, mathDifficulty, currentLevel);
 
       updateGameplayUI(playerComp.score, playerComp.lives, level);
     });

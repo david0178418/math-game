@@ -127,13 +127,19 @@ export type AllComponents = Components
 // `Record<string, unknown>` screen-config constraint.
 export type PlayingScreenConfig = { level: number; isFreshGame: boolean };
 
-export type GameMode = 'multiples' | 'equations' | 'equationResults';
-export type EquationOperation = 'add';
+export type GameMode = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'anything';
+export type MathDifficulty = 'easy' | 'medium' | 'expert';
+export type EquationOperation = 'add' | 'subtract' | 'multiply' | 'divide';
 export type EquationPromptKind = 'selectOperands' | 'selectResult';
 
 export interface EquationValueRange {
   min: number;
   max: number;
+}
+
+export interface EquationOperandRanges {
+  left: EquationValueRange;
+  right: EquationValueRange;
 }
 
 export interface EquationModeState {
@@ -145,11 +151,12 @@ export interface EquationModeState {
   selectedProblemIds: number[];
   clearedThisLevel: number;
   level: number;
-  valueRange: EquationValueRange;
+  operandRanges: EquationOperandRanges;
 }
 
 export interface Resources {
   gameMode: GameMode;
+  mathDifficulty: MathDifficulty;
   currentLevel: number;
   enemySpawn: { index: number };
   equationMode: EquationModeState;
