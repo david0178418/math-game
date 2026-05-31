@@ -237,16 +237,10 @@ body[data-touch-controls="on"] #canvas-container { margin-bottom: 8px; }
  * feels as responsive as the D-pad / Eat button on touch devices. */
 #pause-btn { touch-action: manipulation; }
 
-/* Inline objective pill lives in the top HUD; hidden until a short viewport
- * promotes it (paired with hiding the floating banner). */
-.hud-objective-inline { display: none; }
-
-/* Short viewports (landscape phones): collapse the floating objective banner
- * into the top HUD and reclaim its vertical space for the canvas. */
+/* Short viewports (landscape phones): reduce chrome and reclaim vertical space
+ * for the canvas. */
 @media (max-height: 500px) {
   #top-hud { padding: 6px 10px; }
-  #objective-section { display: none; }
-  .hud-objective-inline { display: inline-block; }
   #canvas-container { margin-top: 60px; margin-bottom: 8px; }
   #touch-dpad { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); }
   #touch-dpad button { width: 48px; height: 48px; font-size: 18px; }

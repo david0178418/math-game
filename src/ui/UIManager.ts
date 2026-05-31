@@ -259,7 +259,6 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           <div id="score-display" class="text-sm md:text-base lg:text-lg bg-green-600/90 px-3 md:px-4 py-2 rounded-lg shadow-md whitespace-nowrap">Score: 0</div>
           <div id="lives-display" class="text-sm md:text-base lg:text-lg bg-red-600/90 px-3 md:px-4 py-2 rounded-lg shadow-md whitespace-nowrap">Lives: 3</div>
           <div id="level-display" class="text-xs md:text-sm lg:text-base bg-blue-600/90 px-2 md:px-3 py-1 md:py-2 rounded-lg shadow-md whitespace-nowrap">Level: Easy</div>
-          <div id="objective-inline" class="hud-objective-inline text-xs bg-gradient-to-r from-purple-600/95 to-pink-600/95 px-3 py-1.5 rounded-lg shadow-md whitespace-nowrap">Multiples of 2</div>
         </div>
 
         <div class="flex gap-2 md:gap-3 items-center">
@@ -272,13 +271,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
         </div>
       </div>
 
-      <div id="objective-section" class="absolute top-16 md:top-20 lg:top-24 inset-x-0 flex justify-center items-center px-4 pointer-events-none z-20">
-        <div id="objective-display" class="text-sm md:text-base lg:text-lg bg-gradient-to-r from-purple-600/95 to-pink-600/95 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl shadow-lg text-center font-bold border-2 border-white/20 max-w-xs md:max-w-sm lg:max-w-md">
-          Find multiples of 2!
-        </div>
-      </div>
-
-      <div id="canvas-container" class="flex-1 min-h-0 min-w-0 flex items-center justify-center mt-24 md:mt-28 lg:mt-32 mb-16 md:mb-20 px-2 md:px-4">
+      <div id="canvas-container" class="flex-1 min-h-0 min-w-0 flex items-center justify-center mt-16 md:mt-20 lg:mt-24 mb-16 md:mb-20 px-2 md:px-4">
         <canvas id="game-canvas" class="bg-white rounded-lg shadow-2xl max-w-full max-h-full"></canvas>
       </div>
 
@@ -518,18 +511,10 @@ export const triggerCancel = (): void => {
   SCREENS[currentScreen].onCancel?.();
 };
 
-const updateObjectiveElements = (fullText: string, inlineText: string): void => {
-  const full = document.getElementById('objective-display');
-  if (full) full.textContent = fullText;
-  const inline = document.getElementById('objective-inline');
-  if (inline) inline.textContent = inlineText;
-};
-
 export const updateGameplayUI = (
   score: number,
   lives: number,
   level: string,
-  objective?: { full: string; inline: string },
 ): void => {
   if (gameplayHud.score && score !== gameplayHud.lastScore) {
     gameplayHud.score.textContent = `Score: ${score}`;
@@ -543,15 +528,6 @@ export const updateGameplayUI = (
     gameplayHud.level.textContent = `Level: ${level}`;
     gameplayHud.lastLevel = level;
   }
-  if (objective) updateObjectiveElements(objective.full, objective.inline);
-};
-
-export const updateObjective = (level: number): void => {
-  if (gameEngine.getResource('gameMode') === 'equations') {
-    updateObjectiveElements('Complete the equation', 'Equation');
-    return;
-  }
-  updateObjectiveElements(`Find multiples of ${level}!`, `Multiples of ${level}`);
 };
 
 export const setFinalScore = (score: number): void => {

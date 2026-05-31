@@ -15,6 +15,7 @@ import { drawEquationSelectionHighlights, drawPlayerHighlight, drawMathProblemNu
 import { drawEnhancedSpiderWebs } from './render/spiderWebs';
 import { drawEnhancedFrogTongues } from './render/frogTongues';
 import { drawFrozenPlayerEffect } from './render/frozenPlayer';
+import { drawBoardObjective } from './render/objective';
 import { IMAGE_ASSET_KEYS } from '../assets';
 
 export { initializeRenderSystem } from './render/context';
@@ -35,10 +36,17 @@ export const addRenderSystemToEngine = (): void => {
       if (!ctx) return;
 
       const currentTime = performance.now();
+      const margin = renderMargin();
 
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      drawBoardObjective(
+        ctx,
+        gameEngine.getResource('gameMode'),
+        queries.mathProblems,
+        margin,
+      );
       ctx.save();
-      ctx.translate(renderMargin(), renderMargin());
+      ctx.translate(margin, margin);
 
       drawGrid(ctx);
       drawPlayerHighlight(ctx, queries.player, queries.mathProblems);

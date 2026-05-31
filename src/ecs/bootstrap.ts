@@ -14,7 +14,7 @@ import { addPauseSystemToEngine } from './systems/PauseSystem';
 import { addUINavigationSystemToEngine } from './systems/UINavigationSystem';
 import { gameplayPlugin } from './gameplayPlugin';
 import { playerQuery } from './queries';
-import { showScreen, updateObjective, setFinalScore } from '../ui/UIManager';
+import { showScreen, setFinalScore } from '../ui/UIManager';
 import { createEquationModeState } from '../math/equations';
 
 const setupCanvas = (): void => {
@@ -59,7 +59,6 @@ const setupScreenHooks = (): void => {
     showScreen('playing');
     setupCanvas();
     enterPlayingScreen(config);
-    updateObjective(config.level);
   });
 
   gameEngine.onScreenEnter('paused', () => {
