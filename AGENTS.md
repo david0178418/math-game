@@ -1,0 +1,12 @@
+- For work that touches ECS architecture, systems, components, resources, screens, assets, input, timers, tweens, coroutines, rendering, collision, or plugins, use the ECSpresso skill when it is available.
+- Prefer ECSpresso framework paths before custom application code:
+	- Use plugins and plugin defaults for feature grouping and screen-scoped systems.
+	- Use queries, singleton queries, `mutates`, resources, events, required components, reactive queries, and the command buffer where they fit.
+	- Use ECSpresso asset, screen, input, timer, tween, coroutine, rendering, collision, spatial, and AI utilities when they fit the problem.
+- Treat escape hatches as exceptions. Examples include direct `entityManager` mutation from gameplay systems, imported singleton `gameEngine` reach-through where an injected `ecs` value is available, manual lifecycle repair around screen transitions, synthetic input events to bypass the input plugin, and custom render/collision infrastructure when an ECSpresso plugin would fit.
+- Before adding a new escape hatch or expanding an existing one, ask for approval first. Explain:
+	- which ECSpresso path was considered,
+	- why it does not fit or is insufficient,
+	- what workaround is proposed,
+	- what framework shortcoming should be noted for follow-up.
+- When an approved escape hatch reveals an ECSpresso shortcoming, add a concise follow-up note to `ecspresso-friction.local.md` unless the user asks for a different destination.
