@@ -64,6 +64,10 @@ const setupScreenHooks = (): void => {
     enterPlayingScreen(config);
   });
 
+  gameEngine.onScreenResume('playing', () => {
+    showScreen('playing');
+  });
+
   gameEngine.onScreenEnter('paused', () => {
     showScreen('paused');
   });

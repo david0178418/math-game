@@ -153,11 +153,8 @@ export const gameplayLevelLabel = (
 ): string =>
   `${modeLabels[mode]} - ${difficultyLabels[difficulty]} - Level ${level}`;
 
-// popScreen doesn't fire onScreenEnter on the screen now at the top, so
-// resuming play needs to explicitly re-show the gameplay UI.
 const resumePlay = (): void => {
   void gameEngine.popScreen();
-  showScreen('playing');
 };
 
 const goToMenu = (): void => { void gameEngine.setScreen('menu', {}); };

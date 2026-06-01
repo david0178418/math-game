@@ -138,19 +138,17 @@ function collectEnemyBlockedCells(ecs: GameEngine, frogId: number): Set<string> 
   );
 }
 
-function initializeFrogTongue(frogId: number): void {
-  gameEngine.entityManager.addComponent(frogId, 'frogTongue', {
-    direction: { x: 0, y: 0 },
-    maxRange: FROG_CONFIG.TONGUE_RANGE,
-    currentLength: 0,
-    segments: [],
-    phase: 'idle',
+function queueFrogTongueInit(ecs: GameEngine, frogId: number): void {
+  ecs.commands.addComponents(frogId, {
+    frogTongue: {
+      direction: { x: 0, y: 0 },
+      maxRange: FROG_CONFIG.TONGUE_RANGE,
+      currentLength: 0,
+      segments: [],
+      phase: 'idle',
+    },
+    coroutine: createCoroutine(tongueLifecycle(frogId)).coroutine,
   });
-  gameEngine.entityManager.addComponent(
-    frogId,
-    'coroutine',
-    createCoroutine(tongueLifecycle(frogId)).coroutine,
-  );
 
   console.log(`🐸 Initialized frog tongue for entity ${frogId}`);
 }
@@ -166,10 +164,9 @@ export const isFrogAttacking = (tongue: AllComponents['frogTongue'] | undefined)
 export function registerFrogTongueInit(): void {
   gameEngine.addReactiveQuery('frog-init', {
     with: ['enemy'],
-    onEnter: (entity) => {
-      if (entity.components.enemy.enemyType === 'frog') {
-        initializeFrogTongue(entity.id);
-      }
+    onEnter: ({ entity, ecs }) => {
+      if (entity.components.enemy.enemyType !== 'frog') return;
+      queueFrogTongueInit(ecs, entity.id);
     },
   });
 }
