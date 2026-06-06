@@ -193,9 +193,9 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     id: 'main-menu',
     className: `${OVERLAY_BASE} app-background`,
     html: `
-      <div class="px-6 md:px-10 py-6 sm:py-8 md:py-16 max-w-sm md:max-w-2xl landscape:max-w-4xl flex flex-col landscape:flex-row landscape:items-center text-center landscape:text-left gap-6 landscape:gap-10 lg:landscape:gap-16">
+      <div class="menu-shell px-6 md:px-10 py-6 sm:py-8 md:py-16 max-w-sm md:max-w-2xl landscape:max-w-4xl flex flex-col landscape:flex-row landscape:items-center text-center landscape:text-left gap-6 landscape:gap-10 lg:landscape:gap-16">
         <div class="landscape:flex-1">
-          <h1 class="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-3 sm:mb-4 md:mb-6 text-gold drop-shadow-lg">
+          <h1 class="pond-title text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-3 sm:mb-4 md:mb-6 text-gold drop-shadow-lg">
             Math Munchers
           </h1>
 
@@ -217,7 +217,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
         </div>
       </div>
 
-      <button id="menu-fullscreen-btn" type="button" class="absolute top-3 right-3 md:top-4 md:right-4 bg-gray-600/80 hover:bg-gray-600 text-white border-none w-10 h-10 md:w-12 md:h-12 rounded-md cursor-pointer text-lg md:text-xl shadow-md transition-colors duration-200 flex items-center justify-center z-10">
+      <button id="menu-fullscreen-btn" type="button" class="utility-btn absolute top-3 right-3 md:top-4 md:right-4 text-white border-none w-10 h-10 md:w-12 md:h-12 rounded-md cursor-pointer text-lg md:text-xl transition-colors duration-200 flex items-center justify-center z-10">
         ⛶
       </button>
     `,
@@ -234,7 +234,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     className: `${OVERLAY_BASE} app-background`,
     html: `
       <div class="text-center max-w-sm md:max-w-3xl landscape:max-w-6xl px-4 md:px-8 py-4 sm:py-6 md:py-12 landscape:py-3 w-full">
-        <h1 class="text-2xl sm:text-3xl md:text-5xl lg:text-6xl landscape:text-2xl landscape:md:text-3xl font-bold mb-3 sm:mb-4 md:mb-6 landscape:mb-2 text-gold drop-shadow-lg">
+        <h1 class="pond-title text-2xl sm:text-3xl md:text-5xl lg:text-6xl landscape:text-2xl landscape:md:text-3xl font-bold mb-3 sm:mb-4 md:mb-6 landscape:mb-2 text-gold drop-shadow-lg">
           Select Math Mode
         </h1>
 
@@ -244,6 +244,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-5 gap-3 md:gap-6 items-stretch">
           <button type="button" data-mode="addition" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <span class="mode-symbol" aria-hidden="true">+</span>
             <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Addition</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
               Solve addition equations with result and operand prompts.
@@ -254,6 +255,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           </button>
 
           <button type="button" data-mode="subtraction" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <span class="mode-symbol" aria-hidden="true">-</span>
             <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Subtraction</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
               Select subtraction operands in order on operand levels.
@@ -263,7 +265,8 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
             </div>
           </button>
 
-          <button type="button" data-mode="multiplication" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+          <button type="button" data-mode="multiplication" data-focusable class="mode-card border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <span class="mode-symbol" aria-hidden="true">x</span>
             <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Multiplication</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
               Build products or find the result tile.
@@ -274,6 +277,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           </button>
 
           <button type="button" data-mode="division" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <span class="mode-symbol" aria-hidden="true">/</span>
             <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Division</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
               Solve whole-number division equations.
@@ -284,6 +288,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           </button>
 
           <button type="button" data-mode="anything" data-focusable class="mode-card text-white border-none p-3 md:p-6 landscape:p-3 rounded-xl shadow-lg cursor-pointer text-left">
+            <span class="mode-symbol" aria-hidden="true">?</span>
             <h3 class="text-lg md:text-2xl landscape:text-base font-bold mb-1 md:mb-3 landscape:mb-1">Anything</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90 mb-1 md:mb-3 landscape:mb-1">
               Mix addition, subtraction, multiplication, and division prompts.
@@ -294,14 +299,14 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
           </button>
         </div>
 
-        <div id="difficulty-select" class="hidden mt-4 md:mt-8 landscape:mt-3 bg-white/10 p-3 md:p-5 rounded-xl backdrop-blur-sm">
+        <div id="difficulty-select" class="difficulty-panel hidden mt-4 md:mt-8 landscape:mt-3 p-3 md:p-5 rounded-xl backdrop-blur-sm">
           <h2 class="text-base md:text-xl font-semibold mb-3">
             <span id="selected-mode-label">Addition</span> Difficulty
           </h2>
           <div class="flex flex-col sm:flex-row gap-2 md:gap-3 justify-center">
-            <button id="easy-difficulty" type="button" class="difficulty-choice bg-green-600 text-white border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-green-700 btn-mobile" data-difficulty="easy">Easy</button>
-            <button type="button" class="difficulty-choice bg-orange-600 text-white border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-orange-700 btn-mobile" data-difficulty="medium">Medium</button>
-            <button type="button" class="difficulty-choice bg-red-600 text-white border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-red-700 btn-mobile" data-difficulty="expert">Expert</button>
+            <button id="easy-difficulty" type="button" class="difficulty-choice easy text-white border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 btn-mobile" data-difficulty="easy">Easy</button>
+            <button type="button" class="difficulty-choice medium border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 btn-mobile" data-difficulty="medium">Medium</button>
+            <button type="button" class="difficulty-choice expert text-white border-none px-5 py-3 rounded-lg cursor-pointer transition-colors duration-200 btn-mobile" data-difficulty="expert">Expert</button>
           </div>
         </div>
 
@@ -336,23 +341,23 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     html: `
       <div id="top-hud" class="absolute top-0 inset-x-0 p-3 md:p-4 lg:p-5 flex flex-nowrap justify-between items-start text-white font-bold pointer-events-none gap-2 md:gap-4">
         <div class="flex flex-wrap gap-2 md:gap-4 lg:gap-6 items-center pointer-events-auto">
-          <div id="score-display" class="text-sm md:text-base lg:text-lg bg-green-600/90 px-3 md:px-4 py-2 rounded-lg shadow-md whitespace-nowrap">Score: 0</div>
-          <div id="lives-display" class="text-sm md:text-base lg:text-lg bg-red-600/90 px-3 md:px-4 py-2 rounded-lg shadow-md whitespace-nowrap">Lives: 3</div>
+          <div id="score-display" class="hud-chip score text-sm md:text-base lg:text-lg px-3 md:px-4 py-2 rounded-lg whitespace-nowrap">Score: 0</div>
+          <div id="lives-display" class="hud-chip lives text-sm md:text-base lg:text-lg px-3 md:px-4 py-2 rounded-lg whitespace-nowrap">Lives: 3</div>
         </div>
 
         <div class="flex gap-2 md:gap-3 items-center pointer-events-auto shrink-0">
-          <button id="hud-fullscreen-btn" type="button" class="bg-gray-600/90 text-white border-none px-3 md:px-4 py-2 rounded-md cursor-pointer text-sm md:text-base transition-colors duration-200 hover:bg-gray-600 min-h-10 min-w-10 flex items-center justify-center">
+          <button id="hud-fullscreen-btn" type="button" class="utility-btn text-white border-none px-3 md:px-4 py-2 rounded-md cursor-pointer text-sm md:text-base transition-colors duration-200 min-h-10 min-w-10 flex items-center justify-center">
             ⛶
           </button>
-          <button id="pause-btn" class="bg-gray-600/90 text-white border-none px-3 md:px-4 py-2 rounded-md cursor-pointer text-sm md:text-base transition-colors duration-200 hover:bg-gray-600 min-h-10 min-w-10 flex items-center justify-center">
+          <button id="pause-btn" class="utility-btn text-white border-none px-3 md:px-4 py-2 rounded-md cursor-pointer text-sm md:text-base transition-colors duration-200 min-h-10 min-w-10 flex items-center justify-center">
             ⏸️
           </button>
-          <div id="level-display" class="text-xs md:text-sm lg:text-base bg-blue-600/90 px-2 md:px-3 py-1 md:py-2 rounded-lg shadow-md whitespace-nowrap">Addition - Easy - Level 1</div>
+          <div id="level-display" class="hud-chip level text-xs md:text-sm lg:text-base px-2 md:px-3 py-1 md:py-2 rounded-lg whitespace-nowrap">Addition - Easy - Level 1</div>
         </div>
       </div>
 
       <div id="canvas-container" class="flex-1 min-h-0 min-w-0 flex items-center justify-center mb-16 md:mb-20 px-2 md:px-4">
-        <canvas id="game-canvas" class="bg-white rounded-lg shadow-2xl max-w-full max-h-full"></canvas>
+        <canvas id="game-canvas" class="rounded-lg max-w-full max-h-full"></canvas>
       </div>
 
       <div id="bottom-hud" class="hud-bottom absolute bottom-0 inset-x-0 p-3 md:p-4 lg:p-5 flex justify-center items-center text-white pointer-events-auto">
@@ -387,29 +392,29 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     className: `${OVERLAY_BASE} app-background`,
     html: `
       <div class="text-center max-w-sm md:max-w-lg landscape:max-w-4xl w-full px-4 md:px-8 py-4 sm:py-6 md:py-8 landscape:py-3">
-        <h2 class="text-2xl sm:text-3xl md:text-4xl landscape:text-xl landscape:md:text-2xl font-bold mb-4 sm:mb-6 md:mb-8 landscape:mb-3 text-gold drop-shadow-lg">⚙️ Settings</h2>
+        <h2 class="pond-title text-2xl sm:text-3xl md:text-4xl landscape:text-xl landscape:md:text-2xl font-bold mb-4 sm:mb-6 md:mb-8 landscape:mb-3 text-gold drop-shadow-lg">⚙️ Settings</h2>
 
         <div class="grid grid-cols-1 landscape:grid-cols-2 gap-3 md:gap-6 landscape:gap-3 text-left items-stretch">
-          <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
+          <div class="settings-panel p-3 md:p-6 landscape:p-3 rounded-xl">
             <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">🎯 Math Challenge</h3>
             <p class="text-xs md:text-base landscape:text-xs opacity-90">Mode and difficulty are selected when starting a game.</p>
           </div>
 
-          <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
+          <div class="settings-panel p-3 md:p-6 landscape:p-3 rounded-xl">
             <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">🔊 Audio</h3>
             <div class="space-y-2 md:space-y-3">
               <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" id="sound-effects" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                <input type="checkbox" id="sound-effects" checked class="theme-checkbox w-5 h-5 rounded">
                 <span class="text-sm md:text-base">Sound Effects</span>
               </label>
               <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" id="background-music" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                <input type="checkbox" id="background-music" checked class="theme-checkbox w-5 h-5 rounded">
                 <span class="text-sm md:text-base">Background Music</span>
               </label>
             </div>
           </div>
 
-          <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
+          <div class="settings-panel p-3 md:p-6 landscape:p-3 rounded-xl">
             <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">🎮 Controls</h3>
             <div class="text-xs md:text-base landscape:text-xs space-y-0.5 md:space-y-1 opacity-90">
               <p>🔤 Move: WASD / Arrows / D-pad</p>
@@ -419,13 +424,13 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
             </div>
           </div>
 
-          <div class="bg-white/10 p-3 md:p-6 landscape:p-3 rounded-xl backdrop-blur-sm">
+          <div class="settings-panel p-3 md:p-6 landscape:p-3 rounded-xl">
             <h3 class="text-base md:text-xl landscape:text-base font-semibold mb-2 md:mb-4 landscape:mb-2">📱 Touch Controls</h3>
             <p class="text-xs md:text-sm opacity-80 mb-2 landscape:hidden">Show on-screen D-pad and Eat button.</p>
             <div class="flex flex-col md:flex-row gap-2 md:gap-3">
-              <button class="touch-mode-btn flex-1 bg-blue-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-blue-700 btn-mobile" data-touch-mode="auto">Auto</button>
-              <button class="touch-mode-btn flex-1 bg-blue-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-blue-700 btn-mobile" data-touch-mode="on">Always On</button>
-              <button class="touch-mode-btn flex-1 bg-blue-600 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-blue-700 btn-mobile" data-touch-mode="off">Always Off</button>
+              <button class="touch-mode-btn flex-1 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 btn-mobile" data-touch-mode="auto">Auto</button>
+              <button class="touch-mode-btn flex-1 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 btn-mobile" data-touch-mode="on">Always On</button>
+              <button class="touch-mode-btn flex-1 text-white border-none px-3 py-2 landscape:py-2 md:py-3 rounded-lg cursor-pointer transition-colors duration-200 btn-mobile" data-touch-mode="off">Always Off</button>
             </div>
           </div>
         </div>
@@ -444,14 +449,14 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
 
   gameOver: {
     id: 'game-over-screen',
-    className: `${OVERLAY_BASE} bg-black/90`,
+    className: `${OVERLAY_BASE} app-background`,
     html: `
-      <div class="text-center max-w-sm md:max-w-md px-6 py-6 sm:py-8">
-        <h1 class="text-red-400 text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 drop-shadow-lg animate-pulse">
+      <div class="overlay-panel text-center max-w-sm md:max-w-md px-6 py-6 sm:py-8">
+        <h1 class="game-over-title text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 drop-shadow-lg animate-pulse">
           💀 GAME OVER
         </h1>
 
-        <div id="final-score" class="text-xl sm:text-2xl md:text-3xl mb-6 sm:mb-8 text-green-400 font-bold drop-shadow-md">
+        <div id="final-score" class="final-score text-xl sm:text-2xl md:text-3xl mb-6 sm:mb-8 font-bold drop-shadow-md">
           Final Score: 0
         </div>
 
@@ -476,9 +481,9 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
 
   paused: {
     id: 'pause-screen',
-    className: `${OVERLAY_BASE} bg-black/80`,
+    className: `${OVERLAY_BASE} app-background`,
     html: `
-      <div class="text-center max-w-sm md:max-w-md px-6 py-6 sm:py-8">
+      <div class="overlay-panel text-center max-w-sm md:max-w-md px-6 py-6 sm:py-8">
         <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 md:mb-12 drop-shadow-lg">⏸️ PAUSED</h2>
 
         <div class="flex flex-col gap-4 md:gap-5">

@@ -7,12 +7,33 @@
 
 /* ===== CUSTOM PROPERTIES (for complex gradients not easily expressed in Tailwind) ===== */
 :root {
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --success-gradient: linear-gradient(45deg, #4CAF50, #45a049);
-  --primary-button-gradient: linear-gradient(45deg, #2196F3, #1976D2);
-  --warning-gradient: linear-gradient(45deg, #FF9800, #F57C00);
-  --danger-gradient: linear-gradient(45deg, #f44336, #d32f2f);
-  --gold-gradient: linear-gradient(45deg, #FFD700, #FFA500);
+  --pond-deep: #0f4f62;
+  --pond-mid: #1f8395;
+  --leaf-deep: #246b35;
+  --leaf-mid: #4b9f3b;
+  --leaf-light: #9bd45e;
+  --reed: #f4d27a;
+  --cream: #fff7c6;
+  --cream-panel: #fff3cf;
+  --ink: #12343b;
+  --danger-deep: #8d241f;
+  --soft-cream-border: rgba(255, 247, 198, 0.28);
+  --reed-border: rgba(244, 210, 122, 0.34);
+  --panel-gradient: linear-gradient(135deg, rgba(15, 79, 98, 0.72), rgba(8, 73, 82, 0.54));
+  --panel-gradient-strong: linear-gradient(135deg, rgba(15, 79, 98, 0.76), rgba(8, 73, 82, 0.58));
+  --leaf-glint: radial-gradient(ellipse at 22% 18%, rgba(255, 247, 198, 0.22), transparent 34%);
+  --button-glint: radial-gradient(ellipse at 18% 22%, rgba(255, 247, 198, 0.22), transparent 34%);
+  --primary-gradient:
+    radial-gradient(ellipse at 16% 12%, rgba(155, 212, 94, 0.22) 0%, rgba(155, 212, 94, 0) 28%),
+    radial-gradient(ellipse at 82% 18%, rgba(244, 210, 122, 0.14) 0%, rgba(244, 210, 122, 0) 24%),
+    linear-gradient(180deg, #5fc3c3 0%, #1f8395 48%, #0f4f62 100%);
+  --success-gradient: linear-gradient(135deg, #9bd45e 0%, #4b9f3b 58%, #246b35 100%);
+  --primary-button-gradient: linear-gradient(135deg, #57c7bd 0%, #1f8395 100%);
+  --warning-gradient: linear-gradient(135deg, #f4d27a 0%, #d89632 100%);
+  --danger-gradient: linear-gradient(135deg, #e25d52 0%, #c7362f 58%, #8d241f 100%);
+  --secondary-gradient: linear-gradient(135deg, #3e7d6b 0%, #1c5361 100%);
+  --gold-gradient: linear-gradient(135deg, #fff7c6 0%, #f4d27a 54%, #d89632 100%);
+  --pond-shadow: 0 10px 22px rgba(5, 31, 36, 0.3);
 }
 
 /* ===== GAME-SPECIFIC CUSTOM STYLES ===== */
@@ -20,24 +41,90 @@
 /* Main app background gradient */
 .app-background {
   background: var(--primary-gradient);
+  color: var(--cream);
+}
+
+#game-container {
+  font-family: ui-rounded, "Trebuchet MS", "Arial Rounded MT Bold", Arial, sans-serif;
+}
+
+.app-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 18% 28%, transparent 0 38px, rgba(255, 247, 198, 0.13) 39px 41px, transparent 42px),
+    radial-gradient(ellipse at 72% 18%, transparent 0 54px, rgba(255, 247, 198, 0.1) 55px 57px, transparent 58px),
+    radial-gradient(ellipse at 42% 72%, transparent 0 70px, rgba(255, 247, 198, 0.08) 71px 73px, transparent 74px),
+    radial-gradient(ellipse at 88% 74%, transparent 0 46px, rgba(255, 247, 198, 0.1) 47px 49px, transparent 50px),
+    linear-gradient(90deg, rgba(36, 107, 53, 0.28), transparent 10%, transparent 90%, rgba(36, 107, 53, 0.28));
+  opacity: 0.72;
+  mask-image: linear-gradient(180deg, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+.app-background::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 22vh;
+  pointer-events: none;
+  background:
+    linear-gradient(78deg, transparent 0 7%, rgba(244, 210, 122, 0.34) 7.4% 8%, transparent 8.4% 100%),
+    linear-gradient(101deg, transparent 0 18%, rgba(155, 212, 94, 0.26) 18.5% 19.2%, transparent 19.6% 100%),
+    linear-gradient(84deg, transparent 0 83%, rgba(244, 210, 122, 0.32) 83.4% 84%, transparent 84.4% 100%),
+    linear-gradient(105deg, transparent 0 91%, rgba(155, 212, 94, 0.28) 91.3% 92%, transparent 92.4% 100%),
+    linear-gradient(0deg, rgba(5, 31, 36, 0.34), transparent);
+  opacity: 0.66;
+}
+
+.menu-shell {
+  position: relative;
+  background:
+    var(--panel-gradient),
+    radial-gradient(ellipse at 12% 50%, rgba(155, 212, 94, 0.18), transparent 36%);
+  border: 2px solid var(--reed-border);
+  border-radius: 26px;
+  box-shadow: var(--pond-shadow);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 /* Canvas border with subtle transparency */
 #game-canvas {
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--cream-panel);
+  border: 7px solid var(--cream-panel);
+  box-shadow:
+    0 0 0 4px rgba(36, 107, 53, 0.86),
+    0 0 0 8px rgba(109, 122, 52, 0.32),
+    0 16px 32px rgba(5, 31, 36, 0.32);
 }
 
 /* Button gradients for primary actions */
 .btn-success {
-  background: var(--success-gradient);
+  background:
+    radial-gradient(ellipse at 18% 18%, rgba(255, 247, 198, 0.25), transparent 32%),
+    var(--success-gradient);
+  border-radius: 22px 28px 22px 28px;
+}
+
+.btn-primary,
+.btn-warning,
+.btn-danger,
+.btn-secondary {
+  border-radius: 18px 24px 18px 24px;
 }
 
 .btn-primary {
-  background: var(--primary-button-gradient);
+  background:
+    var(--button-glint),
+    var(--primary-button-gradient);
 }
 
 .btn-warning {
-  background: var(--warning-gradient);
+  background:
+    radial-gradient(ellipse at 18% 22%, rgba(255, 247, 198, 0.3), transparent 34%),
+    var(--warning-gradient);
 }
 
 .btn-danger {
@@ -45,7 +132,9 @@
 }
 
 .btn-secondary {
-  background: linear-gradient(45deg, #607D8B, #455A64);
+  background:
+    radial-gradient(ellipse at 18% 22%, rgba(255, 247, 198, 0.18), transparent 34%),
+    var(--secondary-gradient);
 }
 
 /* Gold text gradient for titles */
@@ -54,22 +143,83 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: 0;
+}
+
+.pond-title {
+  position: relative;
+  display: inline-block;
+}
+
+.pond-title::after {
+  content: "";
+  position: absolute;
+  right: -18px;
+  bottom: 0.12em;
+  width: 0.38em;
+  height: 0.22em;
+  background: radial-gradient(ellipse at 32% 28%, var(--leaf-light), var(--leaf-mid) 62%, var(--leaf-deep));
+  border-radius: 999px 999px 999px 0;
+  box-shadow: 0 2px 0 rgba(17, 72, 36, 0.54);
+  transform: rotate(-18deg);
 }
 
 /* Bottom HUD background with transparency */
 .hud-bottom {
-  background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+  background: linear-gradient(0deg, rgba(9, 41, 44, 0.88) 0%, rgba(9, 41, 44, 0.5) 70%, transparent 100%);
 }
 
 /* Game mode cards with hover effects */
 .mode-card {
-  background: var(--success-gradient);
+  position: relative;
+  overflow: hidden;
+  color: var(--cream);
+  background:
+    var(--leaf-glint),
+    linear-gradient(135deg, rgba(155, 212, 94, 0.95), rgba(75, 159, 59, 0.95) 58%, rgba(36, 107, 53, 0.96));
+  border: 2px solid var(--reed-border);
+  border-radius: 18px 24px 18px 24px;
   transition: all 0.3s ease;
+}
+
+.mode-symbol {
+  position: absolute;
+  right: 12px;
+  bottom: 4px;
+  color: rgba(255, 247, 198, 0.2);
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.mode-card[data-mode="subtraction"] {
+  background:
+    var(--leaf-glint),
+    linear-gradient(135deg, rgba(95, 195, 195, 0.95), rgba(31, 131, 149, 0.96));
+}
+
+.mode-card[data-mode="multiplication"] {
+  background:
+    var(--leaf-glint),
+    linear-gradient(135deg, rgba(244, 210, 122, 0.98), rgba(203, 132, 39, 0.96));
+  color: #17393f;
+}
+
+.mode-card[data-mode="division"] {
+  background:
+    var(--leaf-glint),
+    linear-gradient(135deg, rgba(76, 132, 112, 0.98), rgba(28, 83, 97, 0.96));
+}
+
+.mode-card[data-mode="anything"] {
+  background:
+    var(--leaf-glint),
+    linear-gradient(135deg, rgba(117, 166, 77, 0.98), rgba(24, 112, 112, 0.96));
 }
 
 .mode-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 18px rgba(5, 31, 36, 0.35);
 }
 
 .mode-card.disabled {
@@ -88,13 +238,128 @@
  * leave a lingering outline on the last-clicked button. */
 button:focus-visible,
 [data-focusable]:focus-visible {
-  outline: 3px solid #FFD700;
+  outline: 3px solid var(--reed);
   outline-offset: 4px;
-  box-shadow: 0 0 0 6px rgba(255, 215, 0, 0.25);
+  box-shadow: 0 0 0 6px rgba(244, 210, 122, 0.28);
 }
 
 .mode-card[data-focusable]:focus-visible {
   transform: translateY(-2px);
+}
+
+.difficulty-panel {
+  background: var(--panel-gradient);
+  border: 2px solid var(--reed-border);
+  box-shadow: var(--pond-shadow);
+}
+
+.utility-btn,
+.hud-chip,
+.difficulty-choice,
+.touch-mode-btn,
+.settings-panel {
+  color: var(--cream);
+  border: 1px solid var(--soft-cream-border);
+  box-shadow: var(--pond-shadow);
+}
+
+.utility-btn {
+  background:
+    radial-gradient(ellipse at 24% 20%, rgba(255, 247, 198, 0.16), transparent 36%),
+    rgba(28, 83, 97, 0.92);
+}
+
+.utility-btn:hover {
+  background: rgba(18, 62, 72, 0.96);
+}
+
+.hud-chip {
+  background: rgba(15, 79, 98, 0.92);
+}
+
+.hud-chip.score {
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(255, 247, 198, 0.2), transparent 36%),
+    linear-gradient(135deg, rgba(75, 159, 59, 0.98), rgba(36, 107, 53, 0.98));
+}
+
+.hud-chip.lives {
+  background: var(--danger-gradient);
+}
+
+.hud-chip.level {
+  background:
+    linear-gradient(135deg, rgba(255, 247, 198, 0.98), rgba(244, 210, 122, 0.96));
+  color: var(--ink);
+}
+
+.difficulty-choice.easy {
+  background: var(--success-gradient);
+}
+
+.difficulty-choice.medium {
+  background: var(--warning-gradient);
+  color: var(--ink);
+}
+
+.difficulty-choice.expert {
+  background: var(--danger-gradient);
+}
+
+.settings-panel {
+  background: var(--panel-gradient);
+  border: 2px solid var(--soft-cream-border);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.overlay-panel {
+  background: var(--panel-gradient-strong);
+  border: 2px solid var(--reed-border);
+  border-radius: 26px;
+  box-shadow: var(--pond-shadow);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.game-over-title {
+  color: #ffb1a9;
+}
+
+.final-score {
+  color: var(--cream);
+}
+
+.loading-label {
+  color: var(--cream);
+}
+
+.error-panel {
+  background: var(--danger-gradient);
+  color: white;
+  border: 1px solid var(--reed-border);
+  box-shadow: var(--pond-shadow);
+}
+
+.error-action {
+  background: var(--cream-panel);
+  color: var(--danger-deep);
+}
+
+.error-action:hover {
+  filter: brightness(0.96);
+}
+
+.theme-checkbox {
+  accent-color: var(--pond-mid);
+}
+
+.touch-mode-btn {
+  background: var(--primary-button-gradient);
+}
+
+.touch-mode-btn:hover {
+  filter: brightness(1.08);
 }
 
 /* Touch-friendly button enhancements for mobile */
@@ -151,15 +416,17 @@ body[data-touch-controls="on"] #touch-action { display: flex; align-items: cente
 #touch-dpad button,
 #touch-action button {
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.18);
-  color: white;
+  border: 2px solid var(--reed-border);
+  background:
+    radial-gradient(ellipse at 24% 18%, rgba(255, 247, 198, 0.18), transparent 36%),
+    rgba(15, 79, 98, 0.8);
+  color: var(--cream);
   font-size: calc(var(--touch-dpad-button-size) * 0.4);
   font-weight: bold;
   border-radius: 14px;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 14px rgba(5, 31, 36, 0.38);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -168,7 +435,7 @@ body[data-touch-controls="on"] #touch-action { display: flex; align-items: cente
 }
 #touch-dpad button { width: var(--touch-dpad-button-size); height: var(--touch-dpad-button-size); }
 #touch-dpad button:active,
-#touch-action button:active { background: rgba(255, 255, 255, 0.38); }
+#touch-action button:active { filter: brightness(1.14); }
 #touch-up    { grid-area: 1 / 2; }
 #touch-left  { grid-area: 2 / 1; }
 #touch-right { grid-area: 2 / 3; }
@@ -196,8 +463,8 @@ body[data-touch-controls="on"] #touch-action { display: flex; align-items: cente
 #touch-eat {
   width: var(--touch-eat-size);
   height: var(--touch-eat-size);
-  border-radius: 50%;
-  background: linear-gradient(45deg, #4CAF50, #45a049);
+  border-radius: 54% 46% 58% 42%;
+  background: var(--success-gradient);
   font-size: calc(var(--touch-eat-size) * 0.18);
   letter-spacing: 0.05em;
 }
