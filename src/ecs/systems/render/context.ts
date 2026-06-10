@@ -32,6 +32,20 @@ const canvasPixelSize = (): { width: number; height: number } => {
 	};
 };
 
+function isDesktopViewport(): boolean {
+	return window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 769px)').matches;
+}
+
+function canvasDisplayArea(container: Element | null): { width: number; height: number } {
+	const width = container?.clientWidth ?? window.innerWidth;
+	const height = container?.clientHeight ?? window.innerHeight;
+	const margin = isDesktopViewport() ? GAME_CONFIG.RENDER.DESKTOP_CANVAS_MARGIN_PX : 0;
+	return {
+		width: Math.max(0, width - margin * 2),
+		height: Math.max(0, height - margin * 2),
+	};
+}
+
 const resizeCanvas = (): void => {
 	if (!canvas) return;
 
@@ -41,10 +55,10 @@ const resizeCanvas = (): void => {
 	// the bottom hints / on-screen touch controls. Sizing against its rect
 	// makes the canvas grow into space the surrounding chrome leaves behind.
 	const container = canvas.parentElement;
-	const availW = container?.clientWidth ?? window.innerWidth;
-	const availH = container?.clientHeight ?? window.innerHeight;
+	const available = canvasDisplayArea(container);
 
-	const scale = Math.min(availW / gameSize.width, availH / gameSize.height, 1);
+	const maxScale = isDesktopViewport() ? Number.POSITIVE_INFINITY : 1;
+	const scale = Math.min(available.width / gameSize.width, available.height / gameSize.height, maxScale);
 
 	canvas.width = gameSize.width;
 	canvas.height = gameSize.height;
