@@ -31,6 +31,7 @@ export const AI_CONFIG = {
 
 // System Priorities (for consistent ordering)
 export const SYSTEM_PRIORITIES = {
+  INPUT_PROMPTS: 99,             // Reads ECSpresso input state after the input plugin
   TIMERS: 95,                   // Timer updates after input, before gameplay intent
   AI: 85,                       // AI behavior
   MOVEMENT: 80,                 // Movement processing

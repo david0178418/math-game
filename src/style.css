@@ -169,6 +169,104 @@
   background: linear-gradient(0deg, rgba(9, 41, 44, 0.88) 0%, rgba(9, 41, 44, 0.5) 70%, transparent 100%);
 }
 
+.input-prompts-slot {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+#menu-fullscreen-btn + .input-prompts-slot {
+  position: absolute;
+  left: max(env(safe-area-inset-left, 0px), 14px);
+  right: max(env(safe-area-inset-right, 0px), 14px);
+  bottom: max(env(safe-area-inset-bottom, 0px), 14px);
+  margin-top: 0;
+  pointer-events: none;
+}
+
+#bottom-hud .input-prompts-slot {
+  margin-top: 0;
+}
+
+.input-prompts-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  max-width: min(92vw, 720px);
+  color: rgba(255, 247, 198, 0.92);
+  text-shadow: 0 1px 2px rgba(5, 31, 36, 0.45);
+}
+
+.input-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.input-prompt-glyphs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.input-prompt-glyph {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(5, 31, 36, 0.38));
+}
+
+.input-prompt-keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(18, 52, 59, 0.34);
+  background: rgba(255, 247, 198, 0.92);
+  color: var(--ink);
+  box-shadow: 0 2px 0 rgba(5, 31, 36, 0.28);
+  text-shadow: none;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.input-prompt-label {
+  display: inline-block;
+}
+
+@media (max-width: 520px) {
+  .input-prompts-bar {
+    gap: 6px 10px;
+  }
+
+  .input-prompt {
+    font-size: 0.7rem;
+  }
+
+  .input-prompt-glyph {
+    width: 22px;
+    height: 22px;
+  }
+
+  .input-prompt-keycap {
+    height: 22px;
+    min-width: 26px;
+    padding: 0 6px;
+    font-size: 0.62rem;
+  }
+}
+
 /* Game mode cards with hover effects */
 .mode-card {
   position: relative;
@@ -391,6 +489,7 @@ button:focus-visible,
 .touch-controls { display: none; }
 body[data-touch-controls="on"] .touch-controls { display: grid; }
 body[data-touch-controls="on"] #touch-action { display: flex; align-items: center; justify-content: center; }
+body[data-touch-controls="on"] .input-prompts-slot { display: none; }
 
 #gameplay-ui {
   --touch-control-gap: 6px;

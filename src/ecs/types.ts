@@ -161,4 +161,5 @@ export interface Resources {
   currentLevel: number;
   enemySpawn: { index: number };
   equationMode: EquationModeState;
+  inputPrompt: import('../ui/inputPrompts').InputPromptState;
 }

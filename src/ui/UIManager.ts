@@ -15,6 +15,11 @@ import {
   toggleFullscreen,
 } from './fullscreen';
 import { requestCanvasResize } from '../ecs/systems/render/context';
+import {
+  renderInputPromptBar,
+  type InputPromptItem,
+  type InputPromptPlatform,
+} from './inputPrompts';
 
 // UI-layer screen set. Includes UI-only screens (modeSelect, settings) that
 // have no ECS gameplay semantics. The ECS engine tracks its own narrower set
@@ -36,12 +41,14 @@ type ScreenSpec = {
   id: string;
   className: string;
   html: string;
+  prompts?: InputPromptItem[];
   wire?: (root: HTMLElement) => void;
   focusSelector?: string;
   onCancel?: () => void;
 };
 
 const DEFAULT_FOCUS_SELECTOR = 'button:not(:disabled), [data-focusable]:not(.disabled)';
+let currentPromptPlatform: InputPromptPlatform = 'keyboard';
 
 const refreshTouchModeButtons = (root: ParentNode, mode: TouchControlsMode): void => {
   const buttons = root.querySelectorAll<HTMLButtonElement>('.touch-mode-btn');
@@ -173,6 +180,19 @@ const exitSettings = (): void => {
   goToMenu();
 };
 
+const inputPromptsSlot = (): string => '<div class="input-prompts-slot" data-input-prompts></div>';
+
+const renderPromptSlot = (root: HTMLElement, prompts: InputPromptItem[] | undefined): void => {
+  const slot = root.querySelector<HTMLElement>('[data-input-prompts]');
+  if (!slot || !prompts) return;
+  slot.replaceChildren(renderInputPromptBar(currentPromptPlatform, prompts));
+};
+
+export const updateInputPromptPlatform = (platform: InputPromptPlatform): void => {
+  currentPromptPlatform = platform;
+  screenElements.forEach((root, screen) => renderPromptSlot(root, SCREENS[screen].prompts));
+};
+
 // HUD element refs + last-written values. Populated when the playing screen
 // mounts; `updateGameplayUI` runs every frame and skips writes when unchanged.
 const gameplayHud: {
@@ -220,7 +240,12 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       <button id="menu-fullscreen-btn" type="button" class="utility-btn absolute top-3 right-3 md:top-4 md:right-4 text-white border-none w-10 h-10 md:w-12 md:h-12 rounded-md cursor-pointer text-lg md:text-xl transition-colors duration-200 flex items-center justify-center z-10">
         ⛶
       </button>
+      ${inputPromptsSlot()}
     `,
+    prompts: [
+      { action: 'navigate', label: 'Navigate' },
+      { action: 'select', label: 'Select' },
+    ],
     wire: (root) => {
       $(root, '#start-game-btn').addEventListener('click', () => showScreen('modeSelect'));
       $(root, '#settings-btn').addEventListener('click', openSettings);
@@ -313,8 +338,14 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
         <button id="back-to-main-btn" class="btn-secondary ${BTN_CHROME} ${BTN_SIZE.mdResponsive} mt-4 md:mt-8 landscape:mt-3">
           ← Back to Menu
         </button>
+        ${inputPromptsSlot()}
       </div>
     `,
+    prompts: [
+      { action: 'navigate', label: 'Navigate' },
+      { action: 'select', label: 'Select' },
+      { action: 'back', label: 'Back' },
+    ],
     wire: (root) => {
       root.querySelectorAll<HTMLElement>('.mode-card').forEach(card => {
         card.addEventListener('click', () => {
@@ -362,8 +393,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
 
       <div id="bottom-hud" class="hud-bottom absolute bottom-0 inset-x-0 p-3 md:p-4 lg:p-5 flex justify-center items-center text-white pointer-events-auto">
         <div id="hints-display" class="text-xs md:text-sm lg:text-base text-center opacity-80 max-w-xs md:max-w-md lg:max-w-lg px-2">
-          <span class="hidden md:inline">Move: WASD / Arrows / D-pad • Eat: Space / A • Pause: Esc / Start</span>
-          <span class="md:hidden">WASD/D-pad to move • Space/A to eat • Avoid enemies</span>
+          ${inputPromptsSlot()}
         </div>
       </div>
 
@@ -377,6 +407,11 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
         <button id="touch-eat" type="button" aria-label="Eat">EAT</button>
       </div>
     `,
+    prompts: [
+      { action: 'move', label: 'Move' },
+      { action: 'eat', label: 'Eat' },
+      { action: 'pause', label: 'Pause' },
+    ],
     wire: (root) => {
       $(root, '#pause-btn').addEventListener('click', () => { void gameEngine.pushScreen('paused', {}); });
       wireFullscreenButton($<HTMLButtonElement>(root, '#hud-fullscreen-btn'));
@@ -438,8 +473,14 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
         <button id="back-to-menu-btn" class="btn-secondary ${BTN_CHROME} ${BTN_SIZE.lg} mt-4 md:mt-8 landscape:mt-3 w-full md:w-auto">
           ← Back to Menu
         </button>
+        ${inputPromptsSlot()}
       </div>
     `,
+    prompts: [
+      { action: 'navigate', label: 'Navigate' },
+      { action: 'select', label: 'Select' },
+      { action: 'back', label: 'Back' },
+    ],
     wire: (root) => {
       $(root, '#back-to-menu-btn').addEventListener('click', exitSettings);
       wireTouchControlsSetting(root);
@@ -468,8 +509,13 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
             🏠 Main Menu
           </button>
         </div>
+        ${inputPromptsSlot()}
       </div>
     `,
+    prompts: [
+      { action: 'navigate', label: 'Navigate' },
+      { action: 'select', label: 'Select' },
+    ],
     wire: (root) => {
       $(root, '#play-again-btn').addEventListener('click', () => {
         startGame(gameEngine.getResource('gameMode'), gameEngine.getResource('mathDifficulty'));
@@ -497,10 +543,14 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
             🏠 Quit to Menu
           </button>
         </div>
-
-        <p class="mt-8 opacity-70 text-sm">Press ESC to resume</p>
+        ${inputPromptsSlot()}
       </div>
     `,
+    prompts: [
+      { action: 'navigate', label: 'Navigate' },
+      { action: 'select', label: 'Select' },
+      { action: 'back', label: 'Back' },
+    ],
     wire: (root) => {
       $(root, '#resume-btn').addEventListener('click', resumePlay);
       $(root, '#pause-settings-btn').addEventListener('click', openSettings);
@@ -536,6 +586,7 @@ const createScreen = (screen: UIScreen): HTMLElement => {
   root.id = spec.id;
   root.className = spec.className;
   root.innerHTML = spec.html;
+  renderPromptSlot(root, spec.prompts);
   spec.wire?.(root);
   gameContainer.appendChild(root);
   screenElements.set(screen, root);

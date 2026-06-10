@@ -12,6 +12,7 @@ import {
 import { addCollisionSystemToEngine } from './systems/CollisionSystem';
 import { addPauseSystemToEngine } from './systems/PauseSystem';
 import { addUINavigationSystemToEngine } from './systems/UINavigationSystem';
+import { addInputPromptSystemToEngine } from './systems/InputPromptSystem';
 import { gameplayPlugin } from './gameplayPlugin';
 import { playerQuery } from './queries';
 import { showScreen, setFinalScore } from '../ui/UIManager';
@@ -88,6 +89,7 @@ const registerSystems = async (): Promise<void> => {
   addCollisionSystemToEngine();
   addPauseSystemToEngine();
   addUINavigationSystemToEngine();
+  addInputPromptSystemToEngine();
   addRenderSystemToEngine();
 
   await initializeEngine();
