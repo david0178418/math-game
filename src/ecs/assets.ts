@@ -5,7 +5,7 @@ import lizardImage from '../assets/images/lizard.svg';
 import spiderImage from '../assets/images/spider.png';
 import lizardWalkAway from '../assets/lizard-walk-away.png';
 import lizardWalkSide from '../assets/lizard-walk-side.png';
-import lizardWalkToward from '../assets/lizard-ward-toward.png';
+import lizardWalkToward from '../assets/lizard-walk-toward.png';
 import lizardTurnSideAway from '../assets/lizard-turn-side-away.png';
 import lizardTurnTowardSide from '../assets/lizard-turn-toward-side.png';
 import spiderWalkAway from '../assets/spider-walk-away.png';
