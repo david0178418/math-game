@@ -19,9 +19,10 @@ import { startShake, startDeathAnimation } from './AnimationSystem';
 import {
   chooseEquationCandidate,
   createEquationModeState,
+  equationSelectionText,
   evaluateEquationSelection,
 } from '../../math/equations';
-import type { EquationModeState } from '../types';
+import type { BaseEquationModeState, EquationFeedbackKind, EquationModeState } from '../types';
 
 const triggerGameOver = (player: PlayerEntityWithHealth, reason: string): void => {
   console.log(reason);
@@ -38,6 +39,18 @@ const isInvulnerable = (player: PlayerEntityWithHealth): boolean =>
 const startInvulnerability = (player: PlayerEntityWithHealth): void => {
   player.components.timers.invulnerability = createTimer(GAME_CONFIG.TIMING.INVULNERABILITY / 1000);
 };
+
+const createEquationFeedback = (
+  kind: EquationFeedbackKind,
+  options: {
+    displayText?: string;
+    nextMode?: BaseEquationModeState;
+  } = {},
+): EquationModeState['feedback'] => ({
+  kind,
+  startedAt: performance.now(),
+  ...options,
+});
 
 /**
  * Collision Detection System
@@ -154,6 +167,7 @@ function handleEquationProblemSelection(
 ): void {
   const equationMode = gameEngine.getResource('equationMode');
   if (equationMode.target === 0) return;
+  if (equationMode.feedback?.kind === 'correct') return;
 
   const selectableProblemIds = new Set(mathProblems.map(candidate => candidate.id));
   const currentSelectedProblemIds = equationMode.selectedProblemIds
@@ -165,6 +179,7 @@ function handleEquationProblemSelection(
   const pendingMode = {
     ...equationMode,
     selectedProblemIds,
+    feedback: undefined,
   };
 
   if (selectedProblemIds.length < equationMode.operandsRequired) {
@@ -199,10 +214,18 @@ function handleEquationProblemSelection(
     nextMode,
     activeEquationOperands(mathProblems),
   );
-
-  gameEngine.setResource('equationMode', nextCandidate
+  const nextEquationMode = nextCandidate
     ? { ...nextMode, target: nextCandidate.target, promptValues: nextCandidate.operandValues }
-    : nextMode);
+    : nextMode;
+  const feedback = createEquationFeedback('correct', {
+    displayText: equationSelectionText(pendingMode, selectedValues),
+    nextMode: nextEquationMode,
+  });
+
+  gameEngine.setResource('equationMode', {
+    ...pendingMode,
+    feedback,
+  });
 }
 
 function handleIncorrectEquationSelection(
@@ -222,6 +245,7 @@ function handleIncorrectEquationSelection(
   gameEngine.setResource('equationMode', {
     ...equationMode,
     selectedProblemIds: [],
+    feedback: createEquationFeedback('incorrect'),
   });
 
   if (playerComp.lives <= 0) {

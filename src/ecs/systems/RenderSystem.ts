@@ -48,6 +48,7 @@ export const addRenderSystemToEngine = (): void => {
         gameEngine.getResource('gameMode'),
         queries.mathProblems,
         margins.top,
+        currentTime,
       );
       ctx.save();
       ctx.translate(margins.left, margins.top);

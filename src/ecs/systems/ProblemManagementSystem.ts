@@ -188,6 +188,8 @@ function checkEquationLevelCompletion(
   currentLevel: number,
 ): void {
   const equationMode = gameEngine.getResource('equationMode');
+  if (equationMode.feedback?.kind === 'correct') return;
+
   const activeCount = activeEquationProblems(mathProblems).length;
   const noPromptAvailable = mathProblems.length > 0
     && activeCount > 0

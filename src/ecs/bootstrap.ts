@@ -10,6 +10,7 @@ import {
   addRenderSystemToEngine
 } from './systems/RenderSystem';
 import { addCollisionSystemToEngine } from './systems/CollisionSystem';
+import { addEquationFeedbackSystemToEngine } from './systems/EquationFeedbackSystem';
 import { addPauseSystemToEngine } from './systems/PauseSystem';
 import { addUINavigationSystemToEngine } from './systems/UINavigationSystem';
 import { addInputPromptSystemToEngine } from './systems/InputPromptSystem';
@@ -87,6 +88,7 @@ const registerSystems = async (): Promise<void> => {
   addShakeSystemToEngine();
   addFrogSpriteAnimationSystemToEngine();
   addCollisionSystemToEngine();
+  addEquationFeedbackSystemToEngine();
   addPauseSystemToEngine();
   addUINavigationSystemToEngine();
   addInputPromptSystemToEngine();

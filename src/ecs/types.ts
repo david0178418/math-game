@@ -142,7 +142,16 @@ export interface EquationOperandRanges {
   right: EquationValueRange;
 }
 
-export interface EquationModeState {
+export type EquationFeedbackKind = 'correct' | 'incorrect';
+
+export interface EquationFeedback {
+  kind: EquationFeedbackKind;
+  startedAt: number;
+  displayText?: string;
+  nextMode?: BaseEquationModeState;
+}
+
+export interface BaseEquationModeState {
   operation: EquationOperation;
   promptKind: EquationPromptKind;
   difficulty: MathDifficulty;
@@ -153,6 +162,10 @@ export interface EquationModeState {
   clearedThisLevel: number;
   level: number;
   operandRanges: EquationOperandRanges;
+}
+
+export interface EquationModeState extends BaseEquationModeState {
+  feedback?: EquationFeedback;
 }
 
 export interface Resources {

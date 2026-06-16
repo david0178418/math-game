@@ -1,4 +1,5 @@
 import { GAME_CONFIG } from '../config';
+import type { EquationFeedbackKind } from './types';
 
 /**
  * System Configuration Constants
@@ -29,6 +30,11 @@ export const AI_CONFIG = {
   },
 } as const;
 
+export const EQUATION_FEEDBACK_DURATION_MS: Record<EquationFeedbackKind, number> = {
+  correct: 320,
+  incorrect: 420,
+} as const;
+
 // System Priorities (for consistent ordering)
 export const SYSTEM_PRIORITIES = {
   INPUT_PROMPTS: 99,             // Reads ECSpresso input state after the input plugin
@@ -37,6 +43,7 @@ export const SYSTEM_PRIORITIES = {
   MOVEMENT: 80,                 // Movement processing
   ANIMATION: 75,                // Animation interpolation (after movement, before collision)
   COLLISION: 70,                // Collision detection
+  EQUATION_FEEDBACK: 60,        // Delayed equation transitions after answer feedback
   UI: 50,                       // UI updates
   ENEMY_SPAWN: 40,              // Enemy spawning
   PROBLEM_MANAGEMENT: 30,       // Problem lifecycle
