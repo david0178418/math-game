@@ -45,7 +45,6 @@ export const addRenderSystemToEngine = (): void => {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       drawBoardObjective(
         ctx,
-        gameEngine.getResource('gameMode'),
         queries.mathProblems,
         margins.top,
         currentTime,

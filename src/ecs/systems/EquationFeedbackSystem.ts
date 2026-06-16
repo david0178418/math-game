@@ -1,14 +1,16 @@
 import { gameEngine } from '../Engine';
 import { EQUATION_FEEDBACK_DURATION_MS, SYSTEM_PRIORITIES } from '../systemConfigs';
-import type { EquationFeedback } from '../types';
+import type { BaseEquationModeState, EquationFeedback } from '../types';
 
-const shouldAdvanceEquation = (
+const nextEquationModeForFeedback = (
   feedback: EquationFeedback,
   currentTime: number,
-): boolean =>
-  feedback.kind === 'correct'
-  && feedback.nextMode !== undefined
-  && currentTime - feedback.startedAt >= EQUATION_FEEDBACK_DURATION_MS.correct;
+): BaseEquationModeState | undefined => {
+  if (feedback.kind !== 'correct') return undefined;
+  if (currentTime - feedback.startedAt < EQUATION_FEEDBACK_DURATION_MS.correct) return undefined;
+
+  return feedback.nextMode;
+};
 
 export function addEquationFeedbackSystemToEngine(): void {
   gameEngine.addSystem('equationFeedbackSystem')
@@ -19,9 +21,10 @@ export function addEquationFeedbackSystemToEngine(): void {
       const equationMode = ecs.getResource('equationMode');
       const feedback = equationMode.feedback;
       if (!feedback) return;
-      if (!shouldAdvanceEquation(feedback, performance.now())) return;
-      if (!feedback.nextMode) return;
 
-      ecs.setResource('equationMode', feedback.nextMode);
+      const nextMode = nextEquationModeForFeedback(feedback, performance.now());
+      if (!nextMode) return;
+
+      ecs.setResource('equationMode', nextMode);
     });
 }

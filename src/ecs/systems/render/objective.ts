@@ -1,7 +1,6 @@
 import { gameEngine } from '../../Engine';
 import { equationSelectionText } from '../../../math/equations';
 import { EQUATION_FEEDBACK_DURATION_MS } from '../../systemConfigs';
-import type { GameMode } from '../../types';
 import type { MathProblemEntity } from '../../queries';
 import type { EquationFeedbackKind, EquationFeedback, EquationModeState } from '../../types';
 
@@ -59,7 +58,6 @@ const activeFeedback = (
 
 export const drawBoardObjective = (
   ctx: CanvasRenderingContext2D,
-  _gameMode: GameMode,
   mathProblems: readonly MathProblemEntity[],
   margin: number,
   currentTime = performance.now(),
