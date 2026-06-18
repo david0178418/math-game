@@ -1,5 +1,5 @@
 import { gameEngine } from '../ecs/Engine';
-import type { GameMode, MathDifficulty } from '../ecs/types';
+import type { GameMode, MathDifficulty, SettingsReturnScreen } from '../ecs/types';
 import {
   applyTouchControlsVisibility,
   bindTouchControls,
@@ -21,10 +21,7 @@ import {
   type InputPromptPlatform,
 } from './inputPrompts';
 
-// UI-layer screen set. Includes UI-only screens (modeSelect, settings) that
-// have no ECS gameplay semantics. The ECS engine tracks its own narrower set
-// ('menu' | 'playing' | 'paused' | 'gameOver') in Engine.ts.
-type UIScreen = 'menu' | 'modeSelect' | 'playing' | 'settings' | 'gameOver' | 'paused';
+type UIScreen = SettingsReturnScreen | 'settings';
 
 const OVERLAY_BASE =
   'absolute inset-0 flex flex-col items-center justify-center text-white z-50 overflow-y-auto overscroll-contain overlay-safe-padding';
@@ -160,25 +157,23 @@ export const gameplayLevelLabel = (
 ): string =>
   `${modeLabels[mode]} - ${difficultyLabels[difficulty]} - Level ${level}`;
 
-const resumePlay = (): void => {
+function returnToPreviousScreen(): void {
   void gameEngine.popScreen();
-};
+}
 
-const goToMenu = (): void => { void gameEngine.setScreen('menu', {}); };
+function goToMenu(): void {
+  void gameEngine.setScreen('menu', {});
+}
 
-// Settings is a UI-only screen — the ECS screen stack still reflects where
-// the player came from (menu or paused), so use that to route "back".
-const openSettings = (): void => {
-  showScreen('settings');
-  const backBtn = document.getElementById('back-to-menu-btn');
-  if (!backBtn) return;
-  backBtn.textContent = gameEngine.getCurrentScreen() === 'paused' ? '← Back to Game' : '← Back to Menu';
-};
+function openModeSelect(): void {
+  void gameEngine.setScreen('modeSelect', {});
+}
 
-const exitSettings = (): void => {
-  if (gameEngine.getCurrentScreen() === 'paused') return showScreen('paused');
-  goToMenu();
-};
+function openSettings(): void {
+  const returnTo = gameEngine.getCurrentScreen();
+  if (returnTo === null || returnTo === 'settings') return;
+  void gameEngine.pushScreen('settings', { returnTo });
+}
 
 const inputPromptsSlot = (): string => '<div class="input-prompts-slot" data-input-prompts></div>';
 
@@ -247,7 +242,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       { action: 'select', label: 'Select' },
     ],
     wire: (root) => {
-      $(root, '#start-game-btn').addEventListener('click', () => showScreen('modeSelect'));
+      $(root, '#start-game-btn').addEventListener('click', openModeSelect);
       $(root, '#settings-btn').addEventListener('click', openSettings);
       $(root, '#high-scores-btn').addEventListener('click', () => alert('High Scores feature coming soon!'));
       wireFullscreenButton($<HTMLButtonElement>(root, '#menu-fullscreen-btn'));
@@ -482,10 +477,10 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       { action: 'back', label: 'Back' },
     ],
     wire: (root) => {
-      $(root, '#back-to-menu-btn').addEventListener('click', exitSettings);
+      $(root, '#back-to-menu-btn').addEventListener('click', returnToPreviousScreen);
       wireTouchControlsSetting(root);
     },
-    onCancel: exitSettings,
+    onCancel: returnToPreviousScreen,
   },
 
   gameOver: {
@@ -552,11 +547,11 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       { action: 'back', label: 'Back' },
     ],
     wire: (root) => {
-      $(root, '#resume-btn').addEventListener('click', resumePlay);
+      $(root, '#resume-btn').addEventListener('click', returnToPreviousScreen);
       $(root, '#pause-settings-btn').addEventListener('click', openSettings);
       $(root, '#quit-to-menu-btn').addEventListener('click', goToMenu);
     },
-    onCancel: resumePlay,
+    onCancel: returnToPreviousScreen,
   },
 };
 
@@ -617,6 +612,21 @@ export const showScreen = (screen: UIScreen): void => {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   requestCanvasResize();
 };
+
+const SETTINGS_BACK_LABELS: Record<SettingsReturnScreen, string> = {
+  menu: '← Back to Menu',
+  modeSelect: '← Back to Mode Selection',
+  playing: '← Back to Game',
+  paused: '← Back to Game',
+  gameOver: '← Back to Game Over',
+} as const;
+
+export function showSettingsScreen(returnTo: SettingsReturnScreen): void {
+  showScreen('settings');
+  const backButton = document.getElementById('back-to-menu-btn');
+  if (!backButton) throw new Error('Settings back button not found');
+  backButton.textContent = SETTINGS_BACK_LABELS[returnTo];
+}
 
 const focusedIndex = (focusables: HTMLElement[]): number => {
   const active = document.activeElement;

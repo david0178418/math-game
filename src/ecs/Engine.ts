@@ -12,6 +12,7 @@ import type {
   GameAction,
   TimerSlot,
   PlayingScreenConfig,
+  SettingsScreenConfig,
 } from './types';
 
 // Gamepad button indices follow the Standard Gamepad mapping
@@ -58,8 +59,10 @@ export const gameEngine = ECSpresso.create()
   .withRequired('enemy', 'health', () => ({ current: 1, max: 1 }))
   .withScreens(screens => screens
     .add('menu', { initialState: () => ({}) })
+    .add('modeSelect', { initialState: () => ({}) })
     .add('playing', { initialState: (config: PlayingScreenConfig) => ({ ...config }) })
     .add('paused', { initialState: () => ({}) })
+    .add('settings', { initialState: (config: SettingsScreenConfig) => ({ ...config }) })
     .add('gameOver', { initialState: () => ({}) }))
   .build();
 

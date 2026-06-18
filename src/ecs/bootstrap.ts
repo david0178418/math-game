@@ -12,7 +12,7 @@ import { addUINavigationSystemToEngine } from './systems/UINavigationSystem';
 import { addInputPromptSystemToEngine } from './systems/InputPromptSystem';
 import { gameplayPlugin } from './gameplayPlugin';
 import { playerQuery } from './queries';
-import { showScreen, setFinalScore } from '../ui/UIManager';
+import { showScreen, showSettingsScreen, setFinalScore } from '../ui/UIManager';
 import { createEquationModeState } from '../math/equations';
 
 const GAMEPLAY_CLOCK_GROUPS = ['timers', 'tweens', 'coroutines'] as const;
@@ -62,9 +62,17 @@ const enterPlayingScreen = ({ level, isFreshGame }: PlayingScreenConfig): void =
  * Wire screen lifecycle hooks. ECS screen state drives DOM, not vice versa.
  */
 const setupScreenHooks = (): void => {
-  gameEngine.onScreenEnter('menu', () => {
-    showScreen('menu');
-  });
+  const registerInactiveScreen = (screen: 'menu' | 'modeSelect' | 'paused'): void => {
+    function showInactiveScreen(): void {
+      pauseGameplayClocks();
+      showScreen(screen);
+    }
+
+    gameEngine.onScreenEnter(screen, showInactiveScreen);
+    gameEngine.onScreenResume(screen, showInactiveScreen);
+  };
+
+  (['menu', 'modeSelect', 'paused'] as const).forEach(registerInactiveScreen);
 
   gameEngine.onScreenEnter('playing', ({ config }) => {
     resumeGameplayClocks();
@@ -78,16 +86,20 @@ const setupScreenHooks = (): void => {
     showScreen('playing');
   });
 
-  gameEngine.onScreenEnter('paused', () => {
+  gameEngine.onScreenEnter('settings', ({ config }) => {
     pauseGameplayClocks();
-    showScreen('paused');
+    showSettingsScreen(config.returnTo);
   });
 
-  gameEngine.onScreenEnter('gameOver', () => {
+  function showGameOverScreen(): void {
+    pauseGameplayClocks();
     const player = gameEngine.tryGetSingleton(playerQuery.with);
     setFinalScore(player?.components.player.score ?? 0);
     showScreen('gameOver');
-  });
+  }
+
+  gameEngine.onScreenEnter('gameOver', showGameOverScreen);
+  gameEngine.onScreenResume('gameOver', showGameOverScreen);
 };
 
 const registerSystems = async (): Promise<void> => {

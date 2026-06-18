@@ -6,7 +6,7 @@ import { navigateFocus, activateFocus, triggerCancel } from '../../ui/UIManager'
 // menus without bespoke event listeners per screen.
 export function addUINavigationSystemToEngine(): void {
   gameEngine.addSystem('uiNavigationSystem')
-    .inScreens(['menu', 'paused', 'gameOver'])
+    .inScreens(['menu', 'modeSelect', 'paused', 'settings', 'gameOver'])
     .withResources(['inputState'])
     .setProcess(({ resources: { inputState } }) => {
       const a = inputState.actions;

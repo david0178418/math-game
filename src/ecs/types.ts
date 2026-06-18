@@ -127,6 +127,9 @@ export type AllComponents = Components
 // `Record<string, unknown>` screen-config constraint.
 export type PlayingScreenConfig = { level: number; isFreshGame: boolean };
 
+export type SettingsReturnScreen = 'menu' | 'modeSelect' | 'playing' | 'paused' | 'gameOver';
+export type SettingsScreenConfig = { returnTo: SettingsReturnScreen };
+
 export type GameMode = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'anything';
 export type MathDifficulty = 'easy' | 'medium' | 'expert';
 export type EquationOperation = 'add' | 'subtract' | 'multiply' | 'divide';
