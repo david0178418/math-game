@@ -7,8 +7,8 @@ export function addPauseSystemToEngine(): void {
   gameEngine.addSystem('pauseSystem')
     .inScreens(['playing'])
     .withResources(['inputState'])
-    .setProcess(({ resources: { inputState } }) => {
+    .setProcess(({ ecs, resources: { inputState } }) => {
       if (!inputState.actions.justActivated('pause')) return;
-      void gameEngine.pushScreen('paused', {});
+      void ecs.pushScreen('paused', {});
     });
 }

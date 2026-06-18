@@ -54,7 +54,7 @@ export function addProblemManagementSystemToEngine(): void {
         }
 
         updateEquationStateFromBoard(ecs, queries.mathProblems, gameMode, currentLevel);
-        checkEquationLevelCompletion(player, queries.mathProblems, gameMode, currentLevel);
+        checkEquationLevelCompletion(ecs, player, queries.mathProblems, gameMode, currentLevel);
       }
       cleanupConsumedProblems(ecs, queries.mathProblems);
     });
@@ -182,12 +182,13 @@ function updateEquationStateFromBoard(
  * The player entity is unscoped, so score and lives persist into the new level.
  */
 function checkEquationLevelCompletion(
+  ecs: GameEngine,
   player: PlayerEntity,
   mathProblems: MathProblemEntityWithRenderable[],
   gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
-  const equationMode = gameEngine.getResource('equationMode');
+  const equationMode = ecs.getResource('equationMode');
   if (equationMode.feedback?.kind === 'correct') return;
 
   const activeCount = activeEquationProblems(mathProblems).length;
@@ -203,12 +204,12 @@ function checkEquationLevelCompletion(
   const nextLevel = currentLevel + 1;
   console.log(`Equation level ${currentLevel} completed. Advancing to level ${nextLevel}`);
   delete player.components.timers.problemSpawn;
-  const mathDifficulty = gameEngine.getResource('mathDifficulty');
-  gameEngine.setResource(
+  const mathDifficulty = ecs.getResource('mathDifficulty');
+  ecs.setResource(
     'equationMode',
     createEquationModeState(nextLevel, mathDifficulty, gameMode),
   );
-  void gameEngine.setScreen('playing', { level: nextLevel, isFreshGame: false });
+  void ecs.setScreen('playing', { level: nextLevel, isFreshGame: false });
 }
 
 /**

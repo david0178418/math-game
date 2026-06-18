@@ -18,6 +18,7 @@ import { drawEnhancedSpiderWebs } from './render/spiderWebs';
 import { drawEnhancedFrogTongues } from './render/frogTongues';
 import { drawFrozenPlayerEffect } from './render/frozenPlayer';
 import { drawBoardObjective } from './render/objective';
+import { getCachedImage } from './render/images';
 import { IMAGE_ASSET_KEYS } from '../assets';
 
 export { initializeRenderSystem } from './render/context';
@@ -27,14 +28,15 @@ export const addRenderSystemToEngine = (): void => {
     .setPriority(SYSTEM_PRIORITIES.RENDER)
     .inScreens(['playing'])
     .requiresAssets(IMAGE_ASSET_KEYS)
-    .addQuery('renderableEntities', renderableEntityQuery)
+    .addQuery('renderableEntities', { ...renderableEntityQuery, optional: ['shake'] } as const)
     .addSingleton('player', playerQuery)
     .addQuery('mathProblems', mathProblemQuery)
     .addQuery('enemies', enemyQuery)
     .addQuery('frogTongues', frogTongueQuery)
     .addQuery('spiderWebs', spiderWebQuery)
+    .withResources(['equationMode'])
     .setOnDetach(cleanupRenderSystem)
-    .setProcess(({ queries }) => {
+    .setProcess(({ queries, ecs, resources: { equationMode } }) => {
       const ctx = getCtx();
       if (!ctx) return;
 
@@ -45,6 +47,7 @@ export const addRenderSystemToEngine = (): void => {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       drawBoardObjective(
         ctx,
+        equationMode,
         queries.mathProblems,
         margins.top,
         currentTime,
@@ -61,11 +64,16 @@ export const addRenderSystemToEngine = (): void => {
       const drawRenderableEntity = (entity: (typeof sortedEntities)[number]): void => {
         const timers = 'timers' in entity.components ? entity.components.timers : undefined;
         const playerComp = 'player' in entity.components ? entity.components.player : undefined;
-        const shake = gameEngine.entityManager.getComponent(entity.id, 'shake');
+        const renderable = entity.components.renderable;
+        const shake = entity.components.shake;
+        const image = renderable.imageSrc
+          ? getCachedImage(ecs, renderable.imageSrc)
+          : undefined;
 
         drawEntity(ctx, {
           position: entity.components.position,
-          renderable: entity.components.renderable,
+          renderable,
+          image,
           isInvulnerable: timers?.invulnerability?.active === true,
           deathScale: playerComp?.deathScale ?? 1.0,
           shakeOffsetX: shake?.offsetX ?? 0,
@@ -86,7 +94,7 @@ export const addRenderSystemToEngine = (): void => {
       drawEquationSelectionHighlights(
         ctx,
         queries.mathProblems,
-        gameEngine.getResource('equationMode').selectedProblemIds,
+        equationMode.selectedProblemIds,
         enemyOccupiedCells,
       );
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'behindFrog');

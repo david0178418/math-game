@@ -1,7 +1,6 @@
 import { GAME_CONFIG } from '../../../config';
 import { cellCenter } from '../../gameUtils';
 import type { AllComponents } from '../../types';
-import { getCachedImage } from './images';
 
 type Renderable = AllComponents['renderable'];
 
@@ -57,12 +56,21 @@ interface ShapeArgs {
   rotation: number;
   renderable: Renderable;
   deathScale: number;
+  image?: HTMLImageElement;
   baselineY?: number;
 }
 
-const drawImageShape = ({ ctx, centerX, centerY, rotation, renderable, deathScale, baselineY }: ShapeArgs): void => {
-  const img = renderable.imageSrc ? getCachedImage(renderable.imageSrc) : undefined;
-  if (!img || !img.complete) {
+const drawImageShape = ({
+  ctx,
+  centerX,
+  centerY,
+  rotation,
+  renderable,
+  deathScale,
+  image,
+  baselineY,
+}: ShapeArgs): void => {
+  if (!image || !image.complete) {
     const radius = (renderable.size / 2) * deathScale;
     ctx.fillStyle = renderable.color;
     ctx.beginPath();
@@ -72,11 +80,11 @@ const drawImageShape = ({ ctx, centerX, centerY, rotation, renderable, deathScal
   }
 
   const spriteSheet = renderable.spriteSheet;
-  const sourceWidth = spriteSheet ? img.width / spriteSheet.frameCount : img.width;
-  const sourceHeight = img.height;
+  const sourceWidth = spriteSheet ? image.width / spriteSheet.frameCount : image.width;
+  const sourceHeight = image.height;
   const dimensionImage = spriteSheet
     ? { width: sourceWidth, height: sourceHeight }
-    : img;
+    : image;
 
   const { width, height } = calculateImageDimensions(
     dimensionImage,
@@ -88,13 +96,13 @@ const drawImageShape = ({ ctx, centerX, centerY, rotation, renderable, deathScal
   const drawCenterY = centerYFromBaseline(centerY, baselineY, scaledHeight);
   const drawImage = (): void => {
     if (!spriteSheet) {
-      ctx.drawImage(img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+      ctx.drawImage(image, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
       return;
     }
 
     const frameIndex = Math.max(0, Math.min(spriteSheet.frameCount - 1, spriteSheet.frameIndex));
     ctx.drawImage(
-      img,
+      image,
       frameIndex * sourceWidth,
       0,
       sourceWidth,
@@ -142,6 +150,7 @@ const SHAPE_RENDERERS: Record<Renderable['shape'], (args: ShapeArgs) => void> = 
 export interface DrawEntityArgs {
   position: { x: number; y: number; rotation?: number };
   renderable: Renderable;
+  image?: HTMLImageElement;
   isInvulnerable: boolean;
   deathScale: number;
   shakeOffsetX: number;
@@ -149,7 +158,7 @@ export interface DrawEntityArgs {
 }
 
 export const drawEntity = (ctx: CanvasRenderingContext2D, args: DrawEntityArgs): void => {
-  const { position, renderable, isInvulnerable, deathScale, shakeOffsetX, shakeOffsetY } = args;
+  const { position, renderable, image, isInvulnerable, deathScale, shakeOffsetX, shakeOffsetY } = args;
   const center = cellCenter(position);
   const baselineY = entityBaselineY(position, renderable, shakeOffsetY);
 
@@ -163,6 +172,7 @@ export const drawEntity = (ctx: CanvasRenderingContext2D, args: DrawEntityArgs):
     rotation: position.rotation ?? 0,
     renderable,
     deathScale,
+    image,
     baselineY,
   });
 

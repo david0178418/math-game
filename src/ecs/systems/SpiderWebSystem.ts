@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine } from '../Engine';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG } from '../../config';
 import { gridToPixel } from '../gameUtils';
@@ -31,7 +31,7 @@ export function createSpiderWeb(ecs: GameEngine, gridX: number, gridY: number): 
       webExpiry: createTimer(SPIDER_CONFIG.WEB_DURATION / 1000, {
         onComplete: ({ entityId }) => {
           console.log(`🕸️ Spider web expired without catching a player`);
-          gameEngine.commands.removeEntity(entityId);
+          ecs.commands.removeEntity(entityId);
         },
       }),
     },

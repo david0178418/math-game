@@ -21,7 +21,7 @@ const queueTween = (
 // A tween component on an entity means it's currently animating (movement,
 // rotation, or death). Shake is a separate component and does NOT block input.
 export const isEntityAnimating = (ecs: GameEngine, entityId: number): boolean =>
-  ecs.entityManager.getComponent(entityId, 'tween') !== undefined;
+  ecs.hasComponent(entityId, 'tween');
 
 /**
  * Tween rotation only (no position). Used by the player at corners — position

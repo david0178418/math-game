@@ -38,7 +38,7 @@ export function addEnemySpawnSystemToEngine(): void {
       const cycleComplete = index >= SPAWN_ORDER.length;
 
       if (cycleComplete && currentEnemyCount === 0) {
-        gameEngine.setResource('enemySpawn', { index: 0 });
+        ecs.setResource('enemySpawn', { index: 0 });
         console.log('🔄 Resetting spawn cycle - ready to spawn new enemy sequence');
         return;
       }
@@ -64,7 +64,7 @@ export function addEnemySpawnSystemToEngine(): void {
       console.log(`Spawned ${nextEnemyType} (#${index + 1}/${SPAWN_ORDER.length})`);
 
       const nextIndex = index + 1;
-      gameEngine.setResource('enemySpawn', { index: nextIndex });
+      ecs.setResource('enemySpawn', { index: nextIndex });
       if (nextIndex >= SPAWN_ORDER.length) console.log('🔄 Spawn cycle complete - all 3 enemy types spawned');
 
       player.components.timers.enemySpawn = createTimer(calculateSpawnInterval(player) / 1000);

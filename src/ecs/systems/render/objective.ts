@@ -1,4 +1,3 @@
-import { gameEngine } from '../../Engine';
 import { equationSelectionText } from '../../../math/equations';
 import { EQUATION_FEEDBACK_DURATION_MS } from '../../systemConfigs';
 import type { MathProblemEntity } from '../../queries';
@@ -58,11 +57,11 @@ const activeFeedback = (
 
 export const drawBoardObjective = (
   ctx: CanvasRenderingContext2D,
+  equationMode: EquationModeState,
   mathProblems: readonly MathProblemEntity[],
   margin: number,
   currentTime = performance.now(),
 ): void => {
-  const equationMode = gameEngine.getResource('equationMode');
   const feedbackState = activeFeedback(equationMode.feedback, currentTime);
   const text = feedbackState?.feedback.displayText ?? objectiveTextForMode(equationMode, mathProblems);
   const normalizedText = text.trim();
