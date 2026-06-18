@@ -1,15 +1,11 @@
 import { initializeEngine, startGameLoop, gameEngine } from './Engine';
 import { createPlayer } from './entities';
 import type { PlayingScreenConfig } from './types';
-import { addMovementSystemToEngine } from './systems/MovementSystem';
 import { gridToPixel } from './gameUtils';
-import { addShakeSystemToEngine } from './systems/AnimationSystem';
-import { addFrogSpriteAnimationSystemToEngine } from './systems/FrogSpriteSystem';
 import {
   initializeRenderSystem,
   addRenderSystemToEngine
 } from './systems/RenderSystem';
-import { addCollisionSystemToEngine } from './systems/CollisionSystem';
 import { addEquationFeedbackSystemToEngine } from './systems/EquationFeedbackSystem';
 import { addPauseSystemToEngine } from './systems/PauseSystem';
 import { addUINavigationSystemToEngine } from './systems/UINavigationSystem';
@@ -18,6 +14,16 @@ import { gameplayPlugin } from './gameplayPlugin';
 import { playerQuery } from './queries';
 import { showScreen, setFinalScore } from '../ui/UIManager';
 import { createEquationModeState } from '../math/equations';
+
+const GAMEPLAY_CLOCK_GROUPS = ['timers', 'tweens', 'coroutines'] as const;
+
+function pauseGameplayClocks(): void {
+  GAMEPLAY_CLOCK_GROUPS.forEach(group => gameEngine.disableSystemGroup(group));
+}
+
+function resumeGameplayClocks(): void {
+  GAMEPLAY_CLOCK_GROUPS.forEach(group => gameEngine.enableSystemGroup(group));
+}
 
 const setupCanvas = (): void => {
   const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
@@ -61,16 +67,19 @@ const setupScreenHooks = (): void => {
   });
 
   gameEngine.onScreenEnter('playing', ({ config }) => {
+    resumeGameplayClocks();
     showScreen('playing');
     setupCanvas();
     enterPlayingScreen(config);
   });
 
   gameEngine.onScreenResume('playing', () => {
+    resumeGameplayClocks();
     showScreen('playing');
   });
 
   gameEngine.onScreenEnter('paused', () => {
+    pauseGameplayClocks();
     showScreen('paused');
   });
 
@@ -84,10 +93,6 @@ const setupScreenHooks = (): void => {
 const registerSystems = async (): Promise<void> => {
   gameEngine.installPlugin(gameplayPlugin);
 
-  addMovementSystemToEngine();
-  addShakeSystemToEngine();
-  addFrogSpriteAnimationSystemToEngine();
-  addCollisionSystemToEngine();
   addEquationFeedbackSystemToEngine();
   addPauseSystemToEngine();
   addUINavigationSystemToEngine();
