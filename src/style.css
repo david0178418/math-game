@@ -417,6 +417,20 @@ button:focus-visible,
     linear-gradient(135deg, rgba(75, 159, 59, 0.98), rgba(36, 107, 53, 0.98));
 }
 
+.hud-chip.score.score-gain {
+  animation: score-gain 520ms cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+@keyframes score-gain {
+  0% { transform: scale(1); }
+  38% {
+    transform: scale(1.2) rotate(-2deg);
+    filter: brightness(1.28);
+    box-shadow: 0 0 22px rgba(155, 212, 94, 0.72);
+  }
+  100% { transform: scale(1); }
+}
+
 .hud-chip.lives {
   background: var(--danger-gradient);
 }

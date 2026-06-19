@@ -13,7 +13,13 @@ import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { cleanupRenderSystem, getCtx, renderMargins } from './render/context';
 import { drawGrid } from './render/grid';
 import { drawEntity } from './render/entities';
-import { drawEquationSelectionHighlights, drawPlayerHighlight, drawMathProblemLilyPads, drawMathProblemNumbers } from './render/mathProblems';
+import {
+  drawAnswerConsumptionEffects,
+  drawEquationSelectionHighlights,
+  drawPlayerHighlight,
+  drawMathProblemLilyPads,
+  drawMathProblemNumbers,
+} from './render/mathProblems';
 import { drawEnhancedSpiderWebs } from './render/spiderWebs';
 import { drawEnhancedFrogTongues } from './render/frogTongues';
 import { drawFrozenPlayerEffect } from './render/frozenPlayer';
@@ -51,7 +57,7 @@ export const addRenderSystemToEngine = (): void => {
       const reducedMotion = reducedMotionPreference?.matches === true;
 
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      drawBoardObjective(
+      const answerTargets = drawBoardObjective(
         ctx,
         equationMode,
         queries.mathProblems,
@@ -105,6 +111,14 @@ export const addRenderSystemToEngine = (): void => {
         equationMode.selectedProblemIds,
         enemyOccupiedCells,
         ambientTime,
+      );
+      drawAnswerConsumptionEffects(
+        ctx,
+        queries.mathProblems,
+        answerTargets,
+        margins,
+        currentTime,
+        reducedMotion,
       );
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'behindFrog');
 

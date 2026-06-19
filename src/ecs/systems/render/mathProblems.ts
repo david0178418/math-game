@@ -1,10 +1,21 @@
 import { GAME_CONFIG } from '../../../config';
+import { ANSWER_CONSUMPTION_DURATION_MS } from '../../systemConfigs';
 import { activePlayerGridCell, cellCenter, positionInGridCell } from '../../gameUtils';
 import { gridCellKey, positionedEntityGridCellKey } from '../../lilyPads';
 import type { MathProblemEntity, PlayerEntity } from '../../queries';
+import type { RenderMargins } from './context';
+import type { EquationValueTarget } from './objective';
 
 const cell = GAME_CONFIG.GRID.CELL_SIZE;
 const lilyPadRadius = cell * 0.38;
+const BURST_PARTICLE_COUNT = 10;
+
+const burstParticles = Array.from({ length: BURST_PARTICLE_COUNT }, (_, index) => ({
+  angle: (index / BURST_PARTICLE_COUNT) * Math.PI * 2,
+  distance: 32 + (index % 3) * 8,
+  size: 3 + (index % 3),
+  color: index % 2 === 0 ? '#d5f6f4' : '#9bd45e',
+}));
 
 type LilyPadMotion = {
   centerX: number;
@@ -91,6 +102,153 @@ const drawLilyPad = (
   drawLilyPadVeins(ctx, centerX, centerY, lilyPadRadius);
   ctx.restore();
 };
+
+function clamp(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function easeOutCubic(value: number): number {
+  return 1 - (1 - value) ** 3;
+}
+
+function consumptionProgress(startedAt: number, currentTime: number): number {
+  return clamp((currentTime - startedAt) / ANSWER_CONSUMPTION_DURATION_MS);
+}
+
+function drawConsumptionRipple(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  progress: number,
+): void {
+  const rippleProgress = easeOutCubic(progress);
+  ctx.strokeStyle = `rgba(213, 246, 244, ${(1 - progress) * 0.72})`;
+  ctx.lineWidth = 5 - progress * 3;
+  ctx.beginPath();
+  ctx.ellipse(
+    centerX,
+    centerY,
+    lilyPadRadius * (0.72 + rippleProgress * 1.15),
+    lilyPadRadius * (0.28 + rippleProgress * 0.52),
+    -0.18,
+    0,
+    Math.PI * 2,
+  );
+  ctx.stroke();
+}
+
+function drawConsumptionPad(
+  ctx: CanvasRenderingContext2D,
+  motion: LilyPadMotion,
+  progress: number,
+  reducedMotion: boolean,
+): void {
+  const fade = 1 - clamp((progress - 0.58) / 0.42);
+  const rebound = reducedMotion
+    ? 1
+    : 1 - Math.sin(progress * Math.PI * 3) * (1 - progress) * 0.12;
+
+  ctx.save();
+  ctx.globalAlpha = fade;
+  ctx.translate(motion.centerX, motion.centerY);
+  ctx.scale(1 + (1 - rebound) * 0.34, rebound);
+  ctx.translate(-motion.centerX, -motion.centerY);
+  drawLilyPad(ctx, motion.centerX, motion.centerY, motion.rotation);
+  ctx.restore();
+}
+
+function drawConsumptionNumber(
+  ctx: CanvasRenderingContext2D,
+  problem: MathProblemEntity,
+  motion: LilyPadMotion,
+  target: EquationValueTarget,
+  progress: number,
+  reducedMotion: boolean,
+): void {
+  const numberProgress = clamp((progress - 0.06) / 0.94);
+  const travel = reducedMotion ? 1 : easeOutCubic(numberProgress);
+  const arc = reducedMotion ? 0 : Math.sin(numberProgress * Math.PI) * cell * 0.34;
+  const x = motion.centerX + (target.x - motion.centerX) * travel;
+  const y = motion.centerY + (target.y - motion.centerY) * travel - arc;
+  const scale = reducedMotion
+    ? 1
+    : 1 + Math.sin(numberProgress * Math.PI) * 0.52;
+  const text = problem.components.mathProblem.value.toString();
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.font = 'bold 32px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.strokeStyle = 'rgba(12, 54, 28, 0.9)';
+  ctx.lineWidth = 7;
+  ctx.strokeText(text, 0, 0);
+  ctx.fillStyle = '#fff7c6';
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+
+function drawBurstParticles(
+  ctx: CanvasRenderingContext2D,
+  problem: MathProblemEntity,
+  motion: LilyPadMotion,
+  progress: number,
+): void {
+  const particleProgress = clamp(progress / 0.78);
+  const fade = 1 - particleProgress;
+
+  burstParticles.forEach(particle => {
+    const angle = particle.angle + problem.id * 0.41;
+    const distance = easeOutCubic(particleProgress) * particle.distance;
+    const x = motion.centerX + Math.cos(angle) * distance;
+    const y = motion.centerY
+      + Math.sin(angle) * distance * 0.58
+      + particleProgress ** 2 * 18;
+
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.translate(x, y);
+    ctx.rotate(angle + particleProgress * 2.4);
+    ctx.fillStyle = particle.color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, particle.size * 1.55, particle.size, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+export function drawAnswerConsumptionEffects(
+  ctx: CanvasRenderingContext2D,
+  mathProblems: MathProblemEntity[],
+  answerTargets: ReadonlyMap<number, EquationValueTarget>,
+  margins: RenderMargins,
+  currentTime: number,
+  reducedMotion: boolean,
+): void {
+  ctx.save();
+  mathProblems.forEach(problem => {
+    const effect = problem.components.answerConsumption;
+    if (!effect) return;
+
+    const progress = consumptionProgress(effect.startedAt, currentTime);
+    if (progress >= 1) return;
+
+    const canvasTarget = answerTargets.get(problem.id);
+    if (!canvasTarget) return;
+
+    const motion = lilyPadMotion(problem, reducedMotion ? 0 : currentTime);
+    const target = {
+      x: canvasTarget.x - margins.left,
+      y: canvasTarget.y - margins.top,
+    };
+    drawConsumptionRipple(ctx, motion.centerX, motion.centerY, progress);
+    drawConsumptionPad(ctx, motion, progress, reducedMotion);
+    drawConsumptionNumber(ctx, problem, motion, target, progress, reducedMotion);
+    if (!reducedMotion) drawBurstParticles(ctx, problem, motion, progress);
+  });
+  ctx.restore();
+}
 
 const activeProblemAtPlayer = (
   player: PlayerEntity,

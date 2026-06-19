@@ -410,7 +410,11 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
     wire: (root) => {
       $(root, '#pause-btn').addEventListener('click', () => { void gameEngine.pushScreen('paused', {}); });
       wireFullscreenButton($<HTMLButtonElement>(root, '#hud-fullscreen-btn'));
-      gameplayHud.score = $(root, '#score-display');
+      const scoreDisplay = $(root, '#score-display');
+      scoreDisplay.addEventListener('animationend', () => {
+        scoreDisplay.classList.remove('score-gain');
+      });
+      gameplayHud.score = scoreDisplay;
       gameplayHud.lives = $(root, '#lives-display');
       gameplayHud.level = $(root, '#level-display');
       bindTouchControls(root);
@@ -663,7 +667,9 @@ export const updateGameplayUI = (
   level: string,
 ): void => {
   if (gameplayHud.score && score !== gameplayHud.lastScore) {
+    const scoreIncreased = Number.isFinite(gameplayHud.lastScore) && score > gameplayHud.lastScore;
     gameplayHud.score.textContent = `Score: ${score}`;
+    gameplayHud.score.classList.toggle('score-gain', scoreIncreased);
     gameplayHud.lastScore = score;
   }
   if (gameplayHud.lives && lives !== gameplayHud.lastLives) {

@@ -89,6 +89,9 @@ export interface Components {
     difficulty: number;
     consumed: boolean;
   };
+  answerConsumption: {
+    startedAt: number;
+  };
   collider: {
     width: number;
     height: number;

@@ -22,10 +22,12 @@ export const playerWithHealthQuery = {
 
 export const mathProblemQuery = {
   with: ['position', 'mathProblem'],
+  optional: ['answerConsumption'],
 } as const;
 
 export const mathProblemWithRenderableQuery = {
   with: ['position', 'mathProblem', 'collider', 'renderable'],
+  optional: ['answerConsumption'],
 } as const;
 
 export const enemyQuery = {

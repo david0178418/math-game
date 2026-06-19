@@ -119,11 +119,18 @@ export function addCollisionSystemToEngine(): void {
     });
 }
 
-const hideProblem = (problem: MathProblemEntityWithRenderable): void => {
+function beginAnswerConsumption(
+  ecs: GameEngine,
+  problem: MathProblemEntityWithRenderable,
+  startedAt: number,
+): void {
   problem.components.mathProblem.consumed = true;
   problem.components.renderable.color = 'transparent';
   problem.components.renderable.size = 0;
-};
+  ecs.commands.addComponent(problem.id, 'answerConsumption', {
+    startedAt,
+  });
+}
 
 const selectedProblemValues = (
   selectedProblems: readonly MathProblemEntityWithRenderable[],
@@ -186,9 +193,12 @@ function handleEquationProblemSelection(
     return;
   }
 
-  selectedProblems.forEach(hideProblem);
-
   const pointsEarned = pendingMode.target * problem.components.mathProblem.difficulty;
+  const consumptionStartedAt = performance.now();
+  selectedProblems.forEach(selectedProblem => {
+    beginAnswerConsumption(ecs, selectedProblem, consumptionStartedAt);
+  });
+
   player.components.player.score += pointsEarned;
   const gameMode = ecs.getResource('gameMode');
   const mathDifficulty = ecs.getResource('mathDifficulty');
