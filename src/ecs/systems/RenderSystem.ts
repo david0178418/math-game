@@ -23,6 +23,10 @@ import { IMAGE_ASSET_KEYS } from '../assets';
 
 export { initializeRenderSystem } from './render/context';
 
+const reducedMotionPreference = typeof window === 'undefined'
+  ? undefined
+  : window.matchMedia('(prefers-reduced-motion: reduce)');
+
 export const addRenderSystemToEngine = (): void => {
   gameEngine.addSystem('renderSystem')
     .setPriority(SYSTEM_PRIORITIES.RENDER)
@@ -55,7 +59,9 @@ export const addRenderSystemToEngine = (): void => {
       ctx.save();
       ctx.translate(margins.left, margins.top);
 
-      drawGrid(ctx);
+      const ambientTime = reducedMotionPreference?.matches ? 0 : currentTime;
+
+      drawGrid(ctx, ambientTime);
 
       const sortedEntities = [...queries.renderableEntities].sort(
         (a, b) => a.components.renderable.layer - b.components.renderable.layer,
@@ -87,15 +93,16 @@ export const addRenderSystemToEngine = (): void => {
         drawRenderableEntity(entity);
       }
 
-      drawMathProblemLilyPads(ctx, queries.mathProblems);
-      drawPlayerHighlight(ctx, queries.player, queries.mathProblems, enemyOccupiedCells);
+      drawMathProblemLilyPads(ctx, queries.mathProblems, ambientTime);
+      drawPlayerHighlight(ctx, queries.player, queries.mathProblems, enemyOccupiedCells, ambientTime);
       drawEnhancedSpiderWebs(ctx, queries.spiderWebs, currentTime);
-      drawMathProblemNumbers(ctx, queries.mathProblems);
+      drawMathProblemNumbers(ctx, queries.mathProblems, ambientTime);
       drawEquationSelectionHighlights(
         ctx,
         queries.mathProblems,
         equationMode.selectedProblemIds,
         enemyOccupiedCells,
+        ambientTime,
       );
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'behindFrog');
 

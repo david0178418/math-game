@@ -6,6 +6,25 @@ import type { MathProblemEntity, PlayerEntity } from '../../queries';
 const cell = GAME_CONFIG.GRID.CELL_SIZE;
 const lilyPadRadius = cell * 0.38;
 
+type LilyPadMotion = {
+  centerX: number;
+  centerY: number;
+  rotation: number;
+};
+
+function lilyPadMotion(problem: MathProblemEntity, currentTime: number): LilyPadMotion {
+  const center = cellCenter(problem.components.position);
+  const phase = problem.id * 0.73
+    + problem.components.position.x * 0.013
+    + problem.components.position.y * 0.019;
+
+  return {
+    centerX: center.x,
+    centerY: center.y + Math.sin(currentTime * 0.0011 + phase) * 1.8,
+    rotation: -0.18 + Math.sin(currentTime * 0.0007 + phase) * 0.025,
+  };
+}
+
 const drawLilyPadShape = (
   ctx: CanvasRenderingContext2D,
   centerX: number,
@@ -61,10 +80,11 @@ const drawLilyPad = (
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
+  rotation: number,
 ): void => {
   ctx.save();
   ctx.translate(centerX, centerY);
-  ctx.rotate(-0.18);
+  ctx.rotate(rotation);
   ctx.translate(-centerX, -centerY);
 
   drawLilyPadShape(ctx, centerX, centerY, lilyPadRadius);
@@ -90,21 +110,22 @@ export const drawPlayerHighlight = (
   player: PlayerEntity | undefined,
   mathProblems: MathProblemEntity[],
   blockedCells: ReadonlySet<string>,
+  currentTime: number,
 ): void => {
   if (!player) return;
 
   const problem = activeProblemAtPlayer(player, mathProblems, blockedCells);
   if (!problem) return;
 
-  const { x: centerX, y: centerY } = cellCenter(problem.components.position);
-  const time = Date.now() / 300;
+  const { centerX, centerY, rotation } = lilyPadMotion(problem, currentTime);
+  const time = currentTime / 300;
   const alpha = 0.3 + 0.2 * Math.sin(time);
 
   ctx.save();
   ctx.strokeStyle = `rgba(248, 232, 112, ${alpha + 0.18})`;
   ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.ellipse(centerX, centerY, lilyPadRadius + 9, lilyPadRadius * 0.76 + 7, -0.18, 0, Math.PI * 2);
+  ctx.ellipse(centerX, centerY, lilyPadRadius + 9, lilyPadRadius * 0.76 + 7, rotation, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 };
@@ -114,6 +135,7 @@ export const drawEquationSelectionHighlights = (
   mathProblems: MathProblemEntity[],
   selectedProblemIds: readonly number[],
   blockedCells: ReadonlySet<string>,
+  currentTime: number,
 ): void => {
   if (selectedProblemIds.length === 0) return;
 
@@ -123,11 +145,11 @@ export const drawEquationSelectionHighlights = (
     if (!problem || problem.components.mathProblem.consumed) return;
     if (blockedCells.has(positionedEntityGridCellKey(problem))) return;
 
-    const { x: centerX, y: centerY } = cellCenter(problem.components.position);
+    const { centerX, centerY, rotation } = lilyPadMotion(problem, currentTime);
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY, lilyPadRadius + 14, lilyPadRadius * 0.76 + 12, -0.18, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY, lilyPadRadius + 14, lilyPadRadius * 0.76 + 12, rotation, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.fillStyle = 'rgba(8, 47, 73, 0.9)';
@@ -146,21 +168,23 @@ export const drawEquationSelectionHighlights = (
 
 function forEachVisibleMathProblem(
   mathProblems: MathProblemEntity[],
-  drawProblem: (center: { x: number; y: number }, problem: MathProblemEntity) => void,
+  drawProblem: (problem: MathProblemEntity) => void,
 ): void {
   mathProblems.forEach(problem => {
     if (problem.components.mathProblem.consumed) return;
-    drawProblem(cellCenter(problem.components.position), problem);
+    drawProblem(problem);
   });
 }
 
 export const drawMathProblemLilyPads = (
   ctx: CanvasRenderingContext2D,
   mathProblems: MathProblemEntity[],
+  currentTime: number,
 ): void => {
   ctx.save();
-  forEachVisibleMathProblem(mathProblems, center => {
-    drawLilyPad(ctx, center.x, center.y);
+  forEachVisibleMathProblem(mathProblems, problem => {
+    const motion = lilyPadMotion(problem, currentTime);
+    drawLilyPad(ctx, motion.centerX, motion.centerY, motion.rotation);
   });
   ctx.restore();
 };
@@ -168,21 +192,23 @@ export const drawMathProblemLilyPads = (
 export const drawMathProblemNumbers = (
   ctx: CanvasRenderingContext2D,
   mathProblems: MathProblemEntity[],
+  currentTime: number,
 ): void => {
   ctx.save();
   ctx.font = 'bold 32px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  forEachVisibleMathProblem(mathProblems, (center, problem) => {
+  forEachVisibleMathProblem(mathProblems, problem => {
+    const motion = lilyPadMotion(problem, currentTime);
     const text = problem.components.mathProblem.value.toString();
 
     ctx.strokeStyle = 'rgba(12, 54, 28, 0.9)';
     ctx.lineWidth = 7;
-    ctx.strokeText(text, center.x, center.y);
+    ctx.strokeText(text, motion.centerX, motion.centerY);
 
     ctx.fillStyle = '#fff7c6';
-    ctx.fillText(text, center.x, center.y);
+    ctx.fillText(text, motion.centerX, motion.centerY);
   });
 
   ctx.restore();
