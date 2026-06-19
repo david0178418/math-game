@@ -91,8 +91,6 @@ export const MOVEMENT_CONFIG = {
   MAX_SPEED: 300,
   // Acceleration applied to ramp up from rest and to brake into the final cell.
   ACCEL: 2000,
-  // Duration of the rotation-only tween triggered at corners.
-  ROTATION_TWEEN_MS: 100,
   // Hard cap on queued breadcrumbs so a mash doesn't overcommit the fly.
   // Rewrite-on-reversal handles the common case.
   MAX_QUEUE_LENGTH: 2,

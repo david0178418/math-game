@@ -18,29 +18,10 @@ const queueTween = (
   ecs.commands.addComponent(entityId, 'tween', createTweenSequence(steps).tween);
 };
 
-// A tween component on an entity means it's currently animating (movement,
-// rotation, or death). Shake is a separate component and does NOT block input.
+// A tween component on an entity means it's currently animating movement or
+// death. Shake is a separate component and does NOT block input.
 export const isEntityAnimating = (ecs: GameEngine, entityId: number): boolean =>
   ecs.hasComponent(entityId, 'tween');
-
-/**
- * Tween rotation only (no position). Used by the player at corners — position
- * is driven by the path follower, not a tween.
- */
-export const startRotationTween = (
-  ecs: GameEngine,
-  entityId: number,
-  toRotation: number,
-  durationMs: number,
-): void => {
-  queueTween(ecs, entityId, [
-    {
-      targets: [{ component: 'position' as const, field: 'rotation' as const, to: toRotation }],
-      duration: durationMs / 1000,
-      easing: easeOutQuad,
-    },
-  ]);
-};
 
 /**
  * Start a grid movement animation, optionally with a simultaneous rotation.

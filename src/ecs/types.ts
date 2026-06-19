@@ -67,6 +67,10 @@ export interface Components {
   enemySprite: {
     facing: 'toward' | 'away' | 'left' | 'right';
   };
+  playerSprite: {
+    facing: 'toward' | 'away' | 'left' | 'right';
+    elapsed: number;
+  };
   player: {
     score: number;
     lives: number;

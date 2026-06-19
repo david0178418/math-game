@@ -7,6 +7,7 @@ import { registerFrogTongueInit } from './systems/FrogTongueSystem';
 import { addMovementSystemToEngine } from './systems/MovementSystem';
 import { addShakeSystemToEngine } from './systems/AnimationSystem';
 import { addFrogSpriteAnimationSystemToEngine } from './systems/FrogSpriteSystem';
+import { addPlayerSpriteSystemToEngine } from './systems/PlayerSpriteSystem';
 import { addCollisionSystemToEngine } from './systems/CollisionSystem';
 import type { PlayingScreenConfig } from './types';
 
@@ -25,6 +26,7 @@ export const gameplayPlugin = definePlugin('gameplay')
   .install(() => {
     addMovementSystemToEngine();
     addShakeSystemToEngine();
+    addPlayerSpriteSystemToEngine();
     addFrogSpriteAnimationSystemToEngine();
     addCollisionSystemToEngine();
     addAISystemToEngine();

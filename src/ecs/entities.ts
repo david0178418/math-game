@@ -3,7 +3,7 @@ import { GAME_CONFIG } from '../config';
 import type { AIBehavior, EnemyType } from '../types/shared';
 import type { AllComponents } from './types';
 import { pixelToGrid } from './gameUtils';
-import { flyImage } from './assets';
+import { defaultPlayerRenderable, defaultPlayerSprite } from './systems/PlayerSpriteSystem';
 import { defaultFrogRenderable, defaultFrogSprite } from './systems/FrogSpriteSystem';
 import { defaultEnemyRenderable, defaultEnemySprite } from './systems/EnemySpriteSystem';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
@@ -13,13 +13,8 @@ const playerComponents = (x: number, y: number): Partial<AllComponents> => {
   const grid = pixelToGrid(x, y);
   return {
     position: { x, y, rotation: 0 },
-    renderable: {
-      shape: 'image',
-      color: GAME_CONFIG.COLORS.PLAYER,
-      size: GAME_CONFIG.GRID.CELL_SIZE * GAME_CONFIG.SIZES.PLAYER,
-      layer: GAME_CONFIG.LAYERS.PLAYER,
-      imageSrc: flyImage
-    },
+    renderable: defaultPlayerRenderable(),
+    playerSprite: defaultPlayerSprite(),
     player: {
       score: GAME_CONFIG.GAMEPLAY.STARTING_SCORE,
       lives: GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,

@@ -1,7 +1,6 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import { gameEngine } from '../Engine';
 import type { GameAction } from '../types';
 import { GAME_CONFIG, MOVEMENT_CONFIG } from '../../config';
-import { startRotationTween } from './AnimationSystem';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { playerMovementQuery } from '../queries';
 import { clamp, gridToPixel } from '../gameUtils';
@@ -17,39 +16,12 @@ const DIRECTION_DELTAS = {
   left:  { dx: -1, dy:  0 },
 } as const satisfies Record<Direction, { dx: number; dy: number }>;
 
-const shortestRotation = (current: number, target: number): number => {
-  const diff = ((target - current) % 360 + 540) % 360 - 180;
-  return current + diff;
-};
-
-const headingFromDelta = (dx: number, dy: number): number | undefined => {
-  if (dx === 0 && dy === 0) return undefined;
-  if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 90 : 270;
-  return dy > 0 ? 180 : 0;
-};
-
-const tryStartRotationTween = (
-  ecs: GameEngine,
-  entityId: number,
-  currentRotation: number,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-): void => {
-  const heading = headingFromDelta(toX - fromX, toY - fromY);
-  if (heading === undefined) return;
-  const targetRot = shortestRotation(currentRotation, heading);
-  if (targetRot === currentRotation) return;
-  startRotationTween(ecs, entityId, targetRot, MOVEMENT_CONFIG.ROTATION_TWEEN_MS);
-};
-
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
     .setPriority(SYSTEM_PRIORITIES.MOVEMENT)
     .inPhase('preUpdate')
     .withResources(['inputState'])
-    .setProcessEach(playerMovementQuery, ({ entity, dt, ecs, resources: { inputState } }) => {
+    .setProcessEach(playerMovementQuery, ({ entity, dt, resources: { inputState } }) => {
       const position = entity.components.position;
       const player = entity.components.player;
       const pf = entity.components.pathFollower;
@@ -83,15 +55,6 @@ export function addMovementSystemToEngine(): void {
             } else if (pf.breadcrumbs.length < MOVEMENT_CONFIG.MAX_QUEUE_LENGTH) {
               pf.breadcrumbs = [...pf.breadcrumbs, { x: newCursorX, y: newCursorY }];
             }
-
-            const headPx = gridToPixel(
-              pf.breadcrumbs[0]?.x ?? pf.anchorGridX,
-              pf.breadcrumbs[0]?.y ?? pf.anchorGridY,
-            );
-            tryStartRotationTween(
-              ecs, entity.id, position.rotation ?? 0,
-              position.x, position.y, headPx.x, headPx.y,
-            );
           }
         }
       }
@@ -124,8 +87,7 @@ export function addMovementSystemToEngine(): void {
       const accel = shouldBrake ? -MOVEMENT_CONFIG.ACCEL : MOVEMENT_CONFIG.ACCEL;
       pf.speed = clamp(pf.speed + accel * dt, 0, MOVEMENT_CONFIG.MAX_SPEED);
 
-      // Cardinal motion. Heading is recomputed each frame from sign(target - pos),
-      // so a queue rewrite reversing direction flips the fly immediately.
+      // Cardinal motion is recomputed each frame from sign(target - position).
       const step = pf.speed * dt;
       if (remaining > step) {
         position.x += Math.sign(dx) * step;
@@ -140,12 +102,5 @@ export function addMovementSystemToEngine(): void {
       pf.anchorGridX = targetGrid.x;
       pf.anchorGridY = targetGrid.y;
       pf.breadcrumbs = pf.breadcrumbs.slice(1);
-      const next = pf.breadcrumbs[0];
-      if (!next) return;
-      const nextPx = gridToPixel(next.x, next.y);
-      tryStartRotationTween(
-        ecs, entity.id, position.rotation ?? 0,
-        position.x, position.y, nextPx.x, nextPx.y,
-      );
     });
 }
