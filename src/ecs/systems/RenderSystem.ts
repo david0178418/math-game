@@ -31,6 +31,7 @@ import {
   drawEnemySpawnTelegraphs,
   enemyEmergencePresentation,
 } from './render/enemyTelegraphs';
+import { drawDamageFeedback } from './render/damageFeedback';
 
 export { initializeRenderSystem } from './render/context';
 
@@ -44,7 +45,7 @@ export const addRenderSystemToEngine = (): void => {
     .inScreens(['playing', 'levelComplete'])
     .requiresAssets(IMAGE_ASSET_KEYS)
     .addQuery('renderableEntities', { ...renderableEntityQuery, optional: ['shake'] } as const)
-    .addSingleton('player', playerQuery)
+    .addSingleton('player', { ...playerQuery, optional: ['shake'] } as const)
     .addQuery('mathProblems', mathProblemQuery)
     .addQuery('enemies', enemyQuery)
     .addQuery('frogTongues', frogTongueQuery)
@@ -72,6 +73,13 @@ export const addRenderSystemToEngine = (): void => {
       ctx.translate(margins.left, margins.top);
 
       const ambientTime = reducedMotion ? 0 : currentTime;
+      const playerShake = queries.player?.components.shake;
+      const boardShakeScale = reducedMotion ? 0 : 0.28;
+
+      ctx.translate(
+        (playerShake?.offsetX ?? 0) * boardShakeScale,
+        (playerShake?.offsetY ?? 0) * boardShakeScale,
+      );
 
       drawGrid(ctx, ambientTime);
 
@@ -142,7 +150,10 @@ export const addRenderSystemToEngine = (): void => {
       }
 
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'aboveFrog');
-      if (queries.player) drawFrozenPlayerEffect(ctx, queries.player, currentTime);
+      if (queries.player) {
+        drawFrozenPlayerEffect(ctx, queries.player, currentTime);
+        drawDamageFeedback(ctx, queries.player, reducedMotion);
+      }
       ctx.restore();
 
       const levelComplete = ecs.tryGetScreenState('levelComplete');

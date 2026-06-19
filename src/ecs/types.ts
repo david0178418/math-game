@@ -10,6 +10,7 @@ export type TimerSlot =
   | 'webBuild'
   | 'enemySpawnTelegraph'
   | 'frogTongueWindup'
+  | 'damageFeedback'
   | 'freeze'
   | 'invulnerability'
   | 'deathDelay'

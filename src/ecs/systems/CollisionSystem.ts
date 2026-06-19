@@ -40,6 +40,15 @@ const startInvulnerability = (player: PlayerEntityWithHealth): void => {
   player.components.timers.invulnerability = createTimer(GAME_CONFIG.TIMING.INVULNERABILITY / 1000);
 };
 
+const startDamageReaction = (
+  ecs: GameEngine,
+  player: PlayerEntityWithHealth,
+  animation: { readonly INTENSITY: number; readonly DURATION: number },
+): void => {
+  startShake(ecs, player.id, animation.INTENSITY, animation.DURATION);
+  player.components.timers.damageFeedback = createTimer(animation.DURATION / 1000);
+};
+
 const createEquationFeedback = (
   kind: EquationFeedbackKind,
   options: {
@@ -238,12 +247,7 @@ function handleIncorrectEquationSelection(
   const playerComp = player.components.player;
   playerComp.lives -= 1;
 
-  startShake(
-    ecs,
-    player.id,
-    ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.INTENSITY,
-    ANIMATION_CONFIG.SHAKE.WRONG_ANSWER.DURATION
-  );
+  startDamageReaction(ecs, player, ANIMATION_CONFIG.SHAKE.WRONG_ANSWER);
 
   ecs.setResource('equationMode', {
     ...equationMode,
@@ -272,12 +276,7 @@ function handlePlayerEnemyCollision(ecs: GameEngine, player: PlayerEntityWithHea
 
   console.log(`Lives remaining: ${playerComp.lives}`);
 
-  startShake(
-    ecs,
-    player.id,
-    ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY,
-    ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
-  );
+  startDamageReaction(ecs, player, ANIMATION_CONFIG.SHAKE.DAMAGE);
 
   startInvulnerability(player);
 
@@ -326,12 +325,7 @@ function handlePlayerTongueCollision(
 
   startInvulnerability(player);
 
-  startShake(
-    ecs,
-    player.id,
-    ANIMATION_CONFIG.SHAKE.DAMAGE.INTENSITY,
-    ANIMATION_CONFIG.SHAKE.DAMAGE.DURATION
-  );
+  startDamageReaction(ecs, player, ANIMATION_CONFIG.SHAKE.DAMAGE);
 
   if (playerComp.lives <= 0) {
     triggerGameOver(ecs, player, '💀 Game Over due to frog tongue attack!');

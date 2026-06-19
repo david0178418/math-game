@@ -75,6 +75,15 @@ const wireFullscreenButton = (button: HTMLButtonElement): void => {
   onFullscreenChange(() => syncFullscreenButton(button));
 };
 
+const removeAnimationClassOnEnd = (
+  element: HTMLElement,
+  className: string,
+): void => {
+  element.addEventListener('animationend', () => {
+    element.classList.remove(className);
+  });
+};
+
 const wireTouchControlsSetting = (root: ParentNode): void => {
   const initial = loadTouchControlsMode();
   refreshTouchModeButtons(root, initial);
@@ -368,7 +377,7 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       <div id="top-hud" class="absolute top-0 inset-x-0 p-3 md:p-4 lg:p-5 flex flex-nowrap justify-between items-start text-white font-bold pointer-events-none gap-2 md:gap-4">
         <div class="flex flex-wrap gap-2 md:gap-4 lg:gap-6 items-center pointer-events-auto">
           <div id="score-display" class="hud-chip score text-sm md:text-base lg:text-lg px-3 md:px-4 py-2 rounded-lg whitespace-nowrap">Score: 0</div>
-          <div id="lives-display" class="hud-chip lives text-sm md:text-base lg:text-lg px-3 md:px-4 py-2 rounded-lg whitespace-nowrap">Lives: 3</div>
+          <div id="lives-display" aria-live="polite" class="hud-chip lives text-sm md:text-base lg:text-lg px-3 md:px-4 py-2 rounded-lg whitespace-nowrap">Lives: 3</div>
         </div>
 
         <div class="flex gap-2 md:gap-3 items-center pointer-events-auto shrink-0">
@@ -411,11 +420,11 @@ const SCREENS: Record<UIScreen, ScreenSpec> = {
       $(root, '#pause-btn').addEventListener('click', () => { void gameEngine.pushScreen('paused', {}); });
       wireFullscreenButton($<HTMLButtonElement>(root, '#hud-fullscreen-btn'));
       const scoreDisplay = $(root, '#score-display');
-      scoreDisplay.addEventListener('animationend', () => {
-        scoreDisplay.classList.remove('score-gain');
-      });
+      const livesDisplay = $(root, '#lives-display');
+      removeAnimationClassOnEnd(scoreDisplay, 'score-gain');
+      removeAnimationClassOnEnd(livesDisplay, 'life-loss');
       gameplayHud.score = scoreDisplay;
-      gameplayHud.lives = $(root, '#lives-display');
+      gameplayHud.lives = livesDisplay;
       gameplayHud.level = $(root, '#level-display');
       bindTouchControls(root);
     },
@@ -673,7 +682,9 @@ export const updateGameplayUI = (
     gameplayHud.lastScore = score;
   }
   if (gameplayHud.lives && lives !== gameplayHud.lastLives) {
+    const lifeLost = Number.isFinite(gameplayHud.lastLives) && lives < gameplayHud.lastLives;
     gameplayHud.lives.textContent = `Lives: ${lives}`;
+    gameplayHud.lives.classList.toggle('life-loss', lifeLost);
     gameplayHud.lastLives = lives;
   }
   if (gameplayHud.level && level !== gameplayHud.lastLevel) {
