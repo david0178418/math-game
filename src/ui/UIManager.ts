@@ -171,7 +171,7 @@ function openModeSelect(): void {
 
 function openSettings(): void {
   const returnTo = gameEngine.getCurrentScreen();
-  if (returnTo === null || returnTo === 'settings') return;
+  if (returnTo === null || returnTo === 'settings' || returnTo === 'levelComplete') return;
   void gameEngine.pushScreen('settings', { returnTo });
 }
 

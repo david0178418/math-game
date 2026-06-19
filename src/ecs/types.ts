@@ -126,6 +126,14 @@ export type AllComponents = Components
 // Must be a `type` (not `interface`) so it satisfies ecspresso's
 // `Record<string, unknown>` screen-config constraint.
 export type PlayingScreenConfig = { level: number; isFreshGame: boolean };
+export type LevelCompleteScreenConfig = {
+  completedLevel: number;
+  nextLevel: number;
+  startedAt: number;
+};
+export type LevelCompleteScreenState = LevelCompleteScreenConfig & {
+  transitionStarted: boolean;
+};
 
 export type SettingsReturnScreen = 'menu' | 'modeSelect' | 'playing' | 'paused' | 'gameOver';
 export type SettingsScreenConfig = { returnTo: SettingsReturnScreen };

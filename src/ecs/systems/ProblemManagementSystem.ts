@@ -54,7 +54,7 @@ export function addProblemManagementSystemToEngine(): void {
         }
 
         updateEquationStateFromBoard(ecs, queries.mathProblems, gameMode, currentLevel);
-        checkEquationLevelCompletion(ecs, player, queries.mathProblems, gameMode, currentLevel);
+        checkEquationLevelCompletion(ecs, player, queries.mathProblems, currentLevel);
       }
       cleanupConsumedProblems(ecs, queries.mathProblems);
     });
@@ -176,16 +176,14 @@ function updateEquationStateFromBoard(
 }
 
 /**
- * Triggers a `setScreen('playing', { level: nextLevel })` round-trip — the
- * exit clears playing-scoped entities (problems, enemies, webs)
- * and the re-entry rebuilds the board via `bootstrap.ts`'s screen hook.
- * The player entity is unscoped, so score and lives persist into the new level.
+ * Pushes a level-complete overlay, preserving the completed board while
+ * gameplay systems are suspended. The overlay's transition system advances
+ * to the next playing screen after the celebration.
  */
 function checkEquationLevelCompletion(
   ecs: GameEngine,
   player: PlayerEntity,
   mathProblems: MathProblemEntityWithRenderable[],
-  gameMode: Resources['gameMode'],
   currentLevel: number,
 ): void {
   const equationMode = ecs.getResource('equationMode');
@@ -204,12 +202,11 @@ function checkEquationLevelCompletion(
   const nextLevel = currentLevel + 1;
   console.log(`Equation level ${currentLevel} completed. Advancing to level ${nextLevel}`);
   delete player.components.timers.problemSpawn;
-  const mathDifficulty = ecs.getResource('mathDifficulty');
-  ecs.setResource(
-    'equationMode',
-    createEquationModeState(nextLevel, mathDifficulty, gameMode),
-  );
-  void ecs.setScreen('playing', { level: nextLevel, isFreshGame: false });
+  void ecs.pushScreen('levelComplete', {
+    completedLevel: currentLevel,
+    nextLevel,
+    startedAt: performance.now(),
+  });
 }
 
 /**

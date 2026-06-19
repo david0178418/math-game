@@ -14,6 +14,7 @@ import { gameplayPlugin } from './gameplayPlugin';
 import { playerQuery } from './queries';
 import { showScreen, showSettingsScreen, setFinalScore } from '../ui/UIManager';
 import { createEquationModeState } from '../math/equations';
+import { addLevelCompleteSystemToEngine } from './systems/LevelCompleteSystem';
 
 const GAMEPLAY_CLOCK_GROUPS = ['timers', 'tweens', 'coroutines'] as const;
 
@@ -86,6 +87,8 @@ const setupScreenHooks = (): void => {
     showScreen('playing');
   });
 
+  gameEngine.onScreenEnter('levelComplete', pauseGameplayClocks);
+
   gameEngine.onScreenEnter('settings', ({ config }) => {
     pauseGameplayClocks();
     showSettingsScreen(config.returnTo);
@@ -109,6 +112,7 @@ const registerSystems = async (): Promise<void> => {
   addPauseSystemToEngine();
   addUINavigationSystemToEngine();
   addInputPromptSystemToEngine();
+  addLevelCompleteSystemToEngine();
   addRenderSystemToEngine();
 
   await initializeEngine();

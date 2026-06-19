@@ -12,6 +12,8 @@ import type {
   GameAction,
   TimerSlot,
   PlayingScreenConfig,
+  LevelCompleteScreenConfig,
+  LevelCompleteScreenState,
   SettingsScreenConfig,
 } from './types';
 
@@ -61,6 +63,12 @@ export const gameEngine = ECSpresso.create()
     .add('menu', { initialState: () => ({}) })
     .add('modeSelect', { initialState: () => ({}) })
     .add('playing', { initialState: (config: PlayingScreenConfig) => ({ ...config }) })
+    .add('levelComplete', {
+      initialState: (config: LevelCompleteScreenConfig): LevelCompleteScreenState => ({
+        ...config,
+        transitionStarted: false,
+      }),
+    })
     .add('paused', { initialState: () => ({}) })
     .add('settings', { initialState: (config: SettingsScreenConfig) => ({ ...config }) })
     .add('gameOver', { initialState: () => ({}) }))

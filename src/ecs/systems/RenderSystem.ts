@@ -20,6 +20,7 @@ import { drawFrozenPlayerEffect } from './render/frozenPlayer';
 import { drawBoardObjective } from './render/objective';
 import { getCachedImage } from './render/images';
 import { IMAGE_ASSET_KEYS } from '../assets';
+import { drawLevelCompleteCelebration } from './render/levelComplete';
 
 export { initializeRenderSystem } from './render/context';
 
@@ -30,7 +31,7 @@ const reducedMotionPreference = typeof window === 'undefined'
 export const addRenderSystemToEngine = (): void => {
   gameEngine.addSystem('renderSystem')
     .setPriority(SYSTEM_PRIORITIES.RENDER)
-    .inScreens(['playing'])
+    .inScreens(['playing', 'levelComplete'])
     .requiresAssets(IMAGE_ASSET_KEYS)
     .addQuery('renderableEntities', { ...renderableEntityQuery, optional: ['shake'] } as const)
     .addSingleton('player', playerQuery)
@@ -47,6 +48,7 @@ export const addRenderSystemToEngine = (): void => {
       const currentTime = performance.now();
       const margins = renderMargins();
       const enemyOccupiedCells = collectGridCellKeys(queries.enemies);
+      const reducedMotion = reducedMotionPreference?.matches === true;
 
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       drawBoardObjective(
@@ -59,7 +61,7 @@ export const addRenderSystemToEngine = (): void => {
       ctx.save();
       ctx.translate(margins.left, margins.top);
 
-      const ambientTime = reducedMotionPreference?.matches ? 0 : currentTime;
+      const ambientTime = reducedMotion ? 0 : currentTime;
 
       drawGrid(ctx, ambientTime);
 
@@ -114,5 +116,15 @@ export const addRenderSystemToEngine = (): void => {
       drawEnhancedFrogTongues(ctx, queries.frogTongues, currentTime, 'aboveFrog');
       if (queries.player) drawFrozenPlayerEffect(ctx, queries.player, currentTime);
       ctx.restore();
+
+      const levelComplete = ecs.tryGetScreenState('levelComplete');
+      if (levelComplete) {
+        drawLevelCompleteCelebration(
+          ctx,
+          levelComplete,
+          currentTime,
+          reducedMotion,
+        );
+      }
     });
 };

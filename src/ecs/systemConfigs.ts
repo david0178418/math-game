@@ -35,6 +35,8 @@ export const EQUATION_FEEDBACK_DURATION_MS: Record<EquationFeedbackKind, number>
   incorrect: 420,
 } as const;
 
+export const LEVEL_COMPLETE_DURATION_MS = 1_600;
+
 // System Priorities (for consistent ordering)
 export const SYSTEM_PRIORITIES = {
   INPUT_PROMPTS: 99,             // Reads ECSpresso input state after the input plugin
@@ -47,6 +49,7 @@ export const SYSTEM_PRIORITIES = {
   UI: 50,                       // UI updates
   ENEMY_SPAWN: 40,              // Enemy spawning
   PROBLEM_MANAGEMENT: 30,       // Problem lifecycle
+  LEVEL_COMPLETE: 25,           // Advances after the level-complete overlay
   FROG_TONGUE: 22,              // Frog Tongue system (before render, after problem management)
   RENDER: 10,                   // Rendering (should be last)
 } as const;
