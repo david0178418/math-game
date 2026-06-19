@@ -38,12 +38,12 @@ export const addRenderSystemToEngine = (): void => {
     .addQuery('enemies', enemyQuery)
     .addQuery('frogTongues', frogTongueQuery)
     .addQuery('spiderWebs', spiderWebQuery)
+    .withResources(['equationMode'])
     .setOnDetach(cleanupRenderSystem)
-    .setProcess(({ queries, ecs }) => {
+    .setProcess(({ queries, ecs, resources: { equationMode } }) => {
       const ctx = getCtx();
       if (!ctx) return;
 
-      const equationMode = ecs.getResource('equationMode');
       const currentTime = performance.now();
       const margins = renderMargins();
       const enemyOccupiedCells = collectGridCellKeys(queries.enemies);
