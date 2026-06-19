@@ -6,7 +6,7 @@
       "name": "math",
       "dependencies": {
         "@eslint/js": "^10.0.1",
-        "ecspresso": "^0.19.2",
+        "ecspresso": "^0.20.0",
         "howler": "^2.2.4",
         "typescript-eslint": "^8.61.1",
       },
@@ -135,7 +135,7 @@
 
     "deep-is": ["deep-is@0.1.4", "", {}, "sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ=="],
 
-    "ecspresso": ["ecspresso@0.19.2", "", { "peerDependencies": { "howler": "^2.2.0", "pixi.js": "^8.0.0", "react": "^19.0.0", "react-dom": "^19.0.0", "three": "^0.184.0", "typescript": "^6.0.3" }, "optionalPeers": ["howler", "pixi.js", "react", "react-dom", "three"] }, "sha512-mQKbww3gUroJmYeJcjF4sTBjXVwwqLHDMt1ts7tRc/Uw91qy7kTwn3ACFLn3iNGv5HHXX3E0IyLbpbXgQ8q2TA=="],
+    "ecspresso": ["ecspresso@0.20.0", "", { "peerDependencies": { "howler": "^2.2.0", "pixi.js": "^8.0.0", "react": "^19.0.0", "three": "^0.184.0" }, "optionalPeers": ["howler", "pixi.js", "react", "three"] }, "sha512-BHIcbDQR7ZwgupRJI1dHgeoQC6LRe2w1CKsFq9A3xist9Iv7mVCcSKCtq1uDS287USmu8jCI7FMS5lBxnfDkdw=="],
 
     "escape-string-regexp": ["escape-string-regexp@4.0.0", "", {}, "sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA=="],
 
