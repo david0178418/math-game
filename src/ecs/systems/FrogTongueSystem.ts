@@ -10,6 +10,8 @@ import {
 import type { AllComponents } from '../types';
 import { isEntityAnimating } from './AnimationSystem';
 import { closeFrogMouth, startFrogTongueAnimation } from './FrogSpriteSystem';
+import { FROG_TONGUE_WINDUP_DURATION_MS } from '../systemConfigs';
+import { createTimer } from 'ecspresso/plugins/scripting/timers';
 
 const FROG_CONFIG = GAME_CONFIG.ENEMY_TYPES.frog;
 const CELL = GAME_CONFIG.GRID.CELL_SIZE;
@@ -37,6 +39,12 @@ function getTongue(ecs: GameEngine, entityId: number): AllComponents['frogTongue
   return c;
 }
 
+function getTimers(ecs: GameEngine, entityId: number): AllComponents['timers'] {
+  const timers = ecs.getComponent(entityId, 'timers');
+  if (!timers) throw new Error(`frog ${entityId} missing timers component`);
+  return timers;
+}
+
 const markTongueChanged = (ecs: GameEngine, frogId: number): void => {
   ecs.markChanged(frogId, 'frogTongue');
 };
@@ -55,8 +63,16 @@ function* tongueLifecycle(ecs: GameEngine, frogId: number): CoroutineGenerator {
     yield* waitUntil(() => !isEntityAnimating(ecs, frogId));
 
     const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+    const timers = getTimers(ecs, frogId);
     tongue.direction = direction;
+    tongue.phase = 'windingUp';
+    timers.frogTongueWindup = createTimer(
+      FROG_TONGUE_WINDUP_DURATION_MS / 1000,
+    );
     startFrogTongueAnimation(ecs, frogId, direction);
+    markTongueChanged(ecs, frogId);
+    yield* waitUntil(() => timers.frogTongueWindup?.active !== true);
+
     tongue.phase = 'extending';
     markTongueChanged(ecs, frogId);
     console.log(`🐸 Frog ${frogId} starting tongue attack in direction (${tongue.direction.x}, ${tongue.direction.y})`);

@@ -55,7 +55,7 @@ export const spiderWebWithRenderableQuery = {
 } as const;
 
 export const frogTongueQuery = {
-  with: ['position', 'enemy', 'frogTongue'],
+  with: ['position', 'enemy', 'frogTongue', 'timers'],
 } as const;
 
 /**

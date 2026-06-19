@@ -155,15 +155,27 @@ export interface DrawEntityArgs {
   deathScale: number;
   shakeOffsetX: number;
   shakeOffsetY: number;
+  opacity?: number;
+  visualScale?: number;
 }
 
 export const drawEntity = (ctx: CanvasRenderingContext2D, args: DrawEntityArgs): void => {
-  const { position, renderable, image, isInvulnerable, deathScale, shakeOffsetX, shakeOffsetY } = args;
+  const {
+    position,
+    renderable,
+    image,
+    isInvulnerable,
+    deathScale,
+    shakeOffsetX,
+    shakeOffsetY,
+    opacity = 1,
+    visualScale = 1,
+  } = args;
   const center = cellCenter(position);
   const baselineY = entityBaselineY(position, renderable, shakeOffsetY);
 
   ctx.save();
-  if (isInvulnerable) ctx.globalAlpha = 0.5;
+  ctx.globalAlpha = opacity * (isInvulnerable ? 0.5 : 1);
 
   SHAPE_RENDERERS[renderable.shape]({
     ctx,
@@ -171,7 +183,7 @@ export const drawEntity = (ctx: CanvasRenderingContext2D, args: DrawEntityArgs):
     centerY: center.y + shakeOffsetY,
     rotation: position.rotation ?? 0,
     renderable,
-    deathScale,
+    deathScale: deathScale * visualScale,
     image,
     baselineY,
   });

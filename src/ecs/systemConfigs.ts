@@ -39,6 +39,9 @@ export const EQUATION_FEEDBACK_DURATION_MS: Record<EquationFeedbackKind, number>
 } as const;
 
 export const LEVEL_COMPLETE_DURATION_MS = 1_600;
+export const ENEMY_SPAWN_TELEGRAPH_DURATION_MS = 650;
+export const FROG_TONGUE_WINDUP_DURATION_MS = 450;
+export const SPIDER_WEB_BUILD_DURATION_MS = 320;
 
 // System Priorities (for consistent ordering)
 export const SYSTEM_PRIORITIES = {

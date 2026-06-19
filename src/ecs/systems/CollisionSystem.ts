@@ -86,6 +86,7 @@ export function addCollisionSystemToEngine(): void {
 
       if (!frozen) {
         for (const spiderWeb of queries.spiderWebs) {
+          if (spiderWeb.components.timers.webBuild?.active) continue;
           if (sameGridPosition(player.components.position, spiderWeb.components.position)) {
             handlePlayerSpiderWebCollision(ecs, player, spiderWeb);
             break;
@@ -111,6 +112,7 @@ export function addCollisionSystemToEngine(): void {
 
       if (!invulnerable) {
         for (const enemy of queries.enemies) {
+          if (enemy.components.timers.enemySpawnTelegraph?.active) continue;
           if (sameGridPosition(player.components.position, enemy.components.position)) {
             handlePlayerEnemyCollision(ecs, player);
           }

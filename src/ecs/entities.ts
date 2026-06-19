@@ -6,6 +6,8 @@ import { pixelToGrid } from './gameUtils';
 import { flyImage } from './assets';
 import { defaultFrogRenderable, defaultFrogSprite } from './systems/FrogSpriteSystem';
 import { defaultEnemyRenderable, defaultEnemySprite } from './systems/EnemySpriteSystem';
+import { createTimer } from 'ecspresso/plugins/scripting/timers';
+import { ENEMY_SPAWN_TELEGRAPH_DURATION_MS } from './systemConfigs';
 
 const playerComponents = (x: number, y: number): Partial<AllComponents> => {
   const grid = pixelToGrid(x, y);
@@ -58,6 +60,9 @@ const enemyComponents = (
     enemy: {
       enemyType,
       behaviorType
+    },
+    timers: {
+      enemySpawnTelegraph: createTimer(ENEMY_SPAWN_TELEGRAPH_DURATION_MS / 1000),
     },
     collider: {
       width: size,

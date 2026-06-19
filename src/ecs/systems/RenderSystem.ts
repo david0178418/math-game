@@ -21,12 +21,16 @@ import {
   drawMathProblemNumbers,
 } from './render/mathProblems';
 import { drawEnhancedSpiderWebs } from './render/spiderWebs';
-import { drawEnhancedFrogTongues } from './render/frogTongues';
+import { drawEnhancedFrogTongues, drawFrogAttackTelegraphs } from './render/frogTongues';
 import { drawFrozenPlayerEffect } from './render/frozenPlayer';
 import { drawBoardObjective } from './render/objective';
 import { getCachedImage } from './render/images';
 import { IMAGE_ASSET_KEYS } from '../assets';
 import { drawLevelCompleteCelebration } from './render/levelComplete';
+import {
+  drawEnemySpawnTelegraphs,
+  enemyEmergencePresentation,
+} from './render/enemyTelegraphs';
 
 export { initializeRenderSystem } from './render/context';
 
@@ -83,6 +87,7 @@ export const addRenderSystemToEngine = (): void => {
         const image = renderable.imageSrc
           ? getCachedImage(ecs, renderable.imageSrc)
           : undefined;
+        const emergence = enemyEmergencePresentation(timers?.enemySpawnTelegraph);
 
         drawEntity(ctx, {
           position: entity.components.position,
@@ -92,6 +97,8 @@ export const addRenderSystemToEngine = (): void => {
           deathScale: playerComp?.deathScale ?? 1.0,
           shakeOffsetX: shake?.offsetX ?? 0,
           shakeOffsetY: shake?.offsetY ?? 0,
+          opacity: emergence.opacity,
+          visualScale: emergence.scale,
         });
       };
 
@@ -102,8 +109,9 @@ export const addRenderSystemToEngine = (): void => {
       }
 
       drawMathProblemLilyPads(ctx, queries.mathProblems, ambientTime);
+      drawEnemySpawnTelegraphs(ctx, queries.enemies, currentTime, reducedMotion);
       drawPlayerHighlight(ctx, queries.player, queries.mathProblems, enemyOccupiedCells, ambientTime);
-      drawEnhancedSpiderWebs(ctx, queries.spiderWebs, currentTime);
+      drawEnhancedSpiderWebs(ctx, queries.spiderWebs, currentTime, reducedMotion);
       drawMathProblemNumbers(ctx, queries.mathProblems, ambientTime);
       drawEquationSelectionHighlights(
         ctx,
@@ -111,6 +119,12 @@ export const addRenderSystemToEngine = (): void => {
         equationMode.selectedProblemIds,
         enemyOccupiedCells,
         ambientTime,
+      );
+      drawFrogAttackTelegraphs(
+        ctx,
+        queries.frogTongues,
+        currentTime,
+        reducedMotion,
       );
       drawAnswerConsumptionEffects(
         ctx,

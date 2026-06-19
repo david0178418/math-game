@@ -7,6 +7,9 @@ export type GameAction = 'up' | 'down' | 'left' | 'right' | 'eat' | 'pause';
 
 export type TimerSlot =
   | 'webExpiry'
+  | 'webBuild'
+  | 'enemySpawnTelegraph'
+  | 'frogTongueWindup'
   | 'freeze'
   | 'invulnerability'
   | 'deathDelay'
@@ -109,7 +112,7 @@ export interface Components {
     maxRange: number;
     currentLength: number;
     segments: Array<{ x: number; y: number }>;
-    phase: 'idle' | 'extending' | 'holding' | 'retracting';
+    phase: 'idle' | 'windingUp' | 'extending' | 'holding' | 'retracting';
   };
   pathFollower: {
     // Grid cell the fly was last snapped to; the implicit "behind" waypoint

@@ -2,6 +2,7 @@ import type { GameEngine } from '../Engine';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG } from '../../config';
 import { gridToPixel } from '../gameUtils';
+import { SPIDER_WEB_BUILD_DURATION_MS } from '../systemConfigs';
 
 const SPIDER_CONFIG = GAME_CONFIG.ENEMY_TYPES.spider;
 
@@ -28,6 +29,7 @@ export function createSpiderWeb(ecs: GameEngine, gridX: number, gridY: number): 
       group: 'spiderWeb',
     },
     timers: {
+      webBuild: createTimer(SPIDER_WEB_BUILD_DURATION_MS / 1000),
       webExpiry: createTimer(SPIDER_CONFIG.WEB_DURATION / 1000, {
         onComplete: ({ entityId }) => {
           console.log(`🕸️ Spider web expired without catching a player`);

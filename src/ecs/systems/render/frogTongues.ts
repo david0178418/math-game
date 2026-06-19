@@ -1,9 +1,14 @@
 import { GAME_CONFIG } from '../../../config';
-import { cellCenter, gridCellCenter } from '../../gameUtils';
+import {
+  cellCenter,
+  gridCellCenter,
+  pixelToGrid,
+  timerElapsedProgress,
+} from '../../gameUtils';
 import type { FrogTongueEntity } from '../../queries';
 
 type Tongue = FrogTongueEntity['components']['frogTongue'];
-type ActivePhase = Exclude<Tongue['phase'], 'idle'>;
+type ActivePhase = Exclude<Tongue['phase'], 'idle' | 'windingUp'>;
 type TongueLayer = 'behindFrog' | 'aboveFrog';
 type DirectionKey = 'away' | 'toward' | 'left' | 'right';
 type TonguePresentation = {
@@ -23,6 +28,7 @@ const CELL = GAME_CONFIG.GRID.CELL_SIZE;
 const AWAY_MOUTH_ANCHOR = { x: 0, y: -0.40 } as const;
 const TOWARD_MOUTH_ANCHOR = { x: 0, y: -0.31 } as const;
 const SIDE_MOUTH_ANCHOR = { x: 0.14, y: -0.34 } as const;
+const WARNING_COLOR = '255, 238, 120';
 
 const TONGUE_PRESENTATION: Record<DirectionKey, TonguePresentation> = {
   away: {
@@ -117,6 +123,83 @@ const drawTongueTip = (
   ctx.fill();
 };
 
+function telegraphedCells(frog: FrogTongueEntity): Array<{ x: number; y: number }> {
+  const start = pixelToGrid(
+    frog.components.position.x,
+    frog.components.position.y,
+  );
+  const { direction, maxRange } = frog.components.frogTongue;
+
+  return Array.from({ length: maxRange }, (_, index) => ({
+    x: start.x + direction.x * (index + 1),
+    y: start.y + direction.y * (index + 1),
+  })).filter(({ x, y }) => (
+    x >= 0
+    && x < GAME_CONFIG.GRID.WIDTH
+    && y >= 0
+    && y < GAME_CONFIG.GRID.HEIGHT
+  ));
+}
+
+export function drawFrogAttackTelegraphs(
+  ctx: CanvasRenderingContext2D,
+  frogs: FrogTongueEntity[],
+  currentTime: number,
+  reducedMotion: boolean,
+): void {
+  frogs.forEach(frog => {
+    const tongue = frog.components.frogTongue;
+    if (tongue.phase !== 'windingUp') return;
+
+    const progress = timerElapsedProgress(
+      frog.components.timers.frogTongueWindup,
+    );
+    const pulse = reducedMotion ? 0.7 : 0.55 + Math.sin(progress * Math.PI * 5) * 0.18;
+    const presentation = tonguePresentation(tongue);
+    const mouth = mouthAnchor(frog.components.position, presentation.anchor);
+    const cells = telegraphedCells(frog);
+    const target = cells.at(-1);
+    if (!target) return;
+
+    const targetCenter = gridCellCenter(target.x, target.y);
+    const lineEnd = presentation.flattenToAnchorY
+      ? { x: targetCenter.x, y: mouth.y }
+      : targetCenter;
+
+    ctx.save();
+    ctx.setLineDash([10, 8]);
+    ctx.lineDashOffset = reducedMotion ? 0 : -progress * 28;
+    ctx.strokeStyle = `rgba(${WARNING_COLOR}, ${pulse})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(mouth.x, mouth.y);
+    ctx.lineTo(lineEnd.x, lineEnd.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    cells.forEach((cellPosition, index) => {
+      const center = gridCellCenter(cellPosition.x, cellPosition.y);
+      const cellPulse = reducedMotion
+        ? 1
+        : 1 + Math.sin(currentTime * 0.018 - index * 0.7) * 0.1;
+      ctx.strokeStyle = `rgba(${WARNING_COLOR}, ${0.28 + progress * 0.42})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(
+        center.x,
+        presentation.flattenToAnchorY ? mouth.y : center.y,
+        CELL * 0.27 * cellPulse,
+        CELL * 0.11 * cellPulse,
+        -0.18,
+        0,
+        Math.PI * 2,
+      );
+      ctx.stroke();
+    });
+    ctx.restore();
+  });
+}
+
 export const drawEnhancedFrogTongues = (
   ctx: CanvasRenderingContext2D,
   frogs: FrogTongueEntity[],
@@ -125,7 +208,7 @@ export const drawEnhancedFrogTongues = (
 ): void => {
   for (const frog of frogs) {
     const tongue = frog.components.frogTongue;
-    if (tongue.phase === 'idle' || tongue.segments.length === 0) continue;
+    if (tongue.phase === 'idle' || tongue.phase === 'windingUp' || tongue.segments.length === 0) continue;
     const presentation = tonguePresentation(tongue);
     if (presentation.layer !== layer) continue;
 

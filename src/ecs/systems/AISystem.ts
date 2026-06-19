@@ -108,6 +108,7 @@ export function addAISystemToEngine(): void {
       const activeLilyPadCells = activeLilyPadCellKeys(queries.mathProblems);
 
       for (const enemy of enemies) {
+        if (enemy.components.timers.enemySpawnTelegraph?.active) continue;
         if (isEntityAnimating(ecs, enemy.id)) continue;
         if (isFrogAttacking(enemy.components.frogTongue)) continue;
         processEnemyAI(ecs, enemy, player, blocked, activeLilyPadCells);

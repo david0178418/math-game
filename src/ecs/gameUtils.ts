@@ -13,6 +13,9 @@ type Position = { x: number; y: number };
 export const timerProgress = (timer: GameTimer | undefined): number =>
   timer ? Math.max(0, 1 - timer.elapsed / timer.duration) : 1;
 
+export const timerElapsedProgress = (timer: GameTimer | undefined): number =>
+  timer ? clamp(timer.elapsed / timer.duration, 0, 1) : 1;
+
 export function sameGridPosition(
   pos1: { x: number; y: number },
   pos2: { x: number; y: number }

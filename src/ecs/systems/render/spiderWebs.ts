@@ -1,23 +1,29 @@
 import { GAME_CONFIG } from '../../../config';
-import { cellCenter, timerProgress } from '../../gameUtils';
+import { cellCenter, timerElapsedProgress, timerProgress } from '../../gameUtils';
 import type { SpiderWebEntity } from '../../queries';
 
 export const drawEnhancedSpiderWebs = (
   ctx: CanvasRenderingContext2D,
   spiderWebs: SpiderWebEntity[],
   currentTime: number,
+  reducedMotion: boolean,
 ): void => {
   for (const webEntity of spiderWebs) {
     const pos = webEntity.components.position;
     const fadeProgress = timerProgress(webEntity.components.timers.webExpiry);
-    const baseOpacity = 0.6 * fadeProgress;
+    const buildProgress = timerElapsedProgress(webEntity.components.timers.webBuild);
+    const buildScale = reducedMotion ? 1 : 1 - (1 - buildProgress) ** 3;
+    const baseOpacity = 0.6 * fadeProgress * (reducedMotion ? 1 : buildProgress);
+    const { x: centerX, y: centerY } = cellCenter(pos);
 
     ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.scale(buildScale, buildScale);
+    ctx.translate(-centerX, -centerY);
 
     ctx.fillStyle = `rgba(128, 0, 128, ${baseOpacity * 0.3})`;
     ctx.fillRect(pos.x + 5, pos.y + 5, GAME_CONFIG.GRID.CELL_SIZE - 10, GAME_CONFIG.GRID.CELL_SIZE - 10);
 
-    const { x: centerX, y: centerY } = cellCenter(pos);
     const webSize = GAME_CONFIG.GRID.CELL_SIZE * 0.4;
 
     ctx.strokeStyle = `rgba(160, 32, 160, ${baseOpacity})`;
@@ -42,7 +48,7 @@ export const drawEnhancedSpiderWebs = (
 
     ctx.stroke();
 
-    if (fadeProgress > 0.5) {
+    if (buildProgress >= 1 && fadeProgress > 0.5) {
       const sparkleOpacity = (fadeProgress - 0.5) * 2;
       ctx.fillStyle = `rgba(200, 100, 200, ${sparkleOpacity * 0.8})`;
 
