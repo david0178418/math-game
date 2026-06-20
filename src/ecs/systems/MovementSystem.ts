@@ -1,5 +1,5 @@
 import { gameEngine } from '../Engine';
-import type { GameAction } from '../types';
+import type { Components, GameAction } from '../types';
 import { GAME_CONFIG, MOVEMENT_CONFIG } from '../../config';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { playerMovementQuery } from '../queries';
@@ -15,6 +15,67 @@ const DIRECTION_DELTAS = {
   down:  { dx:  0, dy:  1 },
   left:  { dx: -1, dy:  0 },
 } as const satisfies Record<Direction, { dx: number; dy: number }>;
+
+function activeDirection(
+  predicate: (direction: Direction) => boolean,
+): Direction | undefined {
+  const directions = DIRECTIONS.filter(predicate);
+  return directions.length === 1 ? directions[0] : undefined;
+}
+
+function adjacentGridPoint(
+  gridPoint: Readonly<{ x: number; y: number }>,
+  direction: Direction,
+): { x: number; y: number } {
+  const delta = DIRECTION_DELTAS[direction];
+  return {
+    x: clamp(gridPoint.x + delta.dx, 0, GAME_CONFIG.GRID.WIDTH - 1),
+    y: clamp(gridPoint.y + delta.dy, 0, GAME_CONFIG.GRID.HEIGHT - 1),
+  };
+}
+
+function canContinueFrom(
+  gridPoint: Readonly<{ x: number; y: number }>,
+  direction: Direction | undefined,
+): boolean {
+  if (!direction) return false;
+  const nextGrid = adjacentGridPoint(gridPoint, direction);
+  return nextGrid.x !== gridPoint.x || nextGrid.y !== gridPoint.y;
+}
+
+function updateBreadcrumbs(
+  pathFollower: Readonly<Components['pathFollower']>,
+  direction: Direction,
+): Components['pathFollower']['breadcrumbs'] {
+  const cursor = pathFollower.breadcrumbs.at(-1) ?? {
+    x: pathFollower.anchorGridX,
+    y: pathFollower.anchorGridY,
+  };
+  const nextGrid = adjacentGridPoint(cursor, direction);
+
+  if (nextGrid.x === cursor.x && nextGrid.y === cursor.y) {
+    return pathFollower.breadcrumbs;
+  }
+
+  // Rewrite-on-reversal: if the candidate is already in the path
+  // (anchor + breadcrumbs), truncate to that point. Backtracking and
+  // 180-degree reversals fall out naturally.
+  const matchingBreadcrumb = pathFollower.breadcrumbs.findIndex(
+    breadcrumb => breadcrumb.x === nextGrid.x && breadcrumb.y === nextGrid.y,
+  );
+  const matchesAnchor = nextGrid.x === pathFollower.anchorGridX
+    && nextGrid.y === pathFollower.anchorGridY;
+
+  if (matchesAnchor) return [];
+  if (matchingBreadcrumb >= 0) {
+    return pathFollower.breadcrumbs.slice(0, matchingBreadcrumb + 1);
+  }
+  if (pathFollower.breadcrumbs.length >= MOVEMENT_CONFIG.MAX_QUEUE_LENGTH) {
+    return pathFollower.breadcrumbs;
+  }
+
+  return [...pathFollower.breadcrumbs, nextGrid];
+}
 
 export function addMovementSystemToEngine(): void {
   gameEngine.addSystem('movementSystem')
@@ -33,29 +94,11 @@ export function addMovementSystemToEngine(): void {
       // Phase A — input updates the breadcrumb queue. Skipped while frozen so
       // the player can't queue moves through a stun.
       if (!frozen) {
-        const pressed = DIRECTIONS.filter(d => inputState.actions.justActivated(d));
-        if (pressed.length === 1) {
-          const delta = DIRECTION_DELTAS[pressed[0]];
-          const cursor = pf.breadcrumbs.at(-1) ?? { x: pf.anchorGridX, y: pf.anchorGridY };
-          const newCursorX = clamp(cursor.x + delta.dx, 0, GAME_CONFIG.GRID.WIDTH - 1);
-          const newCursorY = clamp(cursor.y + delta.dy, 0, GAME_CONFIG.GRID.HEIGHT - 1);
-
-          if (newCursorX !== cursor.x || newCursorY !== cursor.y) {
-            // Rewrite-on-reversal: if the candidate is already in the path
-            // (anchor + breadcrumbs), truncate to that point. Backtracking and
-            // 180° reversals fall out naturally.
-            const matchInBreadcrumbs = pf.breadcrumbs.findIndex(
-              c => c.x === newCursorX && c.y === newCursorY,
-            );
-            const matchesAnchor = newCursorX === pf.anchorGridX && newCursorY === pf.anchorGridY;
-            if (matchesAnchor) {
-              pf.breadcrumbs = [];
-            } else if (matchInBreadcrumbs >= 0) {
-              pf.breadcrumbs = pf.breadcrumbs.slice(0, matchInBreadcrumbs + 1);
-            } else if (pf.breadcrumbs.length < MOVEMENT_CONFIG.MAX_QUEUE_LENGTH) {
-              pf.breadcrumbs = [...pf.breadcrumbs, { x: newCursorX, y: newCursorY }];
-            }
-          }
+        const pressedDirection = activeDirection(
+          direction => inputState.actions.justActivated(direction),
+        );
+        if (pressedDirection) {
+          pf.breadcrumbs = updateBreadcrumbs(pf, pressedDirection);
         }
       }
 
@@ -64,6 +107,10 @@ export function addMovementSystemToEngine(): void {
         pf.speed = 0;
         return;
       }
+
+      const heldDirection = activeDirection(
+        direction => inputState.actions.isActive(direction),
+      );
 
       const head = pf.breadcrumbs[0];
       const targetGrid = head ?? { x: pf.anchorGridX, y: pf.anchorGridY };
@@ -80,10 +127,13 @@ export function addMovementSystemToEngine(): void {
         return;
       }
 
-      // Brake only when one cell remains and we're within braking distance;
-      // otherwise accelerate toward MAX_SPEED.
+      // Held input reserves a continuation without adding a real breadcrumb,
+      // so releasing can still stop the player on the tile being entered.
       const brakeDistance = (pf.speed * pf.speed) / (2 * MOVEMENT_CONFIG.ACCEL);
-      const shouldBrake = pf.breadcrumbs.length <= 1 && remaining <= brakeDistance;
+      const hasContinuation = canContinueFrom(targetGrid, heldDirection);
+      const shouldBrake = pf.breadcrumbs.length <= 1
+        && !hasContinuation
+        && remaining <= brakeDistance;
       const accel = shouldBrake ? -MOVEMENT_CONFIG.ACCEL : MOVEMENT_CONFIG.ACCEL;
       pf.speed = clamp(pf.speed + accel * dt, 0, MOVEMENT_CONFIG.MAX_SPEED);
 
@@ -97,10 +147,15 @@ export function addMovementSystemToEngine(): void {
 
       position.x = target.x;
       position.y = target.y;
-      if (pf.breadcrumbs.length === 0) return;
 
-      pf.anchorGridX = targetGrid.x;
-      pf.anchorGridY = targetGrid.y;
-      pf.breadcrumbs = pf.breadcrumbs.slice(1);
+      if (pf.breadcrumbs.length > 0) {
+        pf.anchorGridX = targetGrid.x;
+        pf.anchorGridY = targetGrid.y;
+        pf.breadcrumbs = pf.breadcrumbs.slice(1);
+      }
+
+      if (pf.breadcrumbs.length === 0 && heldDirection) {
+        pf.breadcrumbs = updateBreadcrumbs(pf, heldDirection);
+      }
     });
 }
