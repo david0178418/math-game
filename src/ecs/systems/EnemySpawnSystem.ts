@@ -27,13 +27,13 @@ export function addEnemySpawnSystemToEngine(systems: GameSystemRegistrar): void 
     .addQuery('mathProblems', mathProblemQuery)
     .addQuery('spiderWebs', spiderWebQuery)
     .addSingleton('player', { ...playerQuery, mutates: ['timers'] } as const)
-    .withResources(['currentLevel'])
-    .setProcess(({ queries, ecs, resources: { currentLevel } }) => {
+    .withResources(['currentLevel', 'enemySpawn'])
+    .setProcess(({ queries, ecs, resources: { currentLevel, enemySpawn } }) => {
       const player = queries.player;
       if (!player) return;
 
       const spawnOrder = enemySpawnOrderForLevel(currentLevel);
-      const { index } = ecs.getResource('enemySpawn');
+      const { index } = enemySpawn;
       const currentEnemyCount = queries.enemies.length;
       const cycleComplete = index >= spawnOrder.length;
 

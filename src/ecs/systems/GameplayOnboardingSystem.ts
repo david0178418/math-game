@@ -101,7 +101,7 @@ function spawnTutorialBoard(ecs: GameEngine, kind: GameplayOnboardingKind): void
       y: Math.floor(index / GAME_CONFIG.GRID.WIDTH),
     };
     const pixel = gridToPixel(grid.x, grid.y);
-    ecs.spawn(mathProblemComponents(pixel.x, pixel.y, value, value === TARGET_VALUE, 1), {
+    ecs.spawn(mathProblemComponents(pixel.x, pixel.y, value, 1), {
       scope: 'tutorial',
     });
   });
@@ -389,6 +389,7 @@ function applyTutorialStep(
   player: Parameters<typeof placePlayer>[0] & { id: number },
   mathProblems: Parameters<typeof resetTutorialScene>[2],
   enemy: Parameters<typeof resetTutorialScene>[3],
+  gameplayTimeSeconds: number,
 ): void {
   resetTutorialScene(
     ecs,
@@ -401,7 +402,7 @@ function applyTutorialStep(
   if (session.kind === 'operands') {
     applyOperandTutorialStep(ecs, session, player, mathProblems);
     updateGameplayUI(
-      ecs.getResource('gameplayTimeSeconds'),
+      gameplayTimeSeconds,
       player.components.player.lives,
       'Learn Level 2',
     );
@@ -477,8 +478,13 @@ export function addGameplayOnboardingSystemToEngine(
       optional: ['enemySprite'],
       mutates: ['position', 'renderable', 'timers'],
     } as const)
-    .withResources(['inputState', 'gameplayOnboardingSession'])
-    .setProcess(({ queries, ecs, resources: { inputState, gameplayOnboardingSession } }) => {
+    .withResources(['inputState', 'gameplayOnboardingSession', 'gameplayTimeSeconds'])
+    .setProcess(({ queries, ecs, resources }) => {
+      const {
+        inputState,
+        gameplayOnboardingSession,
+        gameplayTimeSeconds,
+      } = resources;
       if (!gameplayOnboardingSession.active) return;
       const player = queries.player;
       if (!player) return;
@@ -491,6 +497,7 @@ export function addGameplayOnboardingSystemToEngine(
           player,
           queries.mathProblems,
           queries.enemy,
+          gameplayTimeSeconds,
         );
       }
 

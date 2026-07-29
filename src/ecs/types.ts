@@ -98,7 +98,6 @@ export interface Components {
   };
   mathProblem: {
     value: number;
-    isCorrect?: boolean;
     difficulty: number;
     consumed: boolean;
   };

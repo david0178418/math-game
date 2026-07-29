@@ -22,8 +22,18 @@ import {
   equationSelectionText,
   evaluateEquationSelection,
 } from '../../math/equations';
-import type { BaseEquationModeState, EquationFeedbackKind, EquationModeState } from '../types';
+import type {
+  BaseEquationModeState,
+  EquationFeedbackKind,
+  EquationModeState,
+  Resources,
+} from '../types';
 import { playSound } from '../../audio/audio';
+
+type EquationSelectionResources = Readonly<Pick<
+  Resources,
+  'equationMode' | 'gameMode' | 'mathDifficulty'
+>>;
 
 const triggerGameOver = (ecs: GameEngine, player: PlayerEntityWithHealth, reason: string): void => {
   console.log(reason);
@@ -106,8 +116,8 @@ export function addCollisionSystemToEngine(systems: GameSystemRegistrar): void {
     .addQuery('enemies', enemyWithColliderQuery)
     .addQuery('spiderWebs', spiderWebWithRenderableQuery)
     .addQuery('frogTongues', frogTongueQuery)
-    .withResources(['inputState'])
-    .setProcess(({ queries, ecs, resources: { inputState } }) => {
+    .withResources(['inputState', 'equationMode', 'gameMode', 'mathDifficulty'])
+    .setProcess(({ queries, ecs, resources }) => {
       const player = queries.player;
       if (!player) return;
 
@@ -144,8 +154,14 @@ export function addCollisionSystemToEngine(systems: GameSystemRegistrar): void {
       for (const problem of selectableMathProblems) {
         // Math problems follow the intended active tile, not the rendered midpoint.
         if (positionInGridCell(problem.components.position, activeProblemCell)) {
-          if (inputState.actions.justActivated('eat')) {
-            handleEquationProblemSelection(ecs, player, problem, selectableMathProblems);
+          if (resources.inputState.actions.justActivated('eat')) {
+            handleEquationProblemSelection(
+              ecs,
+              player,
+              problem,
+              selectableMathProblems,
+              resources,
+            );
           }
         }
       }
@@ -203,8 +219,9 @@ function handleEquationProblemSelection(
   player: PlayerEntityWithHealth,
   problem: MathProblemEntityWithRenderable,
   mathProblems: MathProblemEntityWithRenderable[],
+  resources: EquationSelectionResources,
 ): void {
-  const equationMode = ecs.getResource('equationMode');
+  const { equationMode, gameMode, mathDifficulty } = resources;
   if (equationMode.target === 0) return;
   if (equationMode.feedback?.kind === 'correct') return;
 
@@ -242,9 +259,6 @@ function handleEquationProblemSelection(
   selectedProblems.forEach(selectedProblem => {
     beginAnswerConsumption(ecs, selectedProblem, consumptionStartedAt);
   });
-
-  const gameMode = ecs.getResource('gameMode');
-  const mathDifficulty = ecs.getResource('mathDifficulty');
 
   const nextMode = createEquationModeState(
     pendingMode.level,

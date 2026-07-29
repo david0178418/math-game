@@ -17,8 +17,8 @@ export function addEquationFeedbackSystemToEngine(systems: GameSystemRegistrar):
     .setPriority(SYSTEM_PRIORITIES.EQUATION_FEEDBACK)
     .inScreens(['playing'])
     .runWhenEmpty()
-    .setProcess(({ ecs }) => {
-      const equationMode = ecs.getResource('equationMode');
+    .withResources(['equationMode'])
+    .setProcess(({ ecs, resources: { equationMode } }) => {
       const feedback = equationMode.feedback;
       if (!feedback) return;
 
