@@ -28,17 +28,9 @@ import {
   addGameplayOnboardingSystemToEngine,
   setupScriptedTutorialScene,
 } from './systems/GameplayOnboardingSystem';
+import { registerGameplayClockLifecycle } from './gameplayClockLifecycle';
 
-const GAMEPLAY_CLOCK_GROUPS = ['timers', 'tweens', 'coroutines'] as const;
 const INACTIVE_SCREENS = ['menu', 'modeSelect', 'howToPlay', 'tutorialOffer'] as const;
-
-function pauseGameplayClocks(): void {
-  GAMEPLAY_CLOCK_GROUPS.forEach(group => gameEngine.disableSystemGroup(group));
-}
-
-function resumeGameplayClocks(): void {
-  GAMEPLAY_CLOCK_GROUPS.forEach(group => gameEngine.enableSystemGroup(group));
-}
 
 const setupCanvas = (): void => {
   const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
@@ -90,9 +82,10 @@ const enterPlayingScreen = ({ level, isFreshGame }: PlayingScreenConfig): void =
  * Wire screen lifecycle hooks. ECS screen state drives DOM, not vice versa.
  */
 const setupScreenHooks = (): void => {
+  registerGameplayClockLifecycle(gameEngine);
+
   const registerInactiveScreen = (screen: (typeof INACTIVE_SCREENS)[number]): void => {
     function showInactiveScreen(): void {
-      pauseGameplayClocks();
       showScreen(screen);
     }
 
@@ -103,7 +96,6 @@ const setupScreenHooks = (): void => {
   INACTIVE_SCREENS.forEach(registerInactiveScreen);
 
   function showPausedScreen(): void {
-    pauseGameplayClocks();
     showPauseScreen();
   }
 
@@ -111,7 +103,6 @@ const setupScreenHooks = (): void => {
   gameEngine.onScreenResume('paused', showPausedScreen);
 
   gameEngine.onScreenEnter('playing', ({ config }) => {
-    resumeGameplayClocks();
     showGameplayScreen('normal');
     setupCanvas();
     gameEngine.setResource('gameplayOnboardingSession', { active: false });
@@ -120,32 +111,25 @@ const setupScreenHooks = (): void => {
   });
 
   gameEngine.onScreenResume('playing', () => {
-    resumeGameplayClocks();
     showGameplayScreen('normal');
   });
 
   gameEngine.onScreenEnter('tutorial', ({ config }) => {
-    resumeGameplayClocks();
     showGameplayScreen('tutorial');
     setupCanvas();
     setupScriptedTutorialScene(gameEngine, config);
   });
 
   gameEngine.onScreenResume('tutorial', () => {
-    resumeGameplayClocks();
     showGameplayScreen('tutorial');
     updateGameplayOnboardingUI(gameEngine.getResource('gameplayOnboardingSession'));
   });
 
-  gameEngine.onScreenEnter('levelComplete', pauseGameplayClocks);
-
   gameEngine.onScreenEnter('settings', ({ config }) => {
-    pauseGameplayClocks();
     showSettingsScreen(config.returnTo);
   });
 
   function showGameOverScreen(): void {
-    pauseGameplayClocks();
     setFinalTime(gameEngine.getResource('gameplayTimeSeconds'));
     showScreen('gameOver');
   }
