@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import { createMathProblem } from '../entities';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG } from '../../config';
@@ -32,8 +32,10 @@ interface ProblemPlacement {
  */
 
 // Add the problem management system to ECSpresso
-export function addProblemManagementSystemToEngine(): void {
-  gameEngine.addSystem('problemManagementSystem')
+export function addProblemManagementSystemToEngine(
+  systems: GameSystemRegistrar,
+): void {
+  systems.addSystem('problemManagementSystem')
     .setPriority(SYSTEM_PRIORITIES.PROBLEM_MANAGEMENT)
     .addQuery('mathProblems', mathProblemWithRenderableQuery)
     .addSingleton('player', { ...playerQuery, mutates: ['timers'] } as const)

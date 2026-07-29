@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import type { GameSystemRegistrar } from '../Engine';
 import type { Components, GameAction } from '../types';
 import { GAME_CONFIG, MOVEMENT_CONFIG } from '../../config';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
@@ -78,8 +78,8 @@ function updateBreadcrumbs(
   return [...pathFollower.breadcrumbs, nextGrid];
 }
 
-export function addMovementSystemToEngine(): void {
-  gameEngine.addSystem('movementSystem')
+export function addMovementSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('movementSystem')
     .setPriority(SYSTEM_PRIORITIES.MOVEMENT)
     .inPhase('preUpdate')
     .withResources(['inputState'])

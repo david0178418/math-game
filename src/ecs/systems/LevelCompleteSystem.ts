@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import { LEVEL_COMPLETE_DURATION_MS, SYSTEM_PRIORITIES } from '../systemConfigs';
 import {
   shouldStartOperandTutorial,
@@ -24,8 +24,8 @@ function goToNextLevel(
   });
 }
 
-export function addLevelCompleteSystemToEngine(): void {
-  gameEngine.addSystem('levelCompleteSystem')
+export function addLevelCompleteSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('levelCompleteSystem')
     .setPriority(SYSTEM_PRIORITIES.LEVEL_COMPLETE)
     .inScreens(['levelComplete'])
     .runWhenEmpty()

@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import { createEnemy } from '../entities';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { GAME_CONFIG } from '../../config';
@@ -20,8 +20,8 @@ import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import type { EnemyType } from '../../types/shared';
 import { enemySpawnIntervalForLevel, enemySpawnOrderForLevel } from '../enemyDifficulty';
 
-export function addEnemySpawnSystemToEngine(): void {
-  gameEngine.addSystem('enemySpawnSystem')
+export function addEnemySpawnSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('enemySpawnSystem')
     .setPriority(SYSTEM_PRIORITIES.ENEMY_SPAWN)
     .addQuery('enemies', enemyQuery)
     .addQuery('mathProblems', mathProblemQuery)

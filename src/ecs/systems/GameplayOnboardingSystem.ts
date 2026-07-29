@@ -1,4 +1,3 @@
-import { definePlugin, type ScreenDefinition, type ScreensConfig } from 'ecspresso';
 import { createTweenSequence } from 'ecspresso/plugins/scripting/tween';
 import { GAME_CONFIG } from '../../config';
 import {
@@ -15,7 +14,7 @@ import {
   updateGameplayOnboardingUI,
   updateGameplayUI,
 } from '../../ui/UIManager';
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import {
   enemyComponents,
   mathProblemComponents,
@@ -51,10 +50,6 @@ type TutorialEnemy = {
     renderable: TutorialRenderable;
   };
 };
-
-type RequiresTutorialScreen = ScreensConfig<{
-  tutorial: ScreenDefinition<TutorialScreenConfig>;
-}>;
 
 const TUTORIAL_EQUATION_CONFIG = {
   basics: {
@@ -462,10 +457,12 @@ function applyTutorialStep(
   updateGameplayOnboardingUI(session);
 }
 
-export function addGameplayOnboardingSystemToEngine(): void {
+export function addGameplayOnboardingSystemToEngine(
+  systems: GameSystemRegistrar,
+): void {
   let appliedSession: GameplayOnboardingSession | undefined;
 
-  gameEngine.addSystem('gameplayOnboardingSystem')
+  systems.addSystem('gameplayOnboardingSystem')
     .setPriority(SYSTEM_PRIORITIES.ONBOARDING)
     .addSingleton('player', {
       ...playerWithHealthQuery,
@@ -508,10 +505,3 @@ export function addGameplayOnboardingSystemToEngine(): void {
       if (inputState.actions.justActivated('eat')) nextGameplayOnboardingStep();
     });
 }
-
-export const gameplayOnboardingPlugin = definePlugin('gameplayOnboarding')
-  .requires<RequiresTutorialScreen>()
-  .setSystemDefaults({ inScreens: ['tutorial'] })
-  .install(() => {
-    addGameplayOnboardingSystemToEngine();
-  });

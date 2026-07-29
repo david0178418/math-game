@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import type { GameSystemRegistrar } from '../Engine';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import type { InputPromptPlatform } from '../../ui/inputPrompts';
 import { detectInputPromptPlatform } from '../../ui/inputPrompts';
@@ -89,8 +89,8 @@ const updatePlatform = (
   updateInputPromptPlatform(platform);
 };
 
-export function addInputPromptSystemToEngine(): void {
-  gameEngine.addSystem('inputPromptSystem')
+export function addInputPromptSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('inputPromptSystem')
     .setPriority(SYSTEM_PRIORITIES.INPUT_PROMPTS)
     .withResources(['inputState', 'inputPrompt'])
     .setProcess(({ resources: { inputState, inputPrompt } }) => {

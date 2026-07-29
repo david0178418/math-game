@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { activePlayerGridCell, pixelToGrid, positionInGridCell, sameGridPosition } from '../gameUtils';
 import { collectGridCellKeys, positionedEntityGridCellKey } from '../lilyPads';
@@ -98,8 +98,8 @@ const createEquationFeedback = (
  */
 
 // Add the collision system to ECSpresso
-export function addCollisionSystemToEngine(): void {
-  gameEngine.addSystem('collisionSystem')
+export function addCollisionSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('collisionSystem')
     .setPriority(SYSTEM_PRIORITIES.COLLISION)
     .addSingleton('player', { ...playerWithHealthQuery, mutates: ['player', 'health', 'timers'] } as const)
     .addQuery('mathProblems', { ...mathProblemWithRenderableQuery, mutates: ['mathProblem', 'renderable'] } as const)

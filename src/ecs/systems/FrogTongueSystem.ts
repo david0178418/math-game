@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine } from '../Engine';
 import { GAME_CONFIG } from '../../config';
 import { pixelToGrid } from '../gameUtils';
 import {
@@ -182,8 +182,8 @@ export const isFrogAttacking = (tongue: AllComponents['frogTongue'] | undefined)
  * Register a reactive query that wires up the tongue coroutine for any
  * frog-type enemy as soon as it spawns.
  */
-export function registerFrogTongueInit(): void {
-  gameEngine.addReactiveQuery('frog-init', {
+export function registerFrogTongueInit(ecs: GameEngine): void {
+  ecs.addReactiveQuery('frog-init', {
     with: ['enemy'],
     onEnter: ({ entity, ecs }) => {
       if (entity.components.enemy.enemyType !== 'frog') return;

@@ -10,7 +10,8 @@ import { addEquationFeedbackSystemToEngine } from './systems/EquationFeedbackSys
 import { addPauseSystemToEngine } from './systems/PauseSystem';
 import { addUINavigationSystemToEngine } from './systems/UINavigationSystem';
 import { addInputPromptSystemToEngine } from './systems/InputPromptSystem';
-import { gameplayPlugin } from './gameplayPlugin';
+import { registerGameplaySystems } from './gameplayPlugin';
+import { registerFrogTongueInit } from './systems/FrogTongueSystem';
 import { playerQuery } from './queries';
 import {
   initializeUI,
@@ -24,7 +25,7 @@ import {
 import { createEquationModeState } from '../math/equations';
 import { addLevelCompleteSystemToEngine } from './systems/LevelCompleteSystem';
 import {
-  gameplayOnboardingPlugin,
+  addGameplayOnboardingSystemToEngine,
   setupScriptedTutorialScene,
 } from './systems/GameplayOnboardingSystem';
 
@@ -154,15 +155,23 @@ const setupScreenHooks = (): void => {
 };
 
 const registerSystems = async (): Promise<void> => {
-  gameEngine.installPlugin(gameplayPlugin);
-  gameEngine.installPlugin(gameplayOnboardingPlugin);
+  const gameplaySystems = gameEngine.systemScope({
+    inScreens: ['playing'],
+  });
+  const tutorialSystems = gameEngine.systemScope({
+    inScreens: ['tutorial'],
+  });
 
-  addEquationFeedbackSystemToEngine();
-  addPauseSystemToEngine();
-  addUINavigationSystemToEngine();
-  addInputPromptSystemToEngine();
-  addLevelCompleteSystemToEngine();
-  addRenderSystemToEngine();
+  registerGameplaySystems(gameplaySystems);
+  addGameplayOnboardingSystemToEngine(tutorialSystems);
+  registerFrogTongueInit(gameEngine);
+
+  addEquationFeedbackSystemToEngine(gameEngine);
+  addPauseSystemToEngine(gameEngine);
+  addUINavigationSystemToEngine(gameEngine);
+  addInputPromptSystemToEngine(gameEngine);
+  addLevelCompleteSystemToEngine(gameEngine);
+  addRenderSystemToEngine(gameEngine);
 
   await initializeEngine();
 };

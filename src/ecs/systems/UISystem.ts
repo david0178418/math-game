@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import type { GameSystemRegistrar } from '../Engine';
 import { gameplayLevelLabel, updateGameplayUI } from '../../ui/UIManager';
 import { playerQuery } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
@@ -8,8 +8,8 @@ import { SYSTEM_PRIORITIES } from '../systemConfigs';
  * Updates HUD from player state. Gated to the 'playing' screen.
  */
 
-export function addUISystemToEngine(): void {
-  gameEngine.addSystem('uiSystem')
+export function addUISystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('uiSystem')
     .setPriority(SYSTEM_PRIORITIES.UI)
     .addSingleton('player', playerQuery)
     .withResources(['gameMode', 'mathDifficulty', 'currentLevel', 'gameplayTimeSeconds'])

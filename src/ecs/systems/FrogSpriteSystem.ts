@@ -1,5 +1,5 @@
 import { createTweenSequence } from 'ecspresso/plugins/scripting/tween';
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import type { AllComponents } from '../types';
 import { ANIMATION_CONFIG } from '../../config';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
@@ -340,8 +340,10 @@ export const closeFrogMouth = (
   return startSpriteAnimation(ecs, entityId, steps);
 };
 
-export function addFrogSpriteAnimationSystemToEngine(): void {
-  gameEngine.addSystem('frogSpriteAnimationSystem')
+export function addFrogSpriteAnimationSystemToEngine(
+  systems: GameSystemRegistrar,
+): void {
+  systems.addSystem('frogSpriteAnimationSystem')
     .setPriority(SYSTEM_PRIORITIES.ANIMATION)
     .inScreens(['playing', 'tutorial'])
     .setProcessEach(

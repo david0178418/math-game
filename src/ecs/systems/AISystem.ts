@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import { createTimer } from 'ecspresso/plugins/scripting/timers';
 import { createNavGrid, findPath, type NavGrid } from 'ecspresso/plugins/ai/pathfinding';
 import { pixelToGrid, gridToPixel } from '../gameUtils';
@@ -92,8 +92,8 @@ const AI_PROCESSORS: Record<AIBehavior, (ctx: AIContext) => GridCell> = {
   guard: processGuardAI,
 };
 
-export function addAISystemToEngine(): void {
-  gameEngine.addSystem('aiSystem')
+export function addAISystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('aiSystem')
     .setPriority(SYSTEM_PRIORITIES.AI)
     .inPhase('preUpdate')
     .addQuery('enemies', { ...enemyQuery, optional: ['frogTongue'], mutates: ['enemy', 'timers'] } as const)

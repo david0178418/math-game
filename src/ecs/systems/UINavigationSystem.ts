@@ -1,11 +1,11 @@
-import { gameEngine } from '../Engine';
+import type { GameSystemRegistrar } from '../Engine';
 import { navigateFocus, activateFocus, triggerCancel } from '../../ui/UIManager';
 
 // Drives DOM focus on non-gameplay screens from the unified input state, so
 // keyboard arrows, d-pad, left stick, A button, and Start/B all work in
 // menus without bespoke event listeners per screen.
-export function addUINavigationSystemToEngine(): void {
-  gameEngine.addSystem('uiNavigationSystem')
+export function addUINavigationSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('uiNavigationSystem')
     .inScreens(['menu', 'modeSelect', 'howToPlay', 'tutorialOffer', 'paused', 'settings', 'gameOver'])
     .withResources(['inputState'])
     .setProcess(({ resources: { inputState } }) => {

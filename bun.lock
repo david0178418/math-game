@@ -6,7 +6,7 @@
       "name": "math-marsh",
       "dependencies": {
         "@eslint/js": "^10.0.1",
-        "ecspresso": "^0.20.0",
+        "ecspresso": "^0.22.0",
         "howler": "^2.2.4",
         "lit-html": "^3.3.3",
         "typescript-eslint": "^8.64.0",
@@ -290,7 +290,7 @@
 
     "duplexer2": ["duplexer2@0.1.4", "", { "dependencies": { "readable-stream": "^2.0.2" } }, "sha512-asLFVfWWtJ90ZyOUHMqk7/S2w2guQKxUI2itj3d92ADHhxUSbCMGi1f1cBcJ7xM1To+pE/Khbwo1yuNbMEPKeA=="],
 
-    "ecspresso": ["ecspresso@0.20.0", "", { "peerDependencies": { "howler": "^2.2.0", "pixi.js": "^8.0.0", "react": "^19.0.0", "three": "^0.184.0" }, "optionalPeers": ["howler", "pixi.js", "react", "three"] }, "sha512-BHIcbDQR7ZwgupRJI1dHgeoQC6LRe2w1CKsFq9A3xist9Iv7mVCcSKCtq1uDS287USmu8jCI7FMS5lBxnfDkdw=="],
+    "ecspresso": ["ecspresso@0.22.0", "", { "peerDependencies": { "howler": "^2.2.0", "pixi.js": "^8.0.0", "react": "^19.0.0", "three": "^0.184.0" }, "optionalPeers": ["howler", "pixi.js", "react", "three"] }, "sha512-ablHrG1Gk7Y3lbgfCYnBdcolUG1NCst4/joqUWRWSIBhzB5abn7ktAdPVqZbm2bnZ9cPEijgS54cyj0L2ir2OA=="],
 
     "ejs": ["ejs@3.1.10", "", { "dependencies": { "jake": "^10.8.5" }, "bin": { "ejs": "bin/cli.js" } }, "sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA=="],
 

@@ -1,4 +1,4 @@
-import { gameEngine, type GameEngine } from '../Engine';
+import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import { createTweenSequence, type TweenSequenceStepInput } from 'ecspresso/plugins/scripting/tween';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 import { ANIMATION_CONFIG } from '../../config';
@@ -89,8 +89,8 @@ export const startShake = (
   });
 };
 
-export function addShakeSystemToEngine(): void {
-  gameEngine.addSystem('shakeSystem')
+export function addShakeSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('shakeSystem')
     .setPriority(SYSTEM_PRIORITIES.ANIMATION)
     .inScreens(['playing', 'tutorial'])
     .setProcessEach({ with: ['shake'], mutates: ['shake'] } as const, ({ entity, dt, ecs }) => {

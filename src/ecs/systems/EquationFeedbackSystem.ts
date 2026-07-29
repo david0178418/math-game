@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import type { GameSystemRegistrar } from '../Engine';
 import { EQUATION_FEEDBACK_DURATION_MS, SYSTEM_PRIORITIES } from '../systemConfigs';
 import type { BaseEquationModeState, EquationFeedback } from '../types';
 
@@ -12,8 +12,8 @@ const nextEquationModeForFeedback = (
   return feedback.nextMode;
 };
 
-export function addEquationFeedbackSystemToEngine(): void {
-  gameEngine.addSystem('equationFeedbackSystem')
+export function addEquationFeedbackSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('equationFeedbackSystem')
     .setPriority(SYSTEM_PRIORITIES.EQUATION_FEEDBACK)
     .inScreens(['playing'])
     .runWhenEmpty()

@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",
-    "ecspresso": "^0.20.0",
+    "ecspresso": "^0.22.0",
     "howler": "^2.2.4",
     "lit-html": "^3.3.3",
     "typescript-eslint": "^8.64.0"

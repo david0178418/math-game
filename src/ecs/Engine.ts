@@ -1,4 +1,4 @@
-import ECSpresso from 'ecspresso';
+import ECSpresso, { type SystemRegistrarOf } from 'ecspresso';
 import { createInputPlugin, gamepadAxisOn, gamepadButtonsOn } from 'ecspresso/plugins/input/input';
 import { createTimerPlugin } from 'ecspresso/plugins/scripting/timers';
 import { createTweenPlugin } from 'ecspresso/plugins/scripting/tween';
@@ -88,6 +88,7 @@ export const gameEngine = ECSpresso.create()
   .build();
 
 export type GameEngine = typeof gameEngine;
+export type GameSystemRegistrar = SystemRegistrarOf<GameEngine>;
 
 let lastFrameTime = 0;
 let gameRunning = false;

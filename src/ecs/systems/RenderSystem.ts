@@ -1,4 +1,4 @@
-import { gameEngine } from '../Engine';
+import type { GameSystemRegistrar } from '../Engine';
 import { GAME_CONFIG } from '../../config';
 import {
   renderableEntityQuery,
@@ -39,8 +39,10 @@ const reducedMotionPreference = typeof window === 'undefined'
   ? undefined
   : window.matchMedia('(prefers-reduced-motion: reduce)');
 
-export const addRenderSystemToEngine = (): void => {
-  gameEngine.addSystem('renderSystem')
+export const addRenderSystemToEngine = (
+  systems: GameSystemRegistrar,
+): void => {
+  systems.addSystem('renderSystem')
     .setPriority(SYSTEM_PRIORITIES.RENDER)
     .inScreens(['playing', 'tutorial', 'levelComplete'])
     .requiresAssets(IMAGE_ASSET_KEYS)

@@ -1,9 +1,9 @@
-import { gameEngine } from '../Engine';
+import type { GameSystemRegistrar } from '../Engine';
 import { playerQuery } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
 
-export function addGameplayTimeSystemToEngine(): void {
-  gameEngine.addSystem('gameplayTimeSystem')
+export function addGameplayTimeSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('gameplayTimeSystem')
     .setPriority(SYSTEM_PRIORITIES.GAMEPLAY_TIME)
     .addSingleton('player', playerQuery)
     .withResources(['gameplayTimeSeconds'])

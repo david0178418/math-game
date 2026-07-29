@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from '../../config';
-import { gameEngine } from '../Engine';
+import type { GameSystemRegistrar } from '../Engine';
 import type { AllComponents } from '../types';
 import { flyMoveAway, flyMoveSide, flyMoveToward } from '../assets';
 import { gridToPixel } from '../gameUtils';
@@ -55,8 +55,8 @@ export function shouldPlayerFlap(
   return speed > 0 || !isActiveLilyPadCell(positionGridCell(position), activeLilyPadCells);
 }
 
-export function addPlayerSpriteSystemToEngine(): void {
-  gameEngine.addSystem('playerSpriteSystem')
+export function addPlayerSpriteSystemToEngine(systems: GameSystemRegistrar): void {
+  systems.addSystem('playerSpriteSystem')
     .setPriority(SYSTEM_PRIORITIES.ANIMATION)
     .inScreens(['playing', 'tutorial'])
     .addQuery('players', {
