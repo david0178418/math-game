@@ -25,8 +25,8 @@ import { createEquationModeState } from '../math/equations';
 import { addLevelCompleteSystemToEngine } from './systems/LevelCompleteSystem';
 import {
   registerGameplayOnboardingSystem,
-  setupScriptedTutorialScene,
 } from '../onboarding/gameplayOnboardingSystem';
+import { setupScriptedTutorialScene } from '../onboarding/gameplayOnboardingScene';
 import { registerGameplayClockLifecycle } from './gameplayClockLifecycle';
 import { addUISystemToEngine } from './systems/UISystem';
 
