@@ -1,34 +1,34 @@
 import { createTweenSequence } from 'ecspresso/plugins/scripting/tween';
-import { GAME_CONFIG } from '../../config';
+import { GAME_CONFIG } from '../config';
 import {
   createGameplayOnboardingSession,
   SCRIPTED_TUTORIAL_STEPS,
   type GameplayOnboardingKind,
   type GameplayOnboardingPlayerSnapshot,
   type GameplayOnboardingSession,
-} from '../../onboarding/gameplayOnboarding';
+} from './gameplayOnboarding';
 import {
   nextGameplayOnboardingStep,
   previousGameplayOnboardingStep,
   skipGameplayOnboarding,
-} from '../../onboarding/gameplayOnboardingFlow';
-import type { GameEngine, GameSystemRegistrar } from '../Engine';
+} from './gameplayOnboardingFlow';
+import type { GameEngine, GameSystemRegistrar } from '../ecs/Engine';
 import {
   enemyComponents,
   mathProblemComponents,
   playerComponents,
-} from '../entities';
-import { gridToPixel } from '../gameUtils';
+} from '../ecs/entities';
+import { gridToPixel } from '../ecs/gameUtils';
 import {
   mathProblemWithRenderableQuery,
   playerQuery,
   playerWithHealthQuery,
-} from '../queries';
-import { SYSTEM_PRIORITIES } from '../systemConfigs';
-import { startShake } from './AnimationSystem';
-import { startEnemyGridMovement } from './EnemySpriteSystem';
-import { createEquationModeState } from '../../math/equations';
-import type { EquationModeState, TutorialScreenConfig } from '../types';
+} from '../ecs/queries';
+import { SYSTEM_PRIORITIES } from '../ecs/systemConfigs';
+import { startShake } from '../ecs/systems/AnimationSystem';
+import { startEnemyGridMovement } from '../ecs/systems/EnemySpriteSystem';
+import { createEquationModeState } from '../math/equations';
+import type { EquationModeState, TutorialScreenConfig } from '../ecs/types';
 
 const TARGET_VALUE = 8;
 const PLAYER_START = { x: 1, y: 2 } as const;
@@ -438,7 +438,7 @@ function applyTutorialStep(
   }
 }
 
-export function addGameplayOnboardingSystemToEngine(
+export function registerGameplayOnboardingSystem(
   systems: GameSystemRegistrar,
 ): void {
   let appliedSession: GameplayOnboardingSession | undefined;

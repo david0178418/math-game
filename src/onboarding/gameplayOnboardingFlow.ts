@@ -1,5 +1,6 @@
 import { playSound } from '../audio/audio';
 import type { GameEngine } from '../ecs/Engine';
+import type { TutorialScreenConfig } from '../ecs/types';
 import {
   completedOnboardingCompletion,
   saveOnboardingCompletion,
@@ -40,6 +41,23 @@ export function startNormalGame(engine: GameEngine): void {
     level: 1,
     isFreshGame: true,
   });
+}
+
+export function startGameplayOnboarding(engine: GameEngine): void {
+  const isFirstRun = engine.getCurrentScreen() === 'tutorialOffer';
+  const config: TutorialScreenConfig = {
+    kind: 'basics',
+    isReplay: engine.getResource('gameplayOnboardingCompletion') !== 'pending',
+    returnTo: isFirstRun
+      ? { kind: 'newGame' }
+      : { kind: 'nextTutorial' },
+  };
+  playSound('uiSelect');
+  if (isFirstRun) {
+    void engine.setScreen('tutorial', config);
+    return;
+  }
+  void engine.pushScreen('tutorial', config);
 }
 
 async function continueToOperandTutorial(engine: GameEngine): Promise<void> {

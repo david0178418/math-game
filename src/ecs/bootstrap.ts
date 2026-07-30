@@ -24,9 +24,9 @@ import {
 import { createEquationModeState } from '../math/equations';
 import { addLevelCompleteSystemToEngine } from './systems/LevelCompleteSystem';
 import {
-  addGameplayOnboardingSystemToEngine,
+  registerGameplayOnboardingSystem,
   setupScriptedTutorialScene,
-} from './systems/GameplayOnboardingSystem';
+} from '../onboarding/gameplayOnboardingSystem';
 import { registerGameplayClockLifecycle } from './gameplayClockLifecycle';
 import { addUISystemToEngine } from './systems/UISystem';
 
@@ -145,7 +145,7 @@ const registerSystems = async (): Promise<void> => {
   });
 
   registerGameplaySystems(gameplaySystems);
-  addGameplayOnboardingSystemToEngine(tutorialSystems);
+  registerGameplayOnboardingSystem(tutorialSystems);
   addUISystemToEngine(gameEngine.systemScope({
     inScreens: ['playing', 'tutorial'],
   }));
