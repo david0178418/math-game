@@ -15,25 +15,15 @@ import {
   toggleFullscreen,
 } from './fullscreen';
 import { requestCanvasResize } from '../ecs/systems/render/context';
-import {
-  renderInputPromptBar,
-  type InputPromptPlatform,
-} from './inputPrompts';
 import { formatElapsedTime, updateGameplayHud } from './gameplayHud';
 import {
   gameplayLevelLabel,
   settingsBackLabels,
 } from './labels';
 import {
-  createGameContainer,
   createScreenSpecs,
   resetModeSelect,
 } from './screenSpecs';
-import {
-  DEFAULT_FOCUS_SELECTOR,
-  type ScreenSpec,
-  type UIScreen,
-} from './screenTypes';
 import {
   getAudioSettings,
   playSound,
@@ -42,12 +32,8 @@ import {
   unlockAudio,
 } from '../audio/audio';
 import { getDesktopQuitHandler } from '../platform/desktop';
-import { render } from 'lit-html';
-import {
-  findSpatialTargetIndex,
-  type FocusDirection,
-  type SpatialRect,
-} from './spatialNavigation';
+import type { FocusDirection } from './spatialNavigation';
+import type { UIScreen } from './screenTypes';
 import {
   nextGameplayOnboardingStep,
   previousGameplayOnboardingStep,
@@ -59,10 +45,10 @@ import {
   TUTORIAL_PROMPT_SPEC,
   updateGameplayOnboardingUI,
 } from '../onboarding/gameplayOnboardingUI';
+import { createScreenRuntime } from './screenRuntime';
 
 export { gameplayLevelLabel };
 
-let currentPromptPlatform: InputPromptPlatform = 'keyboard';
 let uiEngine: GameEngine | undefined;
 let stopObservingGameplayOnboarding: (() => void) | undefined;
 
@@ -196,7 +182,7 @@ const SCREENS = createScreenSpecs({
   wireAudioSettings: (root) => wireAudioSettings(root),
 });
 
-const gameContainer = createGameContainer();
+const screenRuntime = createScreenRuntime(SCREENS);
 
 applyTouchControlsVisibility();
 // Re-evaluate auto mode if the primary pointer changes (e.g. window moved
@@ -211,83 +197,11 @@ window.matchMedia('(hover: none) and (pointer: coarse)').addEventListener('chang
   document.addEventListener(eventName, unlockAudio, { once: true });
 });
 
-const screenElements = new Map<UIScreen, HTMLElement>();
-let currentScreen: UIScreen = 'menu';
-let tutorialPromptsActive = false;
-
-function promptSpecForScreen(screen: UIScreen): Pick<ScreenSpec, 'prompts' | 'promptPlacement'> {
-  if (screen === 'playing' && tutorialPromptsActive) return TUTORIAL_PROMPT_SPEC;
-  return SCREENS[screen];
-}
-
-const renderPromptSlot = (
-  root: HTMLElement,
-  spec: Pick<ScreenSpec, 'prompts' | 'promptPlacement'>,
-): void => {
-  const slot = root.querySelector<HTMLElement>('[data-input-prompts]');
-  if (!slot || !spec.prompts) return;
-  slot.classList.add(`input-prompts-slot--${spec.promptPlacement}`);
-  slot.dataset.inputPromptPlacement = spec.promptPlacement;
-  slot.replaceChildren(renderInputPromptBar(currentPromptPlatform, spec.prompts));
-};
-
-export const updateInputPromptPlatform = (platform: InputPromptPlatform): void => {
-  currentPromptPlatform = platform;
-  screenElements.forEach((root, screen) => renderPromptSlot(root, promptSpecForScreen(screen)));
-};
-
-const createScreen = (screen: UIScreen): HTMLElement => {
-  const spec = SCREENS[screen];
-  const root = document.createElement('div');
-  root.id = spec.id;
-  root.className = spec.className;
-  if (typeof spec.html === 'string') root.innerHTML = spec.html;
-  else render(spec.html, root);
-  renderPromptSlot(root, promptSpecForScreen(screen));
-  spec.wire?.(root);
-  gameContainer.appendChild(root);
-  screenElements.set(screen, root);
-  return root;
-};
-
-const getFocusables = (screen: UIScreen): HTMLElement[] => {
-  const root = screenElements.get(screen);
-  if (!root) return [];
-  const selector = SCREENS[screen].focusSelector ?? DEFAULT_FOCUS_SELECTOR;
-  return Array.from(root.querySelectorAll<HTMLElement>(selector))
-    .filter(element => element.getClientRects().length > 0 && element.getAttribute('aria-hidden') !== 'true');
-};
-
-const focusElement = (element: HTMLElement | undefined): void => {
-  if (!element) return;
-  element.focus();
-  element.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-};
-
-const focusFirstOn = (screen: UIScreen): void => {
-  const [first] = getFocusables(screen);
-  focusElement(first);
-};
-
 function presentScreen(screen: UIScreen, retainGameplay: boolean): HTMLElement {
-  const root = screenElements.get(screen) ?? createScreen(screen);
-  screenElements.forEach((element, candidate) => {
-    const visible = candidate === screen || (retainGameplay && candidate === 'playing');
-    element.style.display = visible ? 'flex' : 'none';
-  });
-  const gameplayRoot = screenElements.get('playing');
-  if (gameplayRoot) gameplayRoot.inert = retainGameplay;
-  currentScreen = screen;
+  const root = screenRuntime.presentScreen(screen, retainGameplay ? ['playing'] : []);
   setAudioScene(screen === 'playing' ? 'game' : 'title');
   if (screen === 'modeSelect') resetModeSelect(root);
-  // Gameplay screen is driven by inputState, not DOM focus — leaving focus
-  // there would show a focus ring on the pause button during play.
-  if (screen !== 'playing') {
-    focusFirstOn(screen);
-    return root;
-  }
-  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-  requestCanvasResize();
+  if (screen === 'playing') requestCanvasResize();
   return root;
 }
 
@@ -296,10 +210,11 @@ export function showScreen(screen: UIScreen): void {
 }
 
 export function showGameplayScreen(mode: 'normal' | 'tutorial'): void {
-  tutorialPromptsActive = mode === 'tutorial';
+  screenRuntime.setPromptOverride(
+    'playing',
+    mode === 'tutorial' ? TUTORIAL_PROMPT_SPEC : undefined,
+  );
   showScreen('playing');
-  const root = screenElements.get('playing');
-  if (root) renderPromptSlot(root, promptSpecForScreen('playing'));
 }
 
 export function showPauseScreen(): void {
@@ -316,40 +231,15 @@ export function showSettingsScreen(returnTo: SettingsReturnScreen): void {
   backButton.textContent = settingsBackLabels[returnTo];
 }
 
-const focusedIndex = (focusables: HTMLElement[]): number => {
-  const active = document.activeElement;
-  if (!(active instanceof HTMLElement)) return -1;
-  return focusables.indexOf(active);
-};
+export const updateInputPromptPlatform = screenRuntime.updateInputPromptPlatform;
 
-const spatialRect = (element: HTMLElement): SpatialRect => {
-  const { left, right, top, bottom } = element.getBoundingClientRect();
-  return { left, right, top, bottom };
-};
+export function navigateFocus(direction: FocusDirection): void {
+  screenRuntime.navigateFocus(direction);
+}
 
-export const navigateFocus = (direction: FocusDirection): void => {
-  const focusables = getFocusables(currentScreen);
-  if (focusables.length === 0) return;
-  const current = focusedIndex(focusables);
-  if (current < 0) {
-    focusElement(focusables[0]);
-    return;
-  }
-  const target = findSpatialTargetIndex(focusables.map(spatialRect), current, direction);
-  if (target === null) return;
-  focusElement(focusables[target]);
-};
+export const activateFocus = screenRuntime.activateFocus;
 
-export const activateFocus = (): void => {
-  const focusables = getFocusables(currentScreen);
-  const current = focusedIndex(focusables);
-  const target = current >= 0 ? focusables[current] : focusables[0];
-  target?.click();
-};
-
-export const triggerCancel = (): void => {
-  SCREENS[currentScreen].onCancel?.();
-};
+export const triggerCancel = screenRuntime.triggerCancel;
 
 export const updateGameplayUI = updateGameplayHud;
 
