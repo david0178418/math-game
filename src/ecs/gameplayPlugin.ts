@@ -2,7 +2,6 @@ import { addAISystemToEngine } from './systems/AISystem';
 import { addEnemySpawnSystemToEngine } from './systems/EnemySpawnSystem';
 import { addProblemManagementSystemToEngine } from './systems/ProblemManagementSystem';
 import { addGameplayTimeSystemToEngine } from './systems/GameplayTimeSystem';
-import { addUISystemToEngine } from './systems/UISystem';
 import { addMovementSystemToEngine } from './systems/MovementSystem';
 import { addShakeSystemToEngine } from './systems/AnimationSystem';
 import { addFrogSpriteAnimationSystemToEngine } from './systems/FrogSpriteSystem';
@@ -25,5 +24,4 @@ export function registerGameplaySystems(
   addEnemySpawnSystemToEngine(systems);
   addProblemManagementSystemToEngine(systems);
   addGameplayTimeSystemToEngine(systems);
-  addUISystemToEngine(systems);
 }

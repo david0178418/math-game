@@ -11,9 +11,7 @@ import {
   nextGameplayOnboardingStep,
   previousGameplayOnboardingStep,
   skipGameplayOnboarding,
-  updateGameplayOnboardingUI,
-  updateGameplayUI,
-} from '../../ui/UIManager';
+} from '../../onboarding/gameplayOnboardingFlow';
 import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import {
   enemyComponents,
@@ -182,14 +180,6 @@ export function setupScriptedTutorialScene(
   }
   spawnTutorialBoard(ecs, kind);
   spawnTutorialEnemy(ecs, kind);
-  updateGameplayUI(
-    ecs.getResource('gameplayTimeSeconds'),
-    continuesRun
-      ? existingPlayer?.components.player.lives ?? GAME_CONFIG.GAMEPLAY.PLAYER_LIVES
-      : GAME_CONFIG.GAMEPLAY.PLAYER_LIVES,
-    kind === 'operands' ? 'Learn Level 2' : 'Tutorial',
-  );
-  updateGameplayOnboardingUI(session);
 }
 
 function placePlayer(
@@ -389,7 +379,6 @@ function applyTutorialStep(
   player: Parameters<typeof placePlayer>[0] & { id: number },
   mathProblems: Parameters<typeof resetTutorialScene>[2],
   enemy: Parameters<typeof resetTutorialScene>[3],
-  gameplayTimeSeconds: number,
 ): void {
   resetTutorialScene(
     ecs,
@@ -401,12 +390,6 @@ function applyTutorialStep(
   );
   if (session.kind === 'operands') {
     applyOperandTutorialStep(ecs, session, player, mathProblems);
-    updateGameplayUI(
-      gameplayTimeSeconds,
-      player.components.player.lives,
-      'Learn Level 2',
-    );
-    updateGameplayOnboardingUI(session);
     return;
   }
   const targetProblem = mathProblems.find(problem => problem.components.mathProblem.value === TARGET_VALUE);
@@ -453,9 +436,6 @@ function applyTutorialStep(
       target.y,
     );
   }
-
-  updateGameplayUI(0, player.components.player.lives, 'Tutorial');
-  updateGameplayOnboardingUI(session);
 }
 
 export function addGameplayOnboardingSystemToEngine(
@@ -478,12 +458,11 @@ export function addGameplayOnboardingSystemToEngine(
       optional: ['enemySprite'],
       mutates: ['position', 'renderable', 'timers'],
     } as const)
-    .withResources(['inputState', 'gameplayOnboardingSession', 'gameplayTimeSeconds'])
+    .withResources(['inputState', 'gameplayOnboardingSession'])
     .setProcess(({ queries, ecs, resources }) => {
       const {
         inputState,
         gameplayOnboardingSession,
-        gameplayTimeSeconds,
       } = resources;
       if (!gameplayOnboardingSession.active) return;
       const player = queries.player;
@@ -497,18 +476,17 @@ export function addGameplayOnboardingSystemToEngine(
           player,
           queries.mathProblems,
           queries.enemy,
-          gameplayTimeSeconds,
         );
       }
 
       if (inputState.actions.justActivated('back')) {
-        previousGameplayOnboardingStep();
+        previousGameplayOnboardingStep(ecs);
         return;
       }
       if (inputState.actions.justActivated('skip')) {
-        skipGameplayOnboarding();
+        skipGameplayOnboarding(ecs);
         return;
       }
-      if (inputState.actions.justActivated('eat')) nextGameplayOnboardingStep();
+      if (inputState.actions.justActivated('eat')) nextGameplayOnboardingStep(ecs);
     });
 }

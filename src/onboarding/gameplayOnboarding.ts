@@ -146,6 +146,11 @@ export function tutorialSteps(
   return kind === 'operands' ? OPERAND_TUTORIAL_STEPS : SCRIPTED_TUTORIAL_STEPS;
 }
 
+export function tutorialHudLabel(session: GameplayOnboardingSession): string | undefined {
+  if (!session.active) return undefined;
+  return session.kind === 'operands' ? 'Learn Level 2' : 'Tutorial';
+}
+
 export function tutorialStepIndex(kind: GameplayOnboardingKind, index: number): number {
   return Math.max(0, Math.min(tutorialSteps(kind).length - 1, index));
 }

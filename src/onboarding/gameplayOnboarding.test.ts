@@ -5,6 +5,7 @@ import {
   onboardingCompletionFromStoredValue,
   skippedOnboardingCompletion,
   shouldStartOperandTutorial,
+  tutorialHudLabel,
   tutorialStepIndex,
   tutorialSteps,
 } from './gameplayOnboarding';
@@ -56,5 +57,15 @@ describe('gameplay onboarding persistence', () => {
     expect(shouldStartOperandTutorial(2, 'completed')).toBe(false);
     expect(shouldStartOperandTutorial(2, 'skipped')).toBe(false);
     expect(shouldStartOperandTutorial(3, 'pending')).toBe(false);
+  });
+
+  test('labels only active tutorial sessions for the gameplay HUD', () => {
+    expect(tutorialHudLabel({ active: false })).toBeUndefined();
+    expect(tutorialHudLabel(
+      createGameplayOnboardingSession('basics', false, { kind: 'newGame' }),
+    )).toBe('Tutorial');
+    expect(tutorialHudLabel(
+      createGameplayOnboardingSession('operands', false, { kind: 'level', level: 2 }),
+    )).toBe('Learn Level 2');
   });
 });

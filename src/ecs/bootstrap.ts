@@ -20,7 +20,6 @@ import {
   showPauseScreen,
   showScreen,
   showSettingsScreen,
-  updateGameplayOnboardingUI,
 } from '../ui/UIManager';
 import { createEquationModeState } from '../math/equations';
 import { addLevelCompleteSystemToEngine } from './systems/LevelCompleteSystem';
@@ -29,6 +28,7 @@ import {
   setupScriptedTutorialScene,
 } from './systems/GameplayOnboardingSystem';
 import { registerGameplayClockLifecycle } from './gameplayClockLifecycle';
+import { addUISystemToEngine } from './systems/UISystem';
 
 const INACTIVE_SCREENS = ['menu', 'modeSelect', 'howToPlay', 'tutorialOffer'] as const;
 
@@ -106,7 +106,6 @@ const setupScreenHooks = (): void => {
     showGameplayScreen('normal');
     setupCanvas();
     gameEngine.setResource('gameplayOnboardingSession', { active: false });
-    updateGameplayOnboardingUI({ active: false });
     enterPlayingScreen(config);
   });
 
@@ -122,7 +121,6 @@ const setupScreenHooks = (): void => {
 
   gameEngine.onScreenResume('tutorial', () => {
     showGameplayScreen('tutorial');
-    updateGameplayOnboardingUI(gameEngine.getResource('gameplayOnboardingSession'));
   });
 
   gameEngine.onScreenEnter('settings', ({ config }) => {
@@ -148,6 +146,9 @@ const registerSystems = async (): Promise<void> => {
 
   registerGameplaySystems(gameplaySystems);
   addGameplayOnboardingSystemToEngine(tutorialSystems);
+  addUISystemToEngine(gameEngine.systemScope({
+    inScreens: ['playing', 'tutorial'],
+  }));
   registerFrogTongueInit(gameEngine);
 
   addEquationFeedbackSystemToEngine(gameEngine);

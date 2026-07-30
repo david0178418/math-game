@@ -2,6 +2,7 @@ import type { GameSystemRegistrar } from '../Engine';
 import { gameplayLevelLabel, updateGameplayUI } from '../../ui/UIManager';
 import { playerQuery } from '../queries';
 import { SYSTEM_PRIORITIES } from '../systemConfigs';
+import { tutorialHudLabel } from '../../onboarding/gameplayOnboarding';
 
 /**
  * UI System
@@ -12,13 +13,27 @@ export function addUISystemToEngine(systems: GameSystemRegistrar): void {
   systems.addSystem('uiSystem')
     .setPriority(SYSTEM_PRIORITIES.UI)
     .addSingleton('player', playerQuery)
-    .withResources(['gameMode', 'mathDifficulty', 'currentLevel', 'gameplayTimeSeconds'])
-    .setProcess(({ queries, resources: { gameMode, mathDifficulty, currentLevel, gameplayTimeSeconds } }) => {
+    .withResources([
+      'gameMode',
+      'mathDifficulty',
+      'currentLevel',
+      'gameplayTimeSeconds',
+      'gameplayOnboardingSession',
+    ])
+    .setProcess(({ queries, resources }) => {
       const player = queries.player;
       if (!player) return;
 
+      const {
+        gameMode,
+        mathDifficulty,
+        currentLevel,
+        gameplayTimeSeconds,
+        gameplayOnboardingSession,
+      } = resources;
       const playerComp = player.components.player;
-      const level = gameplayLevelLabel(gameMode, mathDifficulty, currentLevel);
+      const level = tutorialHudLabel(gameplayOnboardingSession)
+        ?? gameplayLevelLabel(gameMode, mathDifficulty, currentLevel);
 
       updateGameplayUI(gameplayTimeSeconds, playerComp.lives, level);
     });
