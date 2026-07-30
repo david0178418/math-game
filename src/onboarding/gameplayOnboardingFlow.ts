@@ -16,11 +16,23 @@ const ONBOARDING_COMPLETION_RESOURCES = {
   operands: 'operandOnboardingCompletion',
 } as const;
 
-function onboardingCompletion(
+const ONBOARDING_COMPLETION_TRANSITIONS = {
+  completed: completedOnboardingCompletion,
+  skipped: skippedOnboardingCompletion,
+} as const;
+
+function recordOnboardingCompletion(
   engine: GameEngine,
   kind: GameplayOnboardingKind,
-): GameplayOnboardingCompletion {
-  return engine.getResource(ONBOARDING_COMPLETION_RESOURCES[kind]);
+  requested: Exclude<GameplayOnboardingCompletion, 'pending'>,
+): void {
+  const resource = ONBOARDING_COMPLETION_RESOURCES[kind];
+  const current = engine.getResource(resource);
+  const next = ONBOARDING_COMPLETION_TRANSITIONS[requested](current);
+  engine.setResource(resource, next);
+  if (next === requested && current !== requested) {
+    saveOnboardingCompletion(kind, requested);
+  }
 }
 
 export function startNormalGame(engine: GameEngine): void {
@@ -86,11 +98,8 @@ function continueAfterTutorial(
 export function skipGameplayOnboarding(engine: GameEngine): void {
   const session = engine.getResource('gameplayOnboardingSession');
   const kind = session.active ? session.kind : 'basics';
-  const current = onboardingCompletion(engine, kind);
-  const next = skippedOnboardingCompletion(current);
   playSound('uiSelect');
-  engine.setResource(ONBOARDING_COMPLETION_RESOURCES[kind], next);
-  if (next === 'skipped' && current !== 'skipped') saveOnboardingCompletion(kind, 'skipped');
+  recordOnboardingCompletion(engine, kind, 'skipped');
   if (!session.active) {
     startNormalGame(engine);
     return;
@@ -105,13 +114,8 @@ export function skipGameplayOnboarding(engine: GameEngine): void {
 function completeTutorial(engine: GameEngine): void {
   const session = engine.getResource('gameplayOnboardingSession');
   if (!session.active) return;
-  const current = onboardingCompletion(engine, session.kind);
-  const next = completedOnboardingCompletion(current);
   playSound('uiSelect');
-  engine.setResource(ONBOARDING_COMPLETION_RESOURCES[session.kind], next);
-  if (next === 'completed' && current !== 'completed') {
-    saveOnboardingCompletion(session.kind, 'completed');
-  }
+  recordOnboardingCompletion(engine, session.kind, 'completed');
   continueAfterTutorial(engine, session);
 }
 

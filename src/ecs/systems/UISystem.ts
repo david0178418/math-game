@@ -31,10 +31,9 @@ export function addUISystemToEngine(systems: GameSystemRegistrar): void {
         gameplayTimeSeconds,
         gameplayOnboardingSession,
       } = resources;
-      const playerComp = player.components.player;
       const level = tutorialHudLabel(gameplayOnboardingSession)
         ?? gameplayLevelLabel(gameMode, mathDifficulty, currentLevel);
 
-      updateGameplayUI(gameplayTimeSeconds, playerComp.lives, level);
+      updateGameplayUI(gameplayTimeSeconds, player.components.player.lives, level);
     });
 }

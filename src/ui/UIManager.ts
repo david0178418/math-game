@@ -128,6 +128,18 @@ function startTutorial(): void {
   void engine.pushScreen('tutorial', config);
 }
 
+function skipTutorial(): void {
+  skipGameplayOnboarding(requireEngine());
+}
+
+function nextTutorialStep(): void {
+  nextGameplayOnboardingStep(requireEngine());
+}
+
+function previousTutorialStep(): void {
+  previousGameplayOnboardingStep(requireEngine());
+}
+
 function returnToPreviousScreen(): void {
   playSound('uiBack');
   void requireEngine().popScreen();
@@ -182,9 +194,9 @@ const quitApplication = desktopQuit
 const SCREENS = createScreenSpecs({
   startGame,
   startTutorial,
-  skipTutorial: () => skipGameplayOnboarding(requireEngine()),
-  nextTutorialStep: () => nextGameplayOnboardingStep(requireEngine()),
-  previousTutorialStep: () => previousGameplayOnboardingStep(requireEngine()),
+  skipTutorial,
+  nextTutorialStep,
+  previousTutorialStep,
   replayGame,
   returnToPreviousScreen,
   goToMenu,
