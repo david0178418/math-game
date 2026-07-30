@@ -16,10 +16,10 @@ import {
 
 type PromptSpec = Pick<ScreenSpec, 'prompts' | 'promptPlacement'>;
 
-export type ScreenRuntime = {
+type ScreenRuntime = {
   activateFocus: () => void;
   navigateFocus: (direction: FocusDirection) => void;
-  presentScreen: (screen: UIScreen, retainedScreens?: readonly UIScreen[]) => HTMLElement;
+  presentScreen: (screen: UIScreen, retainGameplay?: boolean) => HTMLElement;
   setPromptOverride: (screen: UIScreen, spec: PromptSpec | undefined) => void;
   triggerCancel: () => void;
   updateInputPromptPlatform: (platform: InputPromptPlatform) => void;
@@ -96,11 +96,11 @@ export function createScreenRuntime(
 
   function presentScreen(
     screen: UIScreen,
-    retainedScreens: readonly UIScreen[] = [],
+    retainGameplay = false,
   ): HTMLElement {
     const root = screenElements.get(screen) ?? createScreen(screen);
     screenElements.forEach((element, candidate) => {
-      const retained = retainedScreens.includes(candidate);
+      const retained = retainGameplay && candidate === 'playing';
       element.style.display = candidate === screen || retained
         ? 'flex'
         : 'none';

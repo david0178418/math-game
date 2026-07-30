@@ -179,7 +179,7 @@ const SCREENS = createScreenSpecs({
   pauseGame,
   wireFullscreenButton,
   wireTouchControlsSetting: (root) => wireTouchControlsSetting(root, requestCanvasResize),
-  wireAudioSettings: (root) => wireAudioSettings(root),
+  wireAudioSettings,
 });
 
 const screenRuntime = createScreenRuntime(SCREENS);
@@ -198,7 +198,7 @@ window.matchMedia('(hover: none) and (pointer: coarse)').addEventListener('chang
 });
 
 function presentScreen(screen: UIScreen, retainGameplay: boolean): HTMLElement {
-  const root = screenRuntime.presentScreen(screen, retainGameplay ? ['playing'] : []);
+  const root = screenRuntime.presentScreen(screen, retainGameplay);
   setAudioScene(screen === 'playing' ? 'game' : 'title');
   if (screen === 'modeSelect') resetModeSelect(root);
   if (screen === 'playing') requestCanvasResize();
